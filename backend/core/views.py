@@ -7,3 +7,6 @@ def index(request):
         message = "Кнопка нажата! Вот логика backend 🎉"
 
     return render(request, "core/index.html", {"message": message})
+
+def about (request):
+    return render(request, "core/about.html")

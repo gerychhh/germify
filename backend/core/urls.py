@@ -2,6 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("", views.index, name="index"),
-    path("index.html", views.index),   # чтобы /index.html тоже открывался
+    path("", views.index),
+    path("index.html", views.index),
+    path("about", views.about),
+    path("about.html", views.about),
 ]
