@@ -4,11 +4,41 @@ from django.conf import settings
 
 
 class User(AbstractUser):
+    # @userid — это username (унаследован от AbstractUser) — НЕ МЕНЯЕМ
     display_name = models.CharField("Отображаемое имя", max_length=150, blank=True)
     avatar = models.ImageField("Аватар", upload_to="avatars/", blank=True, null=True)
+    bio = models.TextField("О себе", blank=True)
 
     def __str__(self):
         return self.display_name or self.username
+
+    @property
+    def followers_count(self):
+        return self.followers.count()
+
+    @property
+    def following_count(self):
+        return self.following.count()
+
+
+class Follow(models.Model):
+    follower = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="following",
+        on_delete=models.CASCADE
+    )
+    following = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="followers",
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("follower", "following")
+
+    def __str__(self):
+        return f"{self.follower} → {self.following}"
 
 
 class Post(models.Model):
@@ -26,6 +56,7 @@ class Post(models.Model):
 
     def __str__(self):
         return f"{self.author}: {self.text[:30]}"
+
 
 class Message(models.Model):
     sender = models.ForeignKey(

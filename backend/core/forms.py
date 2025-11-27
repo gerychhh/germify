@@ -7,6 +7,7 @@ from .models import User, Post, Message
 class RegisterForm(UserCreationForm):
     class Meta:
         model = User
+        # username = @userid (задаётся при регистрации и потом не меняется)
         fields = ("username", "email", "display_name", "password1", "password2")
 
 
@@ -46,4 +47,29 @@ class MessageForm(forms.ModelForm):
                     "placeholder": "Напишите сообщение..."
                 }
             )
+        }
+
+
+class ProfileForm(forms.ModelForm):
+    """
+    Форма редактирования профиля.
+    username (@userid) здесь НЕТ — его менять нельзя.
+    """
+    class Meta:
+        model = User
+        fields = ("display_name", "bio")
+        widgets = {
+            "display_name": forms.TextInput(
+                attrs={
+                    "placeholder": "Ваше отображаемое имя",
+                    "class": "profile-input",
+                }
+            ),
+            "bio": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "placeholder": "Расскажите о себе",
+                    "class": "profile-textarea",
+                }
+            ),
         }

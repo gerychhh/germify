@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import (
-    # лента / посты
+    # лента
     feed,
     create_post,
     delete_post,
@@ -11,8 +11,12 @@ from .views import (
     messages_thread,
 
     # профили
-    profile_view,       # мой профиль (текущий пользователь)
-    user_profile,       # профиль по username
+    profile_view,
+    user_profile,
+
+    # подписки
+    follow_user,
+    unfollow_user,
 
     # прочее
     communities_view,
@@ -24,26 +28,26 @@ from .views import (
 )
 
 urlpatterns = [
-    # главная лента
     path("", feed, name="feed"),
 
     # посты
     path("post/create/", create_post, name="create_post"),
     path("post/<int:pk>/delete/", delete_post, name="delete_post"),
 
-    # личные сообщения
-    # /messages/ — список диалогов
-    path("messages/", messages_inbox, name="messages"),
-    path("messages/", messages_inbox, name="messages_inbox"),  # просто второй alias
-    # /messages/<username>/ — конкретный диалог
+    # сообщения
+    path("messages/", messages_inbox, name="messages_inbox"),
     path("messages/<str:username>/", messages_thread, name="messages_thread"),
 
-    # сообщества (если нужно)
-    path("communities/", communities_view, name="communities"),
-
     # профили
-    path("profile/", profile_view, name="profile"),                  # свой профиль
-    path("u/<str:username>/", user_profile, name="user_profile"),    # чужой профиль / sharable-ссылка
+    path("profile/", profile_view, name="profile"),
+    path("u/<str:username>/", user_profile, name="user_profile"),
+
+    # подписки
+    path("u/<str:username>/follow/", follow_user, name="follow_user"),
+    path("u/<str:username>/unfollow/", unfollow_user, name="unfollow_user"),
+
+    # прочее
+    path("communities/", communities_view, name="communities"),
 
     # аккаунты
     path("register/", register_view, name="register"),

@@ -6,30 +6,85 @@
 
 {% block content %}
 <section class="card" style="margin-bottom: 16px;">
-    <div style="display: flex; justify-content: space-between; gap: 16px; align-items: center;">
-        <div>
-            <h1 style="margin: 0 0 4px; font-size: 20px;">
-                {{ profile_user.display_name|default:profile_user.username }}
-            </h1>
-            <div style="font-size: 13px; color: #9ca3af;">
+    <div style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start;">
+
+        <!-- Левая часть: имя, @userid, био, счётчики -->
+        <div style="flex: 1;">
+            <div style="margin-bottom: 6px; font-size: 13px; color: #9ca3af;">
                 @{{ profile_user.username }}
             </div>
+
+            <div style="display: flex; gap: 12px; margin-bottom: 10px; font-size: 13px; color: #9ca3af;">
+                <span>
+                    <strong>{{ profile_user.followers_count }}</strong> подписчиков
+                </span>
+                <span>
+                    <strong>{{ profile_user.following_count }}</strong> подписок
+                </span>
+            </div>
+
+            {% if is_owner and form %}
+                <form method="post" style="display: flex; flex-direction: column; gap: 8px;">
+                    {% csrf_token %}
+                    <div>
+                        <label style="font-size: 13px; color: #9ca3af; display:block; margin-bottom: 4px;">
+                            Имя (отображаемое)
+                        </label>
+                        {{ form.display_name }}
+                    </div>
+                    <div>
+                        <label style="font-size: 13px; color: #9ca3af; display:block; margin-bottom: 4px;">
+                            О себе
+                        </label>
+                        {{ form.bio }}
+                    </div>
+                    <div style="margin-top: 4px;">
+                        <button type="submit"
+                                class="primary-button"
+                                style="padding-inline: 18px; font-size: 13px;">
+                            Сохранить
+                        </button>
+                    </div>
+                </form>
+            {% else %}
+                <h1 style="margin: 0 0 4px; font-size: 20px;">
+                    {{ profile_user.display_name|default:profile_user.username }}
+                </h1>
+
+                {% if profile_user.bio %}
+                    <p style="margin-top: 8px; font-size: 14px; color: #e5e7eb;">
+                        {{ profile_user.bio }}
+                    </p>
+                {% endif %}
+            {% endif %}
         </div>
 
+        <!-- Правая часть: кнопки для чужого профиля -->
         {% if not is_owner %}
-            <a href="{% url 'messages_thread' profile_user.username %}"
-               class="primary-button"
-               style="text-decoration: none; white-space: nowrap;">
-                Написать сообщение
-            </a>
+            <div style="display:flex; flex-direction:column; gap:8px; white-space:nowrap; margin-top:4px;">
+
+                {% if is_following %}
+                    <a href="{% url 'unfollow_user' profile_user.username %}"
+                       class="primary-button"
+                       style="background:#1f2937; color:#e5e7eb; text-decoration:none;">
+                        Отписаться
+                    </a>
+                {% else %}
+                    <a href="{% url 'follow_user' profile_user.username %}"
+                       class="primary-button"
+                       style="text-decoration:none;">
+                        Подписаться
+                    </a>
+                {% endif %}
+
+                <a href="{% url 'messages_thread' profile_user.username %}"
+                   class="primary-button"
+                   style="text-decoration:none;">
+                    Написать
+                </a>
+            </div>
         {% endif %}
     </div>
-
-    {% if profile_user.bio %}
-        <p style="margin-top: 12px; font-size: 14px; color: #e5e7eb;">
-            {{ profile_user.bio }}
-        </p>
-    {% endif %}
 </section>
 
 <section class="feed">
@@ -46,7 +101,7 @@
                 </div>
             </header>
             <p class="post-text">
-                {{ post.text }}
+            {{ post.text }}
             </p>
         </article>
     {% empty %}

@@ -5,8 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .forms import RegisterForm, PostForm, MessageForm
-from .models import Post, User, Message
+from .forms import RegisterForm, PostForm, MessageForm, ProfileForm
+from .models import Post, User, Message, Follow
 
 
 # ============================
@@ -58,7 +58,6 @@ def create_post(request):
 def delete_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
 
-    # можно удалять только свои посты или будучи суперпользователем
     if request.user == post.author or request.user.is_superuser:
         if request.method == "POST":
             post.delete()
@@ -67,48 +66,70 @@ def delete_post(request, pk):
 
 
 # ============================
-# ПРОЧЕЕ (communities)
-# ============================
-
-def communities_view(request):
-    return render(request, "core/communities.html")
-
-
-# ============================
 # ПРОФИЛИ
 # ============================
 
 @login_required
 def profile_view(request):
-    """
-    /profile/ — всегда мой профиль.
-    Просто переиспользуем общий обработчик по username.
-    """
     return user_profile(request, username=request.user.username)
 
 
 def user_profile(request, username):
-    """
-    /u/<username>/ — профиль любого пользователя (можно открыть по ссылке).
-    """
     profile_user = get_object_or_404(User, username=username)
-    posts = (
-        Post.objects
-        .filter(author=profile_user)
-        .order_by("-created_at")
-    )
 
-    is_owner = request.user.is_authenticated and (request.user == profile_user)
+    posts = Post.objects.filter(author=profile_user).order_by("-created_at")
+
+    is_owner = request.user.is_authenticated and request.user == profile_user
+
+    # подписан ли текущий пользователь на profile_user
+    is_following = False
+    if request.user.is_authenticated and not is_owner:
+        is_following = Follow.objects.filter(
+            follower=request.user,
+            following=profile_user
+        ).exists()
+
+    form = None
+    if is_owner:
+        if request.method == "POST":
+            form = ProfileForm(request.POST, instance=profile_user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Профиль обновлён.")
+                return redirect("profile")
+        else:
+            form = ProfileForm(instance=profile_user)
 
     return render(
         request,
-        "core/profile.html",   # один шаблон и для себя, и для чужих
+        "core/profile.html",
         {
             "profile_user": profile_user,
             "posts": posts,
             "is_owner": is_owner,
+            "is_following": is_following,
+            "form": form,
         },
     )
+
+
+# ============================
+# ПОДПИСКИ
+# ============================
+
+@login_required
+def follow_user(request, username):
+    target = get_object_or_404(User, username=username)
+    if target != request.user:
+        Follow.objects.get_or_create(follower=request.user, following=target)
+    return redirect("user_profile", username=username)
+
+
+@login_required
+def unfollow_user(request, username):
+    target = get_object_or_404(User, username=username)
+    Follow.objects.filter(follower=request.user, following=target).delete()
+    return redirect("user_profile", username=username)
 
 
 # ============================
@@ -152,10 +173,6 @@ def logout_view(request):
 
 @login_required
 def messages_inbox(request):
-    """
-    Список диалогов: с кем переписывался текущий пользователь,
-    + последнее сообщение в каждом диалоге.
-    """
     qs = (
         Message.objects
         .filter(Q(sender=request.user) | Q(recipient=request.user))
@@ -163,11 +180,11 @@ def messages_inbox(request):
         .order_by("-created_at")
     )
 
-    conversations = {}  # other_user -> last_message
+    conversations = {}
     for msg in qs:
         other = msg.recipient if msg.sender == request.user else msg.sender
         if other not in conversations:
-            conversations[other] = msg  # первое в qs – уже самое новое
+            conversations[other] = msg
 
     return render(
         request,
@@ -178,9 +195,6 @@ def messages_inbox(request):
 
 @login_required
 def messages_thread(request, username):
-    """
-    Конкретный диалог с пользователем username.
-    """
     other_user = get_object_or_404(User, username=username)
 
     messages_qs = (
@@ -213,3 +227,6 @@ def messages_thread(request, username):
             "form": form,
         },
     )
+
+def communities_view(request):
+    return render(request, "core/communities.html")
