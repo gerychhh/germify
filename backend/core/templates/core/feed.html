@@ -58,6 +58,10 @@
         font-weight: 600;
         cursor: pointer;
         font-size: 14px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .primary-button:hover {
@@ -80,11 +84,10 @@
         box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
     }
 
-    /* Слева аватар, справа всё содержимое — с маленьким отступом */
     .post-layout {
         display: flex;
         align-items: flex-start;
-        gap: 6px;  /* было 14 — теперь отступ гораздо меньше */
+        gap: 6px;
     }
 
     .post-main {
@@ -145,7 +148,7 @@
     }
 
     .post-actions {
-        margin-top: 4px;
+        margin: 0;
         display: flex;
         justify-content: flex-end;
     }
@@ -206,64 +209,13 @@
     <!-- Лента постов -->
     <section class="posts-list">
         {% for post in posts %}
-            <article class="post-card">
-                <div class="post-layout">
-                    <div class="post-main">
-                        <header class="post-header">
-                            <div class="post-author">
-                                <div class="user-avatar-circle">
-                                    {{ post.author.display_name|default:post.author.username|first|upper }}
-                                </div>
-                                <div class="post-author-meta">
-                                    <a href="{% url 'user_profile' post.author.username %}" class="post-author-name">
-                                        {{ post.author.display_name|default:post.author.username }}
-                                    </a>
-                                    <div class="post-author-username">
-                                        @{{ post.author.username }}
-                                    </div>
-                                </div>
-
-                                {% if user.is_authenticated and user != post.author %}
-                                    <div style="margin-left: 8px;">
-                                        {% if user.following.filter(following=post.author).exists %}
-                                            <a href="{% url 'unfollow_user' post.author.username %}"
-                                               class="primary-button"
-                                               style="padding:2px 10px; font-size:12px; background:#1f2937; color:#e5e7eb;">
-                                                Вы подписаны
-                                            </a>
-                                        {% else %}
-                                            <a href="{% url 'follow_user' post.author.username %}"
-                                               class="primary-button"
-                                               style="padding:2px 10px; font-size:12px;">
-                                                Подписаться
-                                            </a>
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                            <div class="post-date">
-                                {{ post.created_at|date:"d.m.Y H:i" }}
-                            </div>
-                        </header>
-
-                        <p class="post-text">{{ post.text }}</p>
-
-                        {% if user.is_authenticated and user == post.author or user.is_authenticated and user.is_superuser %}
-                            <div class="post-actions">
-                                <form method="post"
-                                      action="{% url 'delete_post' post.id %}"
-                                      class="post-delete-form">
-                                    {% csrf_token %}
-                                    <button type="submit" class="post-delete-button">
-                                        Удалить
-                                    </button>
-                                </form>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </article>
+            {% include "core/partials/post_card.html"
+                  with
+                  post=post
+                  user=user
+                  liked_posts_ids=liked_posts_ids
+                  following_ids=following_ids
+                  show_follow=True %}
         {% empty %}
             <p style="font-size:14px; color:#6b7280;">
                 В ленте пока нет постов. Будь первым, кто что-нибудь напишет 🙂
@@ -272,4 +224,50 @@
     </section>
 
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".like-form").forEach(function(form) {
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const url = form.action;
+            const formData = new FormData(form);
+            const postId = form.dataset.postId;
+
+            fetch(url, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                const button = form.querySelector(".like-button");
+                const countEl = document.querySelector(
+                    '.like-count[data-post-id="' + postId + '"]'
+                );
+
+                if (data.liked) {
+                    button.textContent = "❤️";
+                    button.dataset.liked = "true";
+                } else {
+                    button.textContent = "🤍";
+                    button.dataset.liked = "false";
+                }
+
+                if (countEl && typeof data.likes_count !== "undefined") {
+                    countEl.textContent = data.likes_count + " лайков";
+                }
+            })
+            .catch(function (error) {
+                console.error("Like error:", error);
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

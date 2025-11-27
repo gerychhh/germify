@@ -1,12 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
+        # noqa
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from .forms import RegisterForm, PostForm, MessageForm, ProfileForm
-from .models import Post, User, Message, Follow
+from .models import Post, User, Message, Follow, Like
 
 
 # ============================
@@ -17,9 +19,27 @@ def feed(request):
     posts = (
         Post.objects
         .select_related("author")
+        .prefetch_related("likes")
         .order_by("-created_at")
     )
+
     form = PostForm()
+
+    # список ID пользователей, на которых подписан текущий пользователь
+    following_ids = []
+    if request.user.is_authenticated:
+        following_ids = list(
+            Follow.objects.filter(follower=request.user)
+            .values_list("following_id", flat=True)
+        )
+
+    # список ID постов, которые текущий пользователь лайкнул
+    liked_posts_ids = []
+    if request.user.is_authenticated:
+        liked_posts_ids = list(
+            Like.objects.filter(user=request.user)
+            .values_list("post_id", flat=True)
+        )
 
     if request.method == "POST":
         if not request.user.is_authenticated:
@@ -39,6 +59,8 @@ def feed(request):
         {
             "posts": posts,
             "form": form,
+            "following_ids": following_ids,
+            "liked_posts_ids": liked_posts_ids,
         },
     )
 
@@ -65,6 +87,34 @@ def delete_post(request, pk):
     return redirect("feed")
 
 
+@login_required
+def toggle_like(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+
+    liked = False
+    if request.method == "POST":
+        like, created = Like.objects.get_or_create(user=request.user, post=post)
+        if created:
+            liked = True
+        else:
+            like.delete()
+            liked = False
+
+    likes_count = post.likes.count()
+
+    # AJAX-запрос — возвращаем JSON
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse(
+            {
+                "liked": liked,
+                "likes_count": likes_count,
+            }
+        )
+
+    # обычный запрос — редирект обратно
+    return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+
 # ============================
 # ПРОФИЛИ
 # ============================
@@ -76,8 +126,12 @@ def profile_view(request):
 
 def user_profile(request, username):
     profile_user = get_object_or_404(User, username=username)
-
-    posts = Post.objects.filter(author=profile_user).order_by("-created_at")
+    posts = (
+        Post.objects.filter(author=profile_user)
+        .select_related("author")
+        .prefetch_related("likes")
+        .order_by("-created_at")
+    )
 
     is_owner = request.user.is_authenticated and request.user == profile_user
 
@@ -88,6 +142,26 @@ def user_profile(request, username):
             follower=request.user,
             following=profile_user
         ).exists()
+
+    # подписки/подписчики для счётчиков
+    followers_ids = []
+    following_ids = []
+    if request.user.is_authenticated:
+        following_ids = list(
+            Follow.objects.filter(follower=request.user)
+            .values_list("following_id", flat=True)
+        )
+        followers_ids = list(
+            Follow.objects.filter(following=request.user)
+            .values_list("follower_id", flat=True)
+        )
+
+    liked_posts_ids = []
+    if request.user.is_authenticated:
+        liked_posts_ids = list(
+            Like.objects.filter(user=request.user)
+            .values_list("post_id", flat=True)
+        )
 
     form = None
     if is_owner:
@@ -108,6 +182,9 @@ def user_profile(request, username):
             "posts": posts,
             "is_owner": is_owner,
             "is_following": is_following,
+            "followers_ids": followers_ids,
+            "following_ids": following_ids,
+            "liked_posts_ids": liked_posts_ids,
             "form": form,
         },
     )
@@ -227,6 +304,7 @@ def messages_thread(request, username):
             "form": form,
         },
     )
+
 
 def communities_view(request):
     return render(request, "core/communities.html")

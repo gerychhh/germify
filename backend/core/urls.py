@@ -1,10 +1,13 @@
 from django.urls import path
-
+from . import views
 from .views import (
     # лента
     feed,
     create_post,
     delete_post,
+
+    # лайки
+    toggle_like,
 
     # сообщения
     messages_inbox,
@@ -33,6 +36,9 @@ urlpatterns = [
     # посты
     path("post/create/", create_post, name="create_post"),
     path("post/<int:pk>/delete/", delete_post, name="delete_post"),
+
+    # лайки
+    path("post/<int:post_id>/like/", toggle_like, name="toggle_like"),
 
     # сообщения
     path("messages/", messages_inbox, name="messages_inbox"),

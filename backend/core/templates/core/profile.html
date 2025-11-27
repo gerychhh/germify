@@ -1,113 +1,399 @@
 {% extends "core/base.html" %}
 
-{% block title %}
-Профиль — {{ profile_user.display_name|default:profile_user.username }}
+{% block title %}Профиль — Germify{% endblock %}
+
+{% block extra_head %}
+<style>
+    .profile-page {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .profile-card {
+        background: #020617;
+        border-radius: 16px;
+        border: 1px solid #1e293b;
+        padding: 16px 18px 18px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
+    }
+
+    .profile-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .profile-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 999px;
+        background: radial-gradient(circle at 30% 30%, #22c55e, #16a34a);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        font-weight: 700;
+        color: #022c22;
+        flex-shrink: 0;
+    }
+
+    .profile-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .profile-name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .profile-display-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+
+    .profile-username {
+        font-size: 13px;
+        color: #9ca3af;
+    }
+
+    .profile-bio {
+        margin-top: 4px;
+        font-size: 14px;
+        color: #e5e7eb;
+        white-space: pre-line;
+    }
+
+    .profile-stats {
+        display: flex;
+        gap: 16px;
+        margin-top: 6px;
+        font-size: 13px;
+        color: #9ca3af;
+    }
+
+    .profile-actions {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .primary-button {
+        border: none;
+        border-radius: 999px;
+        padding: 8px 18px;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #022c22;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .primary-button:hover {
+        filter: brightness(1.05);
+    }
+
+    .profile-edit-form {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .profile-edit-form textarea,
+    .profile-edit-form input {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid #1f2937;
+        background: #020617;
+        padding: 8px 10px;
+        font-size: 14px;
+        color: #e5e7eb;
+        outline: none;
+    }
+
+    .profile-edit-form textarea::placeholder,
+    .profile-edit-form input::placeholder {
+        color: #6b7280;
+    }
+
+    .profile-section-title {
+        margin: 0 0 8px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+
+    /* посты — те же стили, что и в ленте */
+
+    .posts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .post-card {
+        background: #020617;
+        border-radius: 16px;
+        border: 1px solid #1e293b;
+        padding: 10px 14px 10px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
+    }
+
+    .post-layout {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .post-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .post-author {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .post-author-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .post-author-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #e5e7eb;
+        text-decoration: none;
+    }
+
+    .post-author-name:hover {
+        text-decoration: underline;
+    }
+
+    .post-author-username {
+        font-size: 13px;
+        color: #9ca3af;
+    }
+
+    .post-date {
+        font-size: 12px;
+        color: #6b7280;
+        white-space: nowrap;
+    }
+
+    .post-text {
+        margin: 2px 0 0;
+        font-size: 15px;
+        color: #e5e7eb;
+        line-height: 1.6;
+        text-align: left;
+        word-wrap: break-word;
+    }
+
+    .post-actions {
+        margin: 0;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .post-delete-form {
+        margin: 0;
+    }
+
+    .post-delete-button {
+        border: none;
+        border-radius: 999px;
+        padding: 6px 14px;
+        background: #b91c1c;
+        color: #fee2e2;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .post-delete-button:hover {
+        background: #dc2626;
+    }
+
+    @media (max-width: 640px) {
+        .profile-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<section class="card" style="margin-bottom: 16px;">
-    <div style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start;">
+<div class="profile-page">
 
-        <!-- Левая часть: имя, @userid, био, счётчики -->
-        <div style="flex: 1;">
-            <div style="margin-bottom: 6px; font-size: 13px; color: #9ca3af;">
-                @{{ profile_user.username }}
+    <!-- Карточка профиля -->
+    <section class="profile-card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                {{ profile_user.display_name|default:profile_user.username|first|upper }}
             </div>
 
-            <div style="display: flex; gap: 12px; margin-bottom: 10px; font-size: 13px; color: #9ca3af;">
-                <span>
-                    <strong>{{ profile_user.followers_count }}</strong> подписчиков
-                </span>
-                <span>
-                    <strong>{{ profile_user.following_count }}</strong> подписок
-                </span>
-            </div>
+            <div class="profile-main">
+                <div class="profile-name-row">
+                    <div class="profile-display-name">
+                        {{ profile_user.display_name|default:profile_user.username }}
+                    </div>
+                </div>
 
-            {% if is_owner and form %}
-                <form method="post" style="display: flex; flex-direction: column; gap: 8px;">
-                    {% csrf_token %}
-                    <div>
-                        <label style="font-size: 13px; color: #9ca3af; display:block; margin-bottom: 4px;">
-                            Имя (отображаемое)
-                        </label>
-                        {{ form.display_name }}
-                    </div>
-                    <div>
-                        <label style="font-size: 13px; color: #9ca3af; display:block; margin-bottom: 4px;">
-                            О себе
-                        </label>
-                        {{ form.bio }}
-                    </div>
-                    <div style="margin-top: 4px;">
-                        <button type="submit"
-                                class="primary-button"
-                                style="padding-inline: 18px; font-size: 13px;">
-                            Сохранить
-                        </button>
-                    </div>
-                </form>
-            {% else %}
-                <h1 style="margin: 0 0 4px; font-size: 20px;">
-                    {{ profile_user.display_name|default:profile_user.username }}
-                </h1>
+                <div class="profile-username">
+                    @{{ profile_user.username }}
+                </div>
+
+                <div class="profile-stats">
+                    <span>
+                        <strong>{{ profile_user.followers_count }}</strong> подписчиков
+                    </span>
+                    <span>
+                        <strong>{{ profile_user.following_count }}</strong> подписок
+                    </span>
+                </div>
 
                 {% if profile_user.bio %}
-                    <p style="margin-top: 8px; font-size: 14px; color: #e5e7eb;">
+                    <div class="profile-bio">
                         {{ profile_user.bio }}
-                    </p>
-                {% endif %}
-            {% endif %}
-        </div>
-
-        <!-- Правая часть: кнопки для чужого профиля -->
-        {% if not is_owner %}
-            <div style="display:flex; flex-direction:column; gap:8px; white-space:nowrap; margin-top:4px;">
-
-                {% if is_following %}
-                    <a href="{% url 'unfollow_user' profile_user.username %}"
-                       class="primary-button"
-                       style="background:#1f2937; color:#e5e7eb; text-decoration:none;">
-                        Отписаться
-                    </a>
-                {% else %}
-                    <a href="{% url 'follow_user' profile_user.username %}"
-                       class="primary-button"
-                       style="text-decoration:none;">
-                        Подписаться
-                    </a>
+                    </div>
                 {% endif %}
 
-                <a href="{% url 'messages_thread' profile_user.username %}"
-                   class="primary-button"
-                   style="text-decoration:none;">
-                    Написать
-                </a>
+                <div class="profile-actions">
+                    {% if is_owner %}
+                        <!-- Редактирование профиля -->
+                        {% if form %}
+                            <form method="post" class="profile-edit-form">
+                                {% csrf_token %}
+                                <div>
+                                    {{ form.display_name }}
+                                </div>
+                                <div>
+                                    {{ form.bio }}
+                                </div>
+                                <button type="submit" class="primary-button">
+                                    Сохранить
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+
+                        {% if user.is_authenticated %}
+                            {% if is_following %}
+                                <a href="{% url 'unfollow_user' profile_user.username %}"
+                                   class="primary-button"
+                                   style="background:#1f2937; color:#e5e7eb; padding:6px 14px; font-size:13px;">
+                                    Вы подписаны
+                                </a>
+                            {% else %}
+                                <a href="{% url 'follow_user' profile_user.username %}"
+                                   class="primary-button"
+                                   style="padding:6px 14px; font-size:13px;">
+                                    Подписаться
+                                </a>
+                            {% endif %}
+
+                            <a href="{% url 'messages_thread' profile_user.username %}"
+                               class="primary-button"
+                               style="background:#0f172a; color:#e5e7eb; padding:6px 14px; font-size:13px;">
+                                Написать сообщение
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
             </div>
-        {% endif %}
-    </div>
-</section>
+        </div>
+    </section>
 
-<section class="feed">
-    <h2 style="font-size: 16px; margin: 0 0 12px 2px;">Посты пользователя</h2>
+    <!-- Посты пользователя -->
+    <section class="profile-card">
+        <h2 class="profile-section-title">Посты</h2>
 
-    {% for post in posts %}
-        <article class="post-card">
-            <header class="post-header">
-                <div class="post-author">
-                    {{ post.author.display_name|default:post.author.username }}
-                </div>
-                <div class="post-date">
-                    {{ post.created_at|date:"d.m.Y H:i" }}
-                </div>
-            </header>
-            <p class="post-text">
-            {{ post.text }}
-            </p>
-        </article>
-    {% empty %}
-        <p style="color: #9ca3af; font-size: 14px;">
-            У этого пользователя пока нет постов.
-        </p>
-    {% endfor %}
-</section>
+        <div class="posts-list">
+            {% for post in posts %}
+                {% include "core/partials/post_card.html"
+                      with
+                      post=post
+                      user=user
+                      liked_posts_ids=liked_posts_ids
+                      following_ids=following_ids
+                      show_follow=False %}
+            {% empty %}
+                <p style="font-size:14px; color:#6b7280;">
+                    У пользователя пока нет постов.
+                </p>
+            {% endfor %}
+        </div>
+    </section>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".like-form").forEach(function(form) {
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const url = form.action;
+            const formData = new FormData(form);
+            const postId = form.dataset.postId;
+
+            fetch(url, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                const button = form.querySelector(".like-button");
+                const countEl = document.querySelector(
+                    '.like-count[data-post-id="' + postId + '"]'
+                );
+
+                if (data.liked) {
+                    button.textContent = "❤️";
+                    button.dataset.liked = "true";
+                } else {
+                    button.textContent = "🤍";
+                    button.dataset.liked = "false";
+                }
+
+                if (countEl && typeof data.likes_count !== "undefined") {
+                    countEl.textContent = data.likes_count + " лайков";
+                }
+            })
+            .catch(function (error) {
+                console.error("Like error:", error);
+            });
+        });
+    });
+});
+</script>
 {% endblock %}
