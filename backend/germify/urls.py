@@ -3,5 +3,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("core.urls")),   # подключаем приложение core
+
+    # Всё приложение core: лента, сообщения, профиль, логин/регистрация и т.д.
+    path("", include("core.urls")),
 ]

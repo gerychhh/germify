@@ -1,19 +1,8 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Germify</title>
-</head>
-<body>
-    <h1>Добро пожаловать на Germify!</h1>
-    <h2>Тест страницы ABout</h2>
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit">Нажми меня</button>
-    </form>
+{% extends "base.html" %}
 
-    {% if message %}
-        <p>{{ message }}</p>
-    {% endif %}
-</body>
-</html>
+{% block title %}Главная — Germify{% endblock %}
+
+{% block content %}
+<h1>О проекте...</h1>
+<p>Тест Тест Тест</p>
+{% endblock %}

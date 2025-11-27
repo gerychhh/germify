@@ -1,0 +1,253 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Лента — Germify{% endblock %}
+
+{% block extra_head %}
+<style>
+    .feed-page {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .feed-new-post-card {
+        background: #020617;
+        border-radius: 16px;
+        border: 1px solid #1e293b;
+        padding: 16px 18px 18px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
+    }
+
+    .feed-new-post-title {
+        margin: 0 0 10px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+
+    .feed-new-post-textarea {
+        width: 100%;
+        min-height: 90px;
+        resize: vertical;
+        border-radius: 12px;
+        border: 1px solid #1f2937;
+        background: #020617;
+        padding: 10px 12px;
+        font-size: 14px;
+        color: #e5e7eb;
+        outline: none;
+    }
+
+    .feed-new-post-textarea::placeholder {
+        color: #6b7280;
+    }
+
+    .feed-new-post-footer {
+        margin-top: 10px;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .primary-button {
+        border: none;
+        border-radius: 999px;
+        padding: 8px 18px;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #022c22;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .primary-button:hover {
+        filter: brightness(1.05);
+    }
+
+    /* ------- посты ------- */
+
+    .posts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .post-card {
+        background: #020617;
+        border-radius: 16px;
+        border: 1px solid #1e293b;
+        padding: 10px 14px 10px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
+    }
+
+    /* Слева аватар, справа всё содержимое — с маленьким отступом */
+    .post-layout {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;  /* было 14 — теперь отступ гораздо меньше */
+    }
+
+
+    .post-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .post-author-block {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .post-author-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #e5e7eb;
+        text-decoration: none;
+    }
+
+    .post-author-name:hover {
+        text-decoration: underline;
+    }
+
+    .post-author-username {
+        font-size: 13px;
+        color: #9ca3af;
+    }
+
+    .post-date {
+        font-size: 12px;
+        color: #6b7280;
+        white-space: nowrap;
+    }
+
+    .post-text {
+        margin: 2px 0 0;
+        font-size: 15px;
+        color: #e5e7eb;
+        line-height: 1.6;
+        text-align: left;
+        word-wrap: break-word;
+    }
+
+    .post-actions {
+        margin-top: 4px;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .post-delete-form {
+        margin: 0;
+    }
+
+    .post-delete-button {
+        border: none;
+        border-radius: 999px;
+        padding: 6px 14px;
+        background: #b91c1c;
+        color: #fee2e2;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .post-delete-button:hover {
+        background: #dc2626;
+    }
+
+    @media (max-width: 640px) {
+        .post-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .post-date {
+            margin-top: 2px;
+        }
+        .post-actions {
+            justify-content: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="feed-page">
+
+    <!-- Форма нового поста -->
+    <section class="feed-new-post-card">
+        <form method="post" action="{% url 'create_post' %}">
+            {% csrf_token %}
+            <h2 class="feed-new-post-title">Чем поделишься сегодня?</h2>
+            <textarea
+                name="text"
+                class="feed-new-post-textarea"
+                placeholder="Напишите что-нибудь интересное..."
+            >{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
+
+            <div class="feed-new-post-footer">
+                <button type="submit" class="primary-button">Опубликовать</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Лента постов -->
+    <section class="posts-list">
+        {% for post in posts %}
+            <article class="post-card">
+                <div class="post-layout">
+                    <div class="post-main">
+                        <header class="post-header">
+                            <div class="post-author">
+                                <div class="user-avatar-circle">
+                                    {{ post.author.display_name|default:post.author.username|first|upper }}
+                                </div>
+                                <div class="post-author-meta">
+                                    <a href="{% url 'user_profile' post.author.username %}" class="post-author-name">
+                                        {{ post.author.display_name|default:post.author.username }}
+                                    </a>
+                                    <div class="post-author-username">
+                                        @{{ post.author.username }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="post-date">
+                                {{ post.created_at|date:"d.m.Y H:i" }}
+                            </div>
+                        </header>
+
+
+                        <p class="post-text">{{ post.text }}</p>
+
+                        {% if user.is_authenticated and user == post.author or user.is_authenticated and user.is_superuser %}
+                            <div class="post-actions">
+                                <form method="post"
+                                      action="{% url 'delete_post' post.id %}"
+                                      class="post-delete-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="post-delete-button">
+                                        Удалить
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+        {% empty %}
+            <p style="font-size:14px; color:#6b7280;">
+                В ленте пока нет постов. Будь первым, кто что-нибудь напишет 🙂
+            </p>
+        {% endfor %}
+    </section>
+
+</div>
+{% endblock %}

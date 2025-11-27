@@ -1,0 +1,58 @@
+{% extends "core/base.html" %}
+
+{% block title %}
+Профиль — {{ profile_user.display_name|default:profile_user.username }}
+{% endblock %}
+
+{% block content %}
+<section class="card" style="margin-bottom: 16px;">
+    <div style="display: flex; justify-content: space-between; gap: 16px; align-items: center;">
+        <div>
+            <h1 style="margin: 0 0 4px; font-size: 20px;">
+                {{ profile_user.display_name|default:profile_user.username }}
+            </h1>
+            <div style="font-size: 13px; color: #9ca3af;">
+                @{{ profile_user.username }}
+            </div>
+        </div>
+
+        {% if not is_owner %}
+            <a href="{% url 'messages_thread' profile_user.username %}"
+               class="primary-button"
+               style="text-decoration: none; white-space: nowrap;">
+                Написать сообщение
+            </a>
+        {% endif %}
+    </div>
+
+    {% if profile_user.bio %}
+        <p style="margin-top: 12px; font-size: 14px; color: #e5e7eb;">
+            {{ profile_user.bio }}
+        </p>
+    {% endif %}
+</section>
+
+<section class="feed">
+    <h2 style="font-size: 16px; margin: 0 0 12px 2px;">Посты пользователя</h2>
+
+    {% for post in posts %}
+        <article class="post-card">
+            <header class="post-header">
+                <div class="post-author">
+                    {{ post.author.display_name|default:post.author.username }}
+                </div>
+                <div class="post-date">
+                    {{ post.created_at|date:"d.m.Y H:i" }}
+                </div>
+            </header>
+            <p class="post-text">
+                {{ post.text }}
+            </p>
+        </article>
+    {% empty %}
+        <p style="color: #9ca3af; font-size: 14px;">
+            У этого пользователя пока нет постов.
+        </p>
+    {% endfor %}
+</section>
+{% endblock %}

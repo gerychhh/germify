@@ -85,11 +85,19 @@ WSGI_APPLICATION = 'germify.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "germify",
+        "USER": "germify_user",
+        "PASSWORD": "mysqlmysql@@1",  # тот, что указал в MySQL
+        "HOST": "127.0.0.1",
+        "PORT": "3306",
+        "OPTIONS": {
+            "charset": "utf8mb4",
+        },
     }
 }
+
 
 
 # Password validation
@@ -132,3 +140,10 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = "core.User"
+
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "feed"
+LOGOUT_REDIRECT_URL = "feed"
+
