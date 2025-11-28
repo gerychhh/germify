@@ -1,46 +1,69 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
-        # noqa
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
+
 
 from .forms import RegisterForm, PostForm, MessageForm, ProfileForm
-from .models import Post, User, Message, Follow, Like
+from .models import (
+    Post,
+    User,
+    Message,
+    Follow,
+    Like,
+    Comment,
+    CommentLike,
+)
 
 
 # ============================
 # ЛЕНТА / ПОСТЫ
 # ============================
 
+
 def feed(request):
     posts = (
         Post.objects
         .select_related("author")
-        .prefetch_related("likes")
+        .prefetch_related(
+            "likes",
+            "comments__author",
+            "comments__likes",
+            "comments__replies",
+        )
+        .annotate(
+            top_comments_count=Count(
+                "comments", filter=Q(comments__parent__isnull=True)
+            )
+        )
         .order_by("-created_at")
     )
 
     form = PostForm()
 
-    # список ID пользователей, на которых подписан текущий пользователь
-    following_ids = []
     if request.user.is_authenticated:
         following_ids = list(
             Follow.objects.filter(follower=request.user)
             .values_list("following_id", flat=True)
         )
-
-    # список ID постов, которые текущий пользователь лайкнул
-    liked_posts_ids = []
-    if request.user.is_authenticated:
         liked_posts_ids = list(
             Like.objects.filter(user=request.user)
             .values_list("post_id", flat=True)
         )
+        liked_comment_ids = list(
+            CommentLike.objects.filter(user=request.user)
+            .values_list("comment_id", flat=True)
+        )
+    else:
+        following_ids = []
+        liked_posts_ids = []
+        liked_comment_ids = []
 
+    # создание поста, если форма отправлена на /
     if request.method == "POST":
         if not request.user.is_authenticated:
             messages.error(request, "Чтобы писать посты, нужно войти.")
@@ -61,6 +84,7 @@ def feed(request):
             "form": form,
             "following_ids": following_ids,
             "liked_posts_ids": liked_posts_ids,
+            "liked_comment_ids": liked_comment_ids,
         },
     )
 
@@ -80,44 +104,122 @@ def create_post(request):
 def delete_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
 
-    if request.user == post.author or request.user.is_superuser:
-        if request.method == "POST":
+    if request.method == "POST":
+        if request.user == post.author or request.user.is_superuser:
             post.delete()
+
+    return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+
+@login_required
+def toggle_like(request, pk):
+    """Лайк/анлайк поста (AJAX)."""
+    post = get_object_or_404(Post, pk=pk)
+
+    if request.method == "POST":
+        like, created = Like.objects.get_or_create(user=request.user, post=post)
+
+        if not created:
+            like.delete()
+            liked = False
+        else:
+            liked = True
+
+        likes_count = post.likes.count()
+
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse(
+                {
+                    "liked": liked,
+                    "likes_count": likes_count,
+                }
+            )
 
     return redirect("feed")
 
 
-@login_required
-def toggle_like(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
+# ============================
+# КОММЕНТАРИИ
+# ============================
 
-    liked = False
+
+@login_required
+def add_comment(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+
     if request.method == "POST":
-        like, created = Like.objects.get_or_create(user=request.user, post=post)
-        if created:
-            liked = True
-        else:
+        text = request.POST.get("text", "").strip()
+        if text:
+            Comment.objects.create(
+                post=post,
+                author=request.user,
+                text=text,
+            )
+
+    return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+
+@login_required
+def add_reply(request, comment_id):
+    parent_comment = get_object_or_404(Comment, pk=comment_id)
+
+    if request.method == "POST":
+        text = request.POST.get("text", "").strip()
+        if text:
+            Comment.objects.create(
+                post=parent_comment.post,
+                author=request.user,
+                parent=parent_comment,
+                text=text,
+            )
+
+    return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+
+@login_required
+def delete_comment(request, comment_id):
+    comment = get_object_or_404(Comment, pk=comment_id)
+
+    if request.method == "POST":
+        if request.user == comment.author or request.user.is_superuser:
+            comment.delete()
+
+    return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+
+@login_required
+def toggle_comment_like(request, comment_id):
+    """Лайк/анлайк комментария (AJAX)."""
+    comment = get_object_or_404(Comment, pk=comment_id)
+
+    if request.method == "POST":
+        like, created = CommentLike.objects.get_or_create(
+            user=request.user,
+            comment=comment,
+        )
+        if not created:
             like.delete()
             liked = False
+        else:
+            liked = True
 
-    likes_count = post.likes.count()
+        likes_count = comment.likes.count()
 
-    # AJAX-запрос — возвращаем JSON
-    if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        return JsonResponse(
-            {
-                "liked": liked,
-                "likes_count": likes_count,
-            }
-        )
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse(
+                {
+                    "liked": liked,
+                    "likes_count": likes_count,
+                }
+            )
 
-    # обычный запрос — редирект обратно
-    return redirect(request.META.get("HTTP_REFERER", "feed"))
+    return redirect("feed")
 
 
 # ============================
 # ПРОФИЛИ
 # ============================
+
 
 @login_required
 def profile_view(request):
@@ -126,10 +228,20 @@ def profile_view(request):
 
 def user_profile(request, username):
     profile_user = get_object_or_404(User, username=username)
+
     posts = (
         Post.objects.filter(author=profile_user)
-        .select_related("author")
-        .prefetch_related("likes")
+        .prefetch_related(
+            "likes",
+            "comments__author",
+            "comments__likes",
+            "comments__replies",
+        )
+        .annotate(
+            top_comments_count=Count(
+                "comments", filter=Q(comments__parent__isnull=True)
+            )
+        )
         .order_by("-created_at")
     )
 
@@ -140,27 +252,19 @@ def user_profile(request, username):
     if request.user.is_authenticated and not is_owner:
         is_following = Follow.objects.filter(
             follower=request.user,
-            following=profile_user
+            following=profile_user,
         ).exists()
 
-    # подписки/подписчики для счётчиков
-    followers_ids = []
-    following_ids = []
-    if request.user.is_authenticated:
-        following_ids = list(
-            Follow.objects.filter(follower=request.user)
-            .values_list("following_id", flat=True)
-        )
-        followers_ids = list(
-            Follow.objects.filter(following=request.user)
-            .values_list("follower_id", flat=True)
-        )
-
     liked_posts_ids = []
+    liked_comment_ids = []
     if request.user.is_authenticated:
         liked_posts_ids = list(
             Like.objects.filter(user=request.user)
             .values_list("post_id", flat=True)
+        )
+        liked_comment_ids = list(
+            CommentLike.objects.filter(user=request.user)
+            .values_list("comment_id", flat=True)
         )
 
     form = None
@@ -182,10 +286,9 @@ def user_profile(request, username):
             "posts": posts,
             "is_owner": is_owner,
             "is_following": is_following,
-            "followers_ids": followers_ids,
-            "following_ids": following_ids,
-            "liked_posts_ids": liked_posts_ids,
             "form": form,
+            "liked_posts_ids": liked_posts_ids,
+            "liked_comment_ids": liked_comment_ids,
         },
     )
 
@@ -193,6 +296,7 @@ def user_profile(request, username):
 # ============================
 # ПОДПИСКИ
 # ============================
+
 
 @login_required
 def follow_user(request, username):
@@ -212,6 +316,7 @@ def unfollow_user(request, username):
 # ============================
 # РЕГИСТРАЦИЯ / ЛОГИН / ЛОГАУТ
 # ============================
+
 
 def register_view(request):
     if request.method == "POST":
@@ -248,11 +353,13 @@ def logout_view(request):
 # ЛИЧНЫЕ СООБЩЕНИЯ
 # ============================
 
+
 @login_required
 def messages_inbox(request):
     qs = (
-        Message.objects
-        .filter(Q(sender=request.user) | Q(recipient=request.user))
+        Message.objects.filter(
+            Q(sender=request.user) | Q(recipient=request.user)
+        )
         .select_related("sender", "recipient")
         .order_by("-created_at")
     )
@@ -276,8 +383,8 @@ def messages_thread(request, username):
 
     messages_qs = (
         Message.objects.filter(
-            Q(sender=request.user, recipient=other_user) |
-            Q(sender=other_user, recipient=request.user)
+            Q(sender=request.user, recipient=other_user)
+            | Q(sender=other_user, recipient=request.user)
         )
         .select_related("sender", "recipient")
         .order_by("created_at")
@@ -304,6 +411,91 @@ def messages_thread(request, username):
             "form": form,
         },
     )
+
+@login_required
+def add_comment(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+
+    if request.method == "POST":
+        text = request.POST.get("text", "").strip()
+        if not text:
+            # если AJAX — вернём ошибку, если обычный POST — просто редирект
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"error": "empty"}, status=400)
+            return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+        comment = Comment.objects.create(
+            post=post,
+            author=request.user,
+            text=text,
+        )
+
+        # AJAX-ветка — возвращаем HTML одного комментария
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            html = render_to_string(
+                "core/partials/comment.html",
+                {
+                    "c": comment,
+                    "user": request.user,
+                    "liked_comment_ids": [],
+                    "level": 0,  # корневой комментарий
+                },
+                request=request,
+            )
+            return JsonResponse(
+                {
+                    "html": html,
+                    "post_id": post.id,
+                    "comment_id": comment.id,
+                    "comments_count": post.comments.count(),
+                }
+            )
+
+    # обычный POST — старая логика
+    return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+
+@login_required
+def add_reply(request, comment_id):
+    parent_comment = get_object_or_404(Comment, pk=comment_id)
+
+    if request.method == "POST":
+        text = request.POST.get("text", "").strip()
+        if not text:
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({"error": "empty"}, status=400)
+            return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+        reply = Comment.objects.create(
+            post=parent_comment.post,
+            author=request.user,
+            parent=parent_comment,
+            text=text,
+        )
+
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            html = render_to_string(
+                "core/partials/comment.html",
+                {
+                    "c": reply,
+                    "user": request.user,
+                    "liked_comment_ids": [],
+                    "level": 20,  # первый уровень вложенности
+                },
+                request=request,
+            )
+            return JsonResponse(
+                {
+                    "html": html,
+                    "post_id": parent_comment.post.id,
+                    "comment_id": reply.id,
+                    "parent_id": parent_comment.id,
+                    "comments_count": parent_comment.post.comments.count(),
+                }
+            )
+
+    return redirect(request.META.get("HTTP_REFERER", "feed"))
+
 
 
 def communities_view(request):

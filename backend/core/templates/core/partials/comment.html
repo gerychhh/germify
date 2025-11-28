@@ -1,0 +1,117 @@
+<div class="comment-item"
+     data-comment-id="{{ c.id }}"
+     data-post-id="{{ c.post.id }}"
+     style="margin-left: {{ level }}px;">
+
+    <!-- HEADER -->
+    <div class="comment-header">
+        <div class="comment-avatar">
+            {{ c.author.display_name|default:c.author.username|first|upper }}
+        </div>
+
+        <div class="comment-author-line">
+            <b style="color:#e5e7eb;">
+                {{ c.author.display_name|default:c.author.username }}
+            </b>
+            <span style="color:#9ca3af;">@{{ c.author.username }}</span>
+            <span style="color:#6b7280;font-size:11px;">
+                {{ c.created_at|date:"d.m.Y H:i" }}
+            </span>
+        </div>
+    </div>
+
+    <!-- ТЕКСТ -->
+    <div class="comment-text">{{ c.text }}</div>
+
+    <!-- FOOTER -->
+    <div style="display:flex;gap:10px;margin-top:3px;align-items:center;flex-wrap:wrap;">
+
+        {# лайк на комментарий #}
+        {% if user.is_authenticated %}
+            <form method="post"
+                  action="{% url 'toggle_comment_like' c.id %}"
+                  class="comment-like-form"
+                  data-comment-id="{{ c.id }}">
+                {% csrf_token %}
+                <button class="comment-like-button"
+                        type="submit"
+                        style="background:none;border:none;font-size:15px;cursor:pointer;"
+                        data-liked="{% if c.id in liked_comment_ids %}true{% else %}false{% endif %}">
+                    {% if c.id in liked_comment_ids %}❤️{% else %}🤍{% endif %}
+                </button>
+            </form>
+        {% endif %}
+
+        <span class="comment-like-count"
+              data-comment-id="{{ c.id }}"
+              style="font-size:12px;color:#9ca3af;">
+            {{ c.likes.count }} лайков
+        </span>
+
+        {% if user.is_authenticated %}
+            {# кнопка "Ответить" — показывает/скрывает форму ввода ответа #}
+            <button class="comment-reply-toggle"
+                    type="button"
+                    data-comment-id="{{ c.id }}"
+                    style="background:none;border:none;color:#93c5fd;font-size:12px;cursor:pointer;">
+                Ответить
+            </button>
+
+            {# Кнопка "Ответы (N)" — раскрывает/сворачивает список ответов #}
+            {% with replies=c.replies.all %}
+                {% if replies %}
+                    <button class="replies-toggle"
+                            type="button"
+                            data-comment-id="{{ c.id }}"
+                            style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;">
+                        Ответы ({{ replies|length }})
+                    </button>
+                {% endif %}
+            {% endwith %}
+
+            {# Удаление комментария (AJAX, без перезагрузки) #}
+            {% if user == c.author or user.is_superuser %}
+                <form method="post"
+                      action="{% url 'delete_comment' c.id %}"
+                      class="comment-delete-form"
+                      data-comment-id="{{ c.id }}"
+                      data-post-id="{{ c.post.id }}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            style="background:none;border:none;color:#fca5a5;font-size:12px;cursor:pointer;">
+                        Удалить
+                    </button>
+                </form>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- ФОРМА ОТВЕТА (скрыта по умолчанию) -->
+    {% if user.is_authenticated %}
+        <form method="post"
+              action="{% url 'add_reply' c.id %}"
+              class="reply-form hidden"
+              data-parent-id="{{ c.id }}"
+              data-post-id="{{ c.post.id }}"
+              style="margin-left:10px;">
+            {% csrf_token %}
+            <textarea name="text"
+                      class="reply-input"
+                      placeholder="Ответить..."
+                      required></textarea>
+            <button type="submit" class="reply-btn">Отправить</button>
+        </form>
+    {% endif %}
+
+    {# ВЛОЖЕННЫЕ ОТВЕТЫ (рекурсивно), по умолчанию скрыты и открываются по кнопке "Ответы" #}
+    {% with replies=c.replies.all %}
+        {% if replies %}
+            <div class="replies-block hidden" data-parent-id="{{ c.id }}">
+                {% for r in replies %}
+                    {% include "core/partials/comment.html" with c=r user=user liked_comment_ids=liked_comment_ids level=level|add:20 %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+</div>

@@ -5,9 +5,13 @@ from .views import (
     feed,
     create_post,
     delete_post,
-
-    # лайки
     toggle_like,
+
+    # комментарии
+    add_comment,
+    add_reply,
+    toggle_comment_like,
+    delete_comment,
 
     # сообщения
     messages_inbox,
@@ -36,9 +40,25 @@ urlpatterns = [
     # посты
     path("post/create/", create_post, name="create_post"),
     path("post/<int:pk>/delete/", delete_post, name="delete_post"),
+    path("post/<int:pk>/like-toggle/", toggle_like, name="toggle_like"),
 
-    # лайки
-    path("post/<int:post_id>/like/", toggle_like, name="toggle_like"),
+    # комментарии
+    path("post/<int:post_id>/comment/", add_comment, name="add_comment"),
+    path(
+        "comment/<int:comment_id>/reply/",
+        add_reply,
+        name="add_reply",
+    ),
+    path(
+        "comment/<int:comment_id>/like-toggle/",
+        toggle_comment_like,
+        name="toggle_comment_like",
+    ),
+    path(
+        "comment/<int:comment_id>/delete/",
+        delete_comment,
+        name="delete_comment",
+    ),
 
     # сообщения
     path("messages/", messages_inbox, name="messages_inbox"),

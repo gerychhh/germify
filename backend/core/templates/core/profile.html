@@ -134,7 +134,7 @@
         color: #e5e7eb;
     }
 
-    /* посты — те же стили, что и в ленте */
+    /* --- посты (как в ленте) --- */
 
     .posts-list {
         display: flex;
@@ -237,10 +237,378 @@
         background: #dc2626;
     }
 
+    .post-footer-row {
+        margin-top: 6px;
+        display:flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .post-likes {
+        display:flex;
+        align-items:center;
+        gap:8px;
+    }
+
+    /* комментарии — стили такие же, как в feed.html */
+
+    .comments-toggle-row {
+        margin-top: 4px;
+        display:flex;
+        align-items:center;
+        justify-content: space-between;
+        gap:8px;
+        cursor:pointer;
+        padding:4px 6px;
+        border-radius:8px;
+        background:#020617;
+    }
+
+    .comments-toggle-label {
+        font-size:13px;
+        color:#9ca3af;
+        display:flex;
+        align-items:center;
+        gap:6px;
+    }
+
+    .comments-count-badge {
+        padding:2px 8px;
+        border-radius:999px;
+        background:#111827;
+        color:#e5e7eb;
+        font-size:12px;
+    }
+
+    .comments-toggle-arrow {
+        font-size:12px;
+        color:#6b7280;
+    }
+
+    .comments-body {
+        margin-top: 4px;
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+    }
+
+    .hidden {
+        display:none;
+    }
+
+    .comment-item {
+        background:#020617;
+        border:1px solid #1e293b;
+        border-radius:10px;
+        padding:6px 8px;
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+    }
+
+    .comment-header {
+        display:flex;
+        align-items:flex-start;
+        gap:6px;
+    }
+
+    .comment-avatar {
+        width:24px;
+        height:24px;
+        border-radius:999px;
+        background:#1e3a8a;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:12px;
+        font-weight:600;
+        color:#dbeafe;
+        flex-shrink:0;
+    }
+
+    .comment-author-block {
+        display:flex;
+        flex-direction:column;
+        gap:1px;
+    }
+
+    .comment-author-line {
+        display:flex;
+        align-items:center;
+        gap:4px;
+        font-size:13px;
+    }
+
+    .comment-display-name {
+        font-weight:600;
+        color:#e5e7eb;
+    }
+
+    .comment-username {
+        font-size:12px;
+        color:#9ca3af;
+    }
+
+    .comment-time {
+        font-size:11px;
+        color:#6b7280;
+    }
+
+    .comment-text {
+        margin-top:2px;
+        font-size:13px;
+        color:#e5e7eb;
+        white-space:pre-wrap;
+    }
+
+    .comment-footer {
+        margin-top:4px;
+        display:flex;
+        align-items:center;
+        gap:8px;
+        font-size:12px;
+    }
+
+    .comment-like-button {
+        border:none;
+        background:transparent;
+        cursor:pointer;
+        font-size:15px;
+        padding:0;
+    }
+
+    .comment-like-count {
+        color:#9ca3af;
+    }
+
+    .comment-actions-inline {
+        display:flex;
+        align-items:center;
+        gap:6px;
+    }
+
+    .comment-reply-toggle {
+        border:none;
+        background:transparent;
+        cursor:pointer;
+        font-size:12px;
+        color:#93c5fd;
+        padding:0;
+    }
+
+    .comment-delete-btn {
+        border:none;
+        background:transparent;
+        cursor:pointer;
+        font-size:12px;
+        color:#fca5a5;
+        padding:0;
+    }
+
+    .comment-add-toggle {
+        margin-top:4px;
+        border:none;
+        background:transparent;
+        cursor:pointer;
+        font-size:12px;
+        color:#93c5fd;
+        padding:0;
+        align-self:flex-start;
+    }
+
+    .comment-add-toggle:hover {
+        color:#bfdbfe;
+    }
+
+    .replies-block {
+        margin-top:4px;
+        padding-left:20px;
+        border-left:1px solid #1f2937;
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+    }
+
+    .reply-item {
+        background:#020617;
+        border:1px solid #1f2937;
+        border-radius:10px;
+        padding:6px 8px;
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+    }
+
+    .reply-header {
+        display:flex;
+        align-items:flex-start;
+        gap:6px;
+    }
+
+    .reply-avatar {
+        width:22px;
+        height:22px;
+        border-radius:999px;
+        background:#0369a1;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:11px;
+        font-weight:600;
+        color:#e0f2fe;
+        flex-shrink:0;
+    }
+
+    .reply-author-block {
+        display:flex;
+        flex-direction:column;
+        gap:1px;
+    }
+
+    .reply-author-line {
+        display:flex;
+        align-items:center;
+        gap:4px;
+        font-size:12px;
+    }
+
+    .reply-display-name {
+        font-weight:600;
+        color:#e5e7eb;
+    }
+
+    .reply-username {
+        font-size:11px;
+        color:#9ca3af;
+    }
+
+    .reply-time {
+        font-size:11px;
+        color:#6b7280;
+    }
+
+    .reply-text {
+        margin-top:2px;
+        font-size:12px;
+        color:#e5e7eb;
+        white-space:pre-wrap;
+    }
+
+    .reply-footer {
+        margin-top:4px;
+        display:flex;
+        align-items:center;
+        gap:8px;
+        font-size:11px;
+    }
+
+    .reply-like-button {
+        border:none;
+        background:transparent;
+        cursor:pointer;
+        font-size:14px;
+        padding:0;
+    }
+
+    .reply-like-count {
+        color:#9ca3af;
+    }
+
+    .reply-actions-inline {
+        display:flex;
+        align-items:center;
+        gap:6px;
+    }
+
+    .reply-delete-btn {
+        border:none;
+        background:transparent;
+        cursor:pointer;
+        font-size:11px;
+        color:#fecaca;
+        padding:0;
+    }
+
+    .comment-form {
+        margin-top:6px;
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+    }
+
+    .comment-input {
+        width:100%;
+        min-height:40px;
+        max-height:120px;
+        resize:vertical;
+        background:#020617;
+        border-radius:8px;
+        border:1px solid #1f2937;
+        padding:6px 8px;
+        font-size:13px;
+        color:#e5e7eb;
+    }
+
+    .comment-btn {
+        align-self:flex-end;
+        padding:4px 10px;
+        border-radius:999px;
+        border:none;
+        background:#2563eb;
+        color:#f9fafb;
+        font-size:12px;
+        cursor:pointer;
+    }
+
+    .comment-btn:hover {
+        background:#1d4ed8;
+    }
+
+    .reply-form {
+        margin-top:4px;
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+    }
+
+    .reply-input {
+        width:100%;
+        min-height:32px;
+        max-height:100px;
+        resize:vertical;
+        background:#020617;
+        border-radius:8px;
+        border:1px solid #1f2937;
+        padding:4px 6px;
+        font-size:12px;
+        color:#e5e7eb;
+    }
+
+    .reply-btn {
+        align-self:flex-end;
+        padding:3px 9px;
+        border-radius:999px;
+        border:none;
+        background:#3b82f6;
+        color:#f9fafb;
+        font-size:11px;
+        cursor:pointer;
+    }
+
+    .reply-btn:hover {
+        background:#2563eb;
+    }
+
     @media (max-width: 640px) {
         .profile-header {
             flex-direction: column;
             align-items: flex-start;
+        }
+        .post-footer-row {
+            flex-direction:column;
+            align-items:flex-start;
         }
     }
 </style>
@@ -284,7 +652,6 @@
 
                 <div class="profile-actions">
                     {% if is_owner %}
-                        <!-- Редактирование профиля -->
                         {% if form %}
                             <form method="post" class="profile-edit-form">
                                 {% csrf_token %}
@@ -300,7 +667,6 @@
                             </form>
                         {% endif %}
                     {% else %}
-
                         {% if user.is_authenticated %}
                             {% if is_following %}
                                 <a href="{% url 'unfollow_user' profile_user.username %}"
@@ -334,13 +700,276 @@
 
         <div class="posts-list">
             {% for post in posts %}
-                {% include "core/partials/post_card.html"
-                      with
-                      post=post
-                      user=user
-                      liked_posts_ids=liked_posts_ids
-                      following_ids=following_ids
-                      show_follow=False %}
+
+                <article class="post-card">
+                    <div class="post-layout">
+                        <div class="post-main">
+                            <header class="post-header">
+                                <div class="post-author">
+                                    <div class="user-avatar-circle">
+                                        {{ post.author.display_name|default:post.author.username|first|upper }}
+                                    </div>
+                                    <div class="post-author-meta">
+                                        <a href="{% url 'user_profile' post.author.username %}" class="post-author-name">
+                                            {{ post.author.display_name|default:post.author.username }}
+                                        </a>
+                                        <div class="post-author-username">
+                                            @{{ post.author.username }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="post-date">
+                                    {{ post.created_at|date:"d.m.Y H:i" }}
+                                </div>
+                            </header>
+
+                            <p class="post-text">{{ post.text }}</p>
+
+                            <div class="post-footer-row">
+                                <div class="post-likes">
+                                    {% if user.is_authenticated %}
+                                        <form method="post"
+                                              action="{% url 'toggle_like' post.id %}"
+                                              class="like-form"
+                                              data-post-id="{{ post.id }}">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    class="like-button"
+                                                    data-liked="{% if user.is_authenticated and user in post.likes.all %}true{% else %}false{% endif %}"
+                                                    style="border:none; background:transparent; cursor:pointer; font-size:18px;">
+                                                {% if user.is_authenticated and user in post.likes.all %}
+                                                    ❤️
+                                                {% else %}
+                                                    🤍
+                                                {% endif %}
+                                            </button>
+                                        </form>
+                                    {% endif %}
+
+                                    <span class="like-count"
+                                          data-post-id="{{ post.id }}"
+                                          style="font-size:13px; color:#9ca3af;">
+                                        {{ post.likes.count }} лайков
+                                    </span>
+                                </div>
+
+                                {% if user.is_authenticated %}
+                                    {% if user == post.author or user.is_superuser %}
+                                        <div class="post-actions">
+                                            <form method="post"
+                                                  action="{% url 'delete_post' post.id %}"
+                                                  class="post-delete-form">
+                                                {% csrf_token %}
+                                                <button type="submit" class="post-delete-button">
+                                                    Удалить
+                                                </button>
+                                            </form>
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+
+                            <!-- Комментарии -->
+                            <div class="comments-toggle-row comments-toggle" data-post-id="{{ post.id }}">
+                                <div class="comments-toggle-label">
+                                    💬 Комментарии
+                                    <span class="comments-count-badge">
+                                        {{ post.comments.count }}
+                                    </span>
+                                </div>
+                                <span class="comments-toggle-arrow">▾</span>
+                            </div>
+
+                            <div class="comments-body hidden" data-post-id="{{ post.id }}">
+                                {% for c in post.comments.all %}
+                                    {% if not c.parent %}
+                                        <div class="comment-item">
+                                            <div class="comment-header">
+                                                <div class="comment-avatar">
+                                                    {{ c.author.display_name|default:c.author.username|first|upper }}
+                                                </div>
+                                                <div class="comment-author-block">
+                                                    <div class="comment-author-line">
+                                                        <span class="comment-display-name">
+                                                            {{ c.author.display_name|default:c.author.username }}
+                                                        </span>
+                                                        <span class="comment-username">
+                                                            @{{ c.author.username }}
+                                                        </span>
+                                                        <span class="comment-time">
+                                                            · {{ c.created_at|date:"d.m.Y H:i" }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="comment-text">
+                                                {{ c.text }}
+                                            </div>
+
+                                            <div class="comment-footer">
+                                                {% if user.is_authenticated %}
+                                                    <form method="post"
+                                                          action="{% url 'toggle_comment_like' c.id %}"
+                                                          class="comment-like-form"
+                                                          data-comment-id="{{ c.id }}">
+                                                        {% csrf_token %}
+                                                        <button type="submit"
+                                                                class="comment-like-button"
+                                                                data-liked="{% if user.is_authenticated and user in c.likes.all %}true{% else %}false{% endif %}">
+                                                            {% if user.is_authenticated and user in c.likes.all %}
+                                                                ❤️
+                                                            {% else %}
+                                                                🤍
+                                                            {% endif %}
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+
+                                                <span class="comment-like-count"
+                                                      data-comment-id="{{ c.id }}">
+                                                    {{ c.likes.count }} лайков
+                                                </span>
+
+                                                <div class="comment-actions-inline">
+                                                    {% if user.is_authenticated %}
+                                                        <button type="button"
+                                                                class="comment-reply-toggle"
+                                                                data-post-id="{{ post.id }}"
+                                                                data-comment-id="{{ c.id }}">
+                                                            Ответить
+                                                        </button>
+
+                                                        {% if user == c.author or user.is_superuser %}
+                                                            <form method="post"
+                                                                  action="{% url 'delete_comment' c.id %}"
+                                                                  class="comment-delete-form">
+                                                                {% csrf_token %}
+                                                                <button type="submit" class="comment-delete-btn">
+                                                                    Удалить
+                                                                </button>
+                                                            </form>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+
+                                            {% if c.replies.all %}
+                                                <div class="replies-block">
+                                                    {% for r in c.replies.all %}
+                                                        <div class="reply-item">
+                                                            <div class="reply-header">
+                                                                <div class="reply-avatar">
+                                                                    {{ r.author.display_name|default:r.author.username|first|upper }}
+                                                                </div>
+                                                                <div class="reply-author-block">
+                                                                    <div class="reply-author-line">
+                                                                        <span class="reply-display-name">
+                                                                            {{ r.author.display_name|default:r.author.username }}
+                                                                        </span>
+                                                                        <span class="reply-username">
+                                                                            @{{ r.author.username }}
+                                                                        </span>
+                                                                        <span class="reply-time">
+                                                                            · {{ r.created_at|date:"d.m.Y H:i" }}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="reply-text">
+                                                                {{ r.text }}
+                                                            </div>
+
+                                                            <div class="reply-footer">
+                                                                {% if user.is_authenticated %}
+                                                                    <form method="post"
+                                                                          action="{% url 'toggle_comment_like' r.id %}"
+                                                                          class="comment-like-form"
+                                                                          data-comment-id="{{ r.id }}">
+                                                                        {% csrf_token %}
+                                                                        <button type="submit"
+                                                                                class="reply-like-button"
+                                                                                data-liked="{% if user.is_authenticated and user in r.likes.all %}true{% else %}false{% endif %}">
+                                                                            {% if user.is_authenticated and user in r.likes.all %}
+                                                                                ❤️
+                                                                            {% else %}
+                                                                                🤍
+                                                                            {% endif %}
+                                                                        </button>
+                                                                    </form>
+                                                                {% endif %}
+
+                                                                <span class="reply-like-count"
+                                                                      data-comment-id="{{ r.id }}">
+                                                                    {{ r.likes.count }} лайков
+                                                                </span>
+
+                                                                <div class="reply-actions-inline">
+                                                                    {% if user.is_authenticated %}
+                                                                        {% if user == r.author or user.is_superuser %}
+                                                                            <form method="post"
+                                                                                  action="{% url 'delete_comment' r.id %}"
+                                                                                  class="comment-delete-form">
+                                                                                {% csrf_token %}
+                                                                                <button type="submit" class="reply-delete-btn">
+                                                                                    Удалить
+                                                                                </button>
+                                                                            </form>
+                                                                        {% endif %}
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+
+                                            {% if user.is_authenticated %}
+                                                <form method="post"
+                                                      action="{% url 'add_comment' post.id %}"
+                                                      class="reply-form hidden"
+                                                      data-post-id="{{ post.id }}"
+                                                      data-parent-id="{{ c.id }}">
+                                                    {% csrf_token %}
+                                                    <textarea name="text"
+                                                              class="reply-input"
+                                                              placeholder="Ответить..."
+                                                              required></textarea>
+                                                    <input type="hidden" name="parent_id" value="{{ c.id }}">
+                                                    <button class="reply-btn" type="submit">Ответить</button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if user.is_authenticated %}
+                                    <button type="button"
+                                            class="comment-add-toggle"
+                                            data-post-id="{{ post.id }}">
+                                        Написать комментарий
+                                    </button>
+
+                                    <form method="post"
+                                          action="{% url 'add_comment' post.id %}"
+                                          class="comment-form hidden"
+                                          data-post-id="{{ post.id }}">
+                                        {% csrf_token %}
+                                        <textarea name="text"
+                                                  class="comment-input"
+                                                  placeholder="Оставьте комментарий..."
+                                                  required></textarea>
+                                        <input type="hidden" name="parent_id" value="">
+                                        <button class="comment-btn" type="submit">Отправить</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
             {% empty %}
                 <p style="font-size:14px; color:#6b7280;">
                     У пользователя пока нет постов.
@@ -353,6 +982,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    // Лайки постов
     document.querySelectorAll(".like-form").forEach(function(form) {
         form.addEventListener("submit", function (e) {
             e.preventDefault();
@@ -368,9 +998,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     "X-Requested-With": "XMLHttpRequest",
                 },
             })
-            .then(function (response) {
-                return response.json();
-            })
+            .then(function (response) { return response.json(); })
             .then(function (data) {
                 const button = form.querySelector(".like-button");
                 const countEl = document.querySelector(
@@ -392,6 +1020,86 @@ document.addEventListener("DOMContentLoaded", function () {
             .catch(function (error) {
                 console.error("Like error:", error);
             });
+        });
+    });
+
+    // Лайки комментариев
+    document.querySelectorAll(".comment-like-form").forEach(function(form) {
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const url = form.action;
+            const formData = new FormData(form);
+            const commentId = form.dataset.commentId;
+
+            fetch(url, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                const button = form.querySelector("button");
+                const countEl = document.querySelector(
+                    '[data-comment-id="' + commentId + '"].comment-like-count, ' +
+                    '[data-comment-id="' + commentId + '"].reply-like-count'
+                );
+
+                if (data.liked) {
+                    button.textContent = "❤️";
+                    button.dataset.liked = "true";
+                } else {
+                    button.textContent = "🤍";
+                    button.dataset.liked = "false";
+                }
+
+                if (countEl && typeof data.likes_count !== "undefined") {
+                    countEl.textContent = data.likes_count + " лайков";
+                }
+            })
+            .catch(function (error) {
+                console.error("Comment like error:", error);
+            });
+        });
+    });
+
+    // Тоггл комментариев
+    document.querySelectorAll(".comments-toggle").forEach(function(toggle) {
+        toggle.addEventListener("click", function () {
+            const postId = toggle.dataset.postId;
+            const body = document.querySelector('.comments-body[data-post-id="' + postId + '"]');
+            const arrow = toggle.querySelector(".comments-toggle-arrow");
+            if (!body) return;
+
+            const isHidden = body.classList.toggle("hidden");
+            arrow.textContent = isHidden ? "▾" : "▴";
+        });
+    });
+
+    // Тоггл формы "Написать комментарий"
+    document.querySelectorAll(".comment-add-toggle").forEach(function(btn) {
+        btn.addEventListener("click", function () {
+            const postId = btn.dataset.postId;
+            const form = document.querySelector('.comment-form[data-post-id="' + postId + '"]');
+            if (form) {
+                form.classList.toggle("hidden");
+            }
+        });
+    });
+
+    // Тоггл формы ответа
+    document.querySelectorAll(".comment-reply-toggle").forEach(function(btn) {
+        btn.addEventListener("click", function () {
+            const postId = btn.dataset.postId;
+            const commentId = btn.dataset.commentId;
+            const form = document.querySelector(
+                '.reply-form[data-post-id="' + postId + '"][data-parent-id="' + commentId + '"]'
+            );
+            if (form) {
+                form.classList.toggle("hidden");
+            }
         });
     });
 });

@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 
-from .models import User, Post, Message
+from .models import User, Post, Message, Comment
 
 
 class RegisterForm(UserCreationForm):
@@ -72,4 +72,16 @@ class ProfileForm(forms.ModelForm):
                     "class": "profile-textarea",
                 }
             ),
+        }
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ["text"]
+        widgets = {
+            "text": forms.Textarea(attrs={
+                "rows": 2,
+                "placeholder": "Напишите комментарий...",
+                "class": "comment-textarea"
+            })
         }
