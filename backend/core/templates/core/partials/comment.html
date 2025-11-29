@@ -1,3 +1,5 @@
+{% load tz %}
+
 <div class="comment-item"
      data-comment-id="{{ c.id }}"
      data-post-id="{{ c.post.id }}"
@@ -9,22 +11,38 @@
             {{ c.author.display_name|default:c.author.username|first|upper }}
         </div>
 
-        <div class="comment-author-line">
-            <b style="color:#e5e7eb;">
-                {{ c.author.display_name|default:c.author.username }}
-            </b>
-            <span style="color:#9ca3af;">@{{ c.author.username }}</span>
-            <span style="color:#6b7280;font-size:11px;">
-                {{ c.created_at|date:"d.m.Y H:i" }}
-            </span>
+        <div class="comment-author-block">
+            <div class="comment-author-line">
+                <b class="comment-display-name">
+                    {{ c.author.display_name|default:c.author.username }}
+                </b>
+
+                <span class="comment-username">
+                    @{{ c.author.username }}
+                </span>
+
+                {# если это ответ на другой комментарий — показываем, на что именно #}
+                {% if c.parent %}
+                    <span class="comment-reply-meta">
+                        в ответ @{{ c.parent.author.username }}
+                        «{{ c.parent.text|truncatechars:18 }}»
+                    </span>
+                {% endif %}
+
+                <span class="comment-time">
+                    {{ c.created_at|localtime|date:"d.m.Y H:i" }}
+                </span>
+            </div>
         </div>
     </div>
 
     <!-- ТЕКСТ -->
-    <div class="comment-text">{{ c.text }}</div>
+    <div class="comment-text">
+        {{ c.text }}
+    </div>
 
     <!-- FOOTER -->
-    <div style="display:flex;gap:10px;margin-top:3px;align-items:center;flex-wrap:wrap;">
+    <div class="comment-footer">
 
         {# лайк на комментарий #}
         {% if user.is_authenticated %}
@@ -35,7 +53,6 @@
                 {% csrf_token %}
                 <button class="comment-like-button"
                         type="submit"
-                        style="background:none;border:none;font-size:15px;cursor:pointer;"
                         data-liked="{% if c.id in liked_comment_ids %}true{% else %}false{% endif %}">
                     {% if c.id in liked_comment_ids %}❤️{% else %}🤍{% endif %}
                 </button>
@@ -43,33 +60,28 @@
         {% endif %}
 
         <span class="comment-like-count"
-              data-comment-id="{{ c.id }}"
-              style="font-size:12px;color:#9ca3af;">
+              data-comment-id="{{ c.id }}">
             {{ c.likes.count }} лайков
         </span>
 
         {% if user.is_authenticated %}
-            {# кнопка "Ответить" — показывает/скрывает форму ввода ответа #}
+            {# показать/скрыть форму "Ответить" #}
             <button class="comment-reply-toggle"
                     type="button"
-                    data-comment-id="{{ c.id }}"
-                    style="background:none;border:none;color:#93c5fd;font-size:12px;cursor:pointer;">
+                    data-comment-id="{{ c.id }}">
                 Ответить
             </button>
 
-            {# Кнопка "Ответы (N)" — раскрывает/сворачивает список ответов #}
-            {% with replies=c.replies.all %}
-                {% if replies %}
-                    <button class="replies-toggle"
-                            type="button"
-                            data-comment-id="{{ c.id }}"
-                            style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;">
-                        Ответы ({{ replies|length }})
-                    </button>
-                {% endif %}
-            {% endwith %}
+            {# кнопка показать/скрыть блок ответов #}
+            {% if c.replies.count %}
+                <button class="replies-toggle"
+                        type="button"
+                        data-comment-id="{{ c.id }}">
+                    Ответы ({{ c.replies.count }})
+                </button>
+            {% endif %}
 
-            {# Удаление комментария (AJAX, без перезагрузки) #}
+            {# Удаление комментария #}
             {% if user == c.author or user.is_superuser %}
                 <form method="post"
                       action="{% url 'delete_comment' c.id %}"
@@ -78,7 +90,7 @@
                       data-post-id="{{ c.post.id }}">
                     {% csrf_token %}
                     <button type="submit"
-                            style="background:none;border:none;color:#fca5a5;font-size:12px;cursor:pointer;">
+                            class="comment-delete-btn">
                         Удалить
                     </button>
                 </form>
@@ -86,7 +98,7 @@
         {% endif %}
     </div>
 
-    <!-- ФОРМА ОТВЕТА (скрыта по умолчанию) -->
+    {# ФОРМА ОТВЕТА (скрыта по умолчанию, открывается по кнопке "Ответить") #}
     {% if user.is_authenticated %}
         <form method="post"
               action="{% url 'add_reply' c.id %}"
@@ -103,15 +115,14 @@
         </form>
     {% endif %}
 
-    {# ВЛОЖЕННЫЕ ОТВЕТЫ (рекурсивно), по умолчанию скрыты и открываются по кнопке "Ответы" #}
-    {% with replies=c.replies.all %}
-        {% if replies %}
-            <div class="replies-block hidden" data-parent-id="{{ c.id }}">
-                {% for r in replies %}
-                    {% include "core/partials/comment.html" with c=r user=user liked_comment_ids=liked_comment_ids level=level|add:20 %}
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+    {# ВЛОЖЕННЫЕ ОТВЕТЫ — по умолчанию спрятаны, открываются кнопкой "Ответы" #}
+    {% if c.replies.exists %}
+        <div class="replies-block hidden"
+             data-parent-id="{{ c.id }}">
+            {% for r in c.replies.all %}
+                {% include "core/partials/comment.html" with c=r user=user liked_comment_ids=liked_comment_ids level=level|add:20 %}
+            {% endfor %}
+        </div>
+    {% endif %}
 
 </div>

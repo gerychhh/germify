@@ -1,4 +1,7 @@
-<article class="post-card">
+{# core/partials/post.html #}
+{% load tz %}
+
+<article class="post-card" id="post-{{ post.id }}">
     <div class="post-layout">
         <div class="post-main">
             <header class="post-header">
@@ -35,8 +38,49 @@
                     {% endif %}
                 </div>
 
-                <div class="post-date">
-                    {{ post.created_at|date:"d.m.Y H:i" }}
+                <div class="post-header-right" style="display:flex; align-items:center; gap:8px;">
+                    {# Дата как ссылка на страницу поста #}
+                    <a href="{% url 'post_detail' post.id %}"
+                       class="post-date"
+                       style="text-decoration:none; color:#6b7280; font-size:12px;">
+                        {{ post.created_at|date:"d.m.Y H:i" }}
+                    </a>
+
+                    {# меню из трёх точек #}
+                    <div class="post-menu-wrapper" style="position:relative;">
+                        <button type="button"
+                                class="post-menu-toggle"
+                                data-post-id="{{ post.id }}"
+                                style="border:none;background:transparent;color:#9ca3af;font-size:18px;cursor:pointer;padding:4px;">
+                            ⋯
+                        </button>
+
+                        <div class="post-menu hidden"
+                             data-post-id="{{ post.id }}"
+                             style="position:absolute;right:0;top:100%;margin-top:4px;background:#020617;border:1px solid #1f2937;border-radius:8px;min-width:140px;z-index:20;display:flex;flex-direction:column;overflow:hidden;">
+                            <button type="button"
+                                    class="post-menu-item post-share-btn"
+                                    data-post-id="{{ post.id }}"
+                                    style="padding:6px 10px;border:none;background:transparent;color:#e5e7eb;font-size:13px;text-align:left;cursor:pointer;">
+                                Поделиться
+                            </button>
+
+                            {% if user == post.author or user.is_superuser %}
+                                <form method="post"
+                                      action="{% url 'delete_post' post.id %}"
+                                      class="post-delete-form"
+                                      data-post-id="{{ post.id }}"
+                                      style="margin:0;">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="post-menu-item post-menu-delete-btn"
+                                            style="padding:6px 10px;border:none;background:transparent;color:#fecaca;font-size:13px;text-align:left;cursor:pointer;width:100%;text-align:left;">
+                                        Удалить
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -69,18 +113,6 @@
                         {{ post.likes.count }} лайков
                     </span>
                 </div>
-
-                {% if user.is_authenticated and user == post.author %}
-                    <form method="post"
-                          action="{% url 'delete_post' post.id %}"
-                          class="post-delete-form"
-                          data-post-id="{{ post.id }}">
-                        {% csrf_token %}
-                        <button type="submit" class="post-delete-button">
-                            Удалить
-                        </button>
-                    </form>
-                {% endif %}
             </div>
 
             {# ------ КОММЕНТАРИИ К ПОСТУ ------ #}
@@ -99,7 +131,6 @@
                 <div class="comments-body hidden"
                      data-post-id="{{ post.id }}">
 
-                    {# корневые комментарии #}
                     {% for c in post.comments.all %}
                         {% if not c.parent %}
                             {% include "core/partials/comment.html" with c=c user=user liked_comment_ids=liked_comment_ids level=0 %}

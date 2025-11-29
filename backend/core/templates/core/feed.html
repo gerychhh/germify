@@ -1,5 +1,5 @@
 {% extends "core/base.html" %}
-{% load static %}
+{% load static tz %}
 
 {% block title %}Лента — Germify{% endblock %}
 
@@ -227,9 +227,8 @@
     }
 
     .hidden {
-    display: none !important;
-}
-
+        display: none !important;
+    }
 
     /* --- комментарий --- */
 
@@ -275,11 +274,14 @@
         align-items:center;
         gap:4px;
         font-size:13px;
+        flex-wrap: wrap;
     }
 
     .comment-display-name { font-weight:600; color:#e5e7eb; }
 
     .comment-username { font-size:12px; color:#9ca3af; }
+
+    .comment-reply-meta { font-size:11px; color:#9ca3af; }
 
     .comment-time { font-size:11px; color:#6b7280; }
 
@@ -387,6 +389,7 @@
         align-items:center;
         gap:4px;
         font-size:12px;
+        flex-wrap: wrap;
     }
 
     .reply-display-name { font-weight:600; color:#e5e7eb; }
@@ -465,12 +468,11 @@
         color:#e5e7eb;
     }
 
-        /* чтобы hidden реально скрывал формы комментариев и ответов */
+    /* чтобы hidden реально скрывал формы комментариев и ответов */
     .comment-form.hidden,
     .reply-form.hidden {
         display: none !important;
     }
-
 
     .comment-btn {
         align-self:flex-end;
@@ -541,6 +543,73 @@
             align-items:flex-start;
         }
     }
+        /* перенос длинных слов в постах и комментариях */
+    .post-text,
+    .comment-text,
+    .reply-text {
+        /* сохраняем переносы строк, но ломаем очень длинные слова */
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .post-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    }
+
+    .post-menu-wrapper {
+        position: relative;
+    }
+
+    .post-menu-toggle {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 20px;
+        line-height: 1;
+        padding: 2px 6px;
+        color: #9ca3af;
+        border-radius: 999px;
+    }
+
+    .post-menu-toggle:hover {
+        background: #020617;
+        color: #e5e7eb;
+    }
+
+    .post-menu {
+        position: absolute;
+        right: 0;
+        top: 24px;
+        background: #020617;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 4px 0;
+        min-width: 140px;
+        z-index: 50;
+    }
+
+    .post-menu-item {
+        width: 100%;
+        padding: 6px 10px;
+        border: none;
+        background: transparent;
+        color: #e5e7eb;
+        font-size: 13px;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .post-menu-item:hover {
+        background: #111827;
+    }
+
+    .post-menu-delete-btn {
+        color: #fecaca;
+    }
+
 </style>
 {% endblock %}
 
@@ -549,7 +618,9 @@
 
     <!-- Форма нового поста -->
     <section class="feed-new-post-card">
-        <form method="post" action="{% url 'create_post' %}">
+        <form method="post"
+              action="{% url 'create_post' %}"
+              class="new-post-form">
             {% csrf_token %}
             <h2 class="feed-new-post-title">Чем поделишься сегодня?</h2>
             <textarea
@@ -565,151 +636,14 @@
 
     <!-- Лента постов -->
     <section class="posts-list">
-        {% for post in posts %}
+    {% for post in posts %}
+        {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
+    {% empty %}
+        <p style="font-size:14px; color:#6b7280;">
+            В ленте пока нет постов. Будь первым, кто что-нибудь напишет 🙂</p>
+    {% endfor %}
+</section>
 
-            <article class="post-card">
-                <div class="post-layout">
-                    <div class="post-main">
-                        <header class="post-header">
-                            <div class="post-author">
-                                <div class="user-avatar-circle">
-                                    {{ post.author.display_name|default:post.author.username|first|upper }}
-                                </div>
-                                <div class="post-author-meta">
-                                    <a href="{% url 'user_profile' post.author.username %}"
-                                       class="post-author-name">
-                                        {{ post.author.display_name|default:post.author.username }}
-                                    </a>
-                                    <div class="post-author-username">
-                                        @{{ post.author.username }}
-                                    </div>
-                                </div>
-
-                                {% if user.is_authenticated and user != post.author %}
-                                    <div style="margin-left:8px;">
-                                        {% if post.author.id in following_ids %}
-                                            <a href="{% url 'unfollow_user' post.author.username %}"
-                                               class="primary-button"
-                                               style="padding:2px 10px; font-size:12px; background:#1f2937; color:#e5e7eb;">
-                                                Вы подписаны
-                                            </a>
-                                        {% else %}
-                                            <a href="{% url 'follow_user' post.author.username %}"
-                                               class="primary-button"
-                                               style="padding:2px 10px; font-size:12px;">
-                                                Подписаться
-                                            </a>
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                            <div class="post-date">
-                                {{ post.created_at|date:"d.m.Y H:i" }}
-                            </div>
-                        </header>
-
-                        <p class="post-text">{{ post.text }}</p>
-
-                        <div class="post-footer-row">
-                            <div class="post-likes">
-                                {% if user.is_authenticated %}
-                                    <form method="post"
-                                          action="{% url 'toggle_like' post.id %}"
-                                          class="like-form"
-                                          data-post-id="{{ post.id }}">
-                                        {% csrf_token %}
-                                        <button type="submit"
-                                                class="like-button"
-                                                data-liked="{% if post.id in liked_posts_ids %}true{% else %}false{% endif %}"
-                                                style="border:none; background:transparent; cursor:pointer; font-size:18px;">
-                                            {% if post.id in liked_posts_ids %}
-                                                ❤️
-                                            {% else %}
-                                                🤍
-                                            {% endif %}
-                                        </button>
-                                    </form>
-                                {% endif %}
-
-                                <span class="like-count"
-                                      data-post-id="{{ post.id }}"
-                                      style="font-size:13px; color:#9ca3af;">
-                                    {{ post.likes.count }} лайков
-                                </span>
-                            </div>
-
-                            {% if user.is_authenticated and user == post.author %}
-                                <form method="post"
-                                      action="{% url 'delete_post' post.id %}"
-                                      class="post-delete-form"
-                                      data-post-id="{{ post.id }}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="post-delete-button">
-                                        Удалить
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </div>
-
-                        {# ------ КОММЕНТАРИИ К ПОСТУ ------ #}
-                        <div class="comments-wrap">
-                            <button type="button"
-                                    class="comments-toggle"
-                                    data-post-id="{{ post.id }}">
-                                <span class="comments-toggle-label">
-                                    💬 Комментарии
-                                </span>
-                                <span class="comments-count-badge">
-                                    {{ post.comments.count }}
-                                </span>
-                            </button>
-
-                            <div class="comments-body hidden"
-                                 data-post-id="{{ post.id }}">
-
-                                {# корневые комментарии #}
-                                {% for c in post.comments.all %}
-                                    {% if not c.parent %}
-                                        {# рекурсивный шаблон комментария #}
-                                        {% include "core/partials/comment.html" with c=c user=user liked_comment_ids=liked_comment_ids level=0 %}
-                                    {% endif %}
-                                {% endfor %}
-
-                                {% if user.is_authenticated %}
-                                    <button type="button"
-                                            class="comment-add-toggle"
-                                            data-post-id="{{ post.id }}">
-                                        Написать комментарий
-                                    </button>
-
-                                    <form method="post"
-                                          action="{% url 'add_comment' post.id %}"
-                                          class="comment-form hidden"
-                                          data-post-id="{{ post.id }}">
-                                        {% csrf_token %}
-                                        <textarea name="text"
-                                                  class="comment-input"
-                                                  placeholder="Оставьте комментарий..."
-                                                  required></textarea>
-                                        <button type="submit"
-                                                class="comment-btn">
-                                            Отправить
-                                        </button>
-                                    </form>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </article>
-
-        {% empty %}
-            <p style="font-size:14px; color:#6b7280;">
-                В ленте пока нет постов. Будь первым, кто что-нибудь напишет 🙂</p>
-        {% endfor %}
-    </section>
 
 </div>
 
@@ -726,7 +660,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 👉 ГЛАВНОЕ ДОБАВЛЕНИЕ — прячем все формы на старте
+    // прячем формы на старте (если вдруг где-то нет hidden в шаблоне)
     document.querySelectorAll(".comment-form").forEach(function (f) {
         f.classList.add("hidden");
     });
@@ -734,22 +668,73 @@ document.addEventListener("DOMContentLoaded", function () {
         f.classList.add("hidden");
     });
 
-    /* ===== ЛАЙКИ ПОСТОВ ===== */
+    /* ===== SUBMIT-обработчик ===== */
     document.addEventListener("submit", function (e) {
         const form = e.target;
 
-        // лайк поста
+        // ---------- СОЗДАНИЕ НОВОГО ПОСТА (AJAX) ----------
+        if (form.classList.contains("new-post-form")) {
+            e.preventDefault();
+
+            ajaxPost(form.action, form)
+                .then(function (response) {
+                    const ct = response.headers.get("content-type") || "";
+                    if (ct.indexOf("application/json") !== -1) {
+                        return response.json().then(function (data) {
+                            return { kind: "json", data: data };
+                        });
+                    }
+                    return response.text().then(function (html) {
+                        return { kind: "html", html: html, url: response.url };
+                    });
+                })
+                .then(function (result) {
+                    if (result.kind === "json") {
+                        const data = result.data;
+                        if (!data.success || !data.html) {
+                            return;
+                        }
+
+                        const list = document.querySelector(".posts-list");
+                        if (!list) return;
+
+                        // вставляем новый пост в начало ленты
+                        list.insertAdjacentHTML("afterbegin", data.html);
+
+                        // в только что вставленном посте скрываем формы
+                        const firstPost = list.querySelector(".post-card");
+                        if (firstPost) {
+                            firstPost.querySelectorAll(".comment-form, .reply-form")
+                                     .forEach(function (f) { f.classList.add("hidden"); });
+                            firstPost.querySelectorAll(".replies-block")
+                                     .forEach(function (b) { b.classList.add("hidden"); });
+                        }
+
+                        form.reset();
+                    } else {
+                        // fallback, если сервер вернул обычную страницу
+                        window.location.href = result.url;
+                    }
+                })
+                .catch(function (err) {
+                    console.error("create post error:", err);
+                });
+
+            return;
+        }
+
+        // ---------- ЛАЙК ПОСТА ----------
         if (form.classList.contains("like-form")) {
             e.preventDefault();
 
             const postId = form.dataset.postId;
 
             ajaxPost(form.action, form)
-                .then(r => r.json())
-                .then(data => {
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
                     const btn = form.querySelector(".like-button");
                     const cnt = document.querySelector(
-                        `.like-count[data-post-id="${postId}"]`
+                        '.like-count[data-post-id="' + postId + '"]'
                     );
 
                     btn.textContent = data.liked ? "❤️" : "🤍";
@@ -757,22 +742,24 @@ document.addEventListener("DOMContentLoaded", function () {
                         cnt.textContent = data.likes_count + " лайков";
                     }
                 })
-                .catch(err => console.error("post like error:", err));
+                .catch(function (err) {
+                    console.error("post like error:", err);
+                });
         }
 
-        // лайк комментария / ответа
+        // ---------- ЛАЙК КОММЕНТАРИЯ / ОТВЕТА ----------
         else if (form.classList.contains("comment-like-form")) {
             e.preventDefault();
 
             const commentId = form.dataset.commentId;
 
             ajaxPost(form.action, form)
-                .then(r => r.json())
-                .then(data => {
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
                     const btn = form.querySelector("button");
                     const cnt = document.querySelector(
-                        `.comment-like-count[data-comment-id="${commentId}"],
-                         .reply-like-count[data-comment-id="${commentId}"]`
+                        '.comment-like-count[data-comment-id="' + commentId + '"], ' +
+                        '.reply-like-count[data-comment-id="' + commentId + '"]'
                     );
 
                     btn.textContent = data.liked ? "❤️" : "🤍";
@@ -780,24 +767,25 @@ document.addEventListener("DOMContentLoaded", function () {
                         cnt.textContent = data.likes_count + " лайков";
                     }
                 })
-                .catch(err => console.error("comment like error:", err));
+                .catch(function (err) {
+                    console.error("comment like error:", err);
+                });
         }
 
-        // добавление комментария (к посту)
+        // ---------- ДОБАВЛЕНИЕ КОММЕНТАРИЯ ----------
         else if (form.classList.contains("comment-form")) {
             e.preventDefault();
 
-            const postId = form.dataset.postId;
             const textArea = form.querySelector(".comment-input");
             if (!textArea || !textArea.value.trim()) return;
 
             ajaxPost(form.action, form)
-                .then(r => r.json())
-                .then(data => {
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
                     if (!data.html) return;
 
                     const body = document.querySelector(
-                        `.comments-body[data-post-id="${data.post_id}"]`
+                        '.comments-body[data-post-id="' + data.post_id + '"]'
                     );
                     if (!body) return;
 
@@ -809,7 +797,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
 
                     const badge = document.querySelector(
-                        `.comments-toggle[data-post-id="${data.post_id}"] .comments-count-badge`
+                        '.comments-toggle[data-post-id="' + data.post_id + '"] .comments-count-badge'
                     );
                     if (badge && typeof data.comments_count !== "undefined") {
                         badge.textContent = data.comments_count;
@@ -818,31 +806,33 @@ document.addEventListener("DOMContentLoaded", function () {
                     textArea.value = "";
                     form.classList.add("hidden");
                 })
-                .catch(err => console.error("add comment error:", err));
+                .catch(function (err) {
+                    console.error("add comment error:", err);
+                });
         }
 
-        // добавление ОТВЕТА
+        // ---------- ДОБАВЛЕНИЕ ОТВЕТА ----------
         else if (form.classList.contains("reply-form")) {
             e.preventDefault();
 
-            const parentId = form.dataset.parentId;
             const textArea = form.querySelector(".reply-input");
             if (!textArea || !textArea.value.trim()) return;
 
             ajaxPost(form.action, form)
-                .then(r => r.json())
-                .then(data => {
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
                     if (!data.html) return;
 
-                    const parent = document.querySelector(
-                        `.comment-item[data-comment-id="${data.parent_id}"]`
+                    const parentEl = document.querySelector(
+                        '.comment-item[data-comment-id="' + data.parent_id + '"]'
                     );
-                    if (!parent) return;
+                    if (!parentEl) return;
 
-                    parent.insertAdjacentHTML("beforeend", data.html);
+                    // добавляем html с ответом внутрь родительского комментария
+                    parentEl.insertAdjacentHTML("beforeend", data.html);
 
                     const badge = document.querySelector(
-                        `.comments-toggle[data-post-id="${data.post_id}"] .comments-count-badge`
+                        '.comments-toggle[data-post-id="' + data.post_id + '"] .comments-count-badge'
                     );
                     if (badge && typeof data.comments_count !== "undefined") {
                         badge.textContent = data.comments_count;
@@ -851,10 +841,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     textArea.value = "";
                     form.classList.add("hidden");
                 })
-                .catch(err => console.error("add reply error:", err));
+                .catch(function (err) {
+                    console.error("add reply error:", err);
+                });
         }
 
-        // удаление комментария
+        // ---------- УДАЛЕНИЕ КОММЕНТАРИЯ ----------
         else if (form.classList.contains("comment-delete-form")) {
             e.preventDefault();
 
@@ -862,21 +854,40 @@ document.addEventListener("DOMContentLoaded", function () {
             const postId = form.dataset.postId;
 
             ajaxPost(form.action, form)
-                .then(() => {
+                .then(function () {
                     const el = document.querySelector(
-                        `.comment-item[data-comment-id="${commentId}"]`
+                        '.comment-item[data-comment-id="' + commentId + '"]'
                     );
                     if (el) el.remove();
 
                     const badge = document.querySelector(
-                        `.comments-toggle[data-post-id="${postId}"] .comments-count-badge`
+                        '.comments-toggle[data-post-id="' + postId + '"] .comments-count-badge'
                     );
                     if (badge) {
                         const n = parseInt(badge.textContent) || 0;
                         badge.textContent = n > 0 ? n - 1 : 0;
                     }
                 })
-                .catch(err => console.error("delete comment error:", err));
+                .catch(function (err) {
+                    console.error("delete comment error:", err);
+                });
+        }
+
+        // ---------- УДАЛЕНИЕ ПОСТА (AJAX) ----------
+        else if (form.classList.contains("post-delete-form")) {
+            e.preventDefault();
+
+            const postCard = form.closest(".post-card");
+
+            ajaxPost(form.action, form)
+                .then(function () {
+                    if (postCard) {
+                        postCard.remove();
+                    }
+                })
+                .catch(function (err) {
+                    console.error("delete post error:", err);
+                });
         }
     });
 
@@ -885,11 +896,12 @@ document.addEventListener("DOMContentLoaded", function () {
     ===================== */
     document.addEventListener("click", function (e) {
 
+        // открыть/закрыть список комментариев
         const commentsToggle = e.target.closest(".comments-toggle");
         if (commentsToggle) {
             const postId = commentsToggle.dataset.postId;
             const body = document.querySelector(
-                `.comments-body[data-post-id="${postId}"]`
+                '.comments-body[data-post-id="' + postId + '"]'
             );
             const arrow = commentsToggle.querySelector(".comments-toggle-arrow");
 
@@ -897,10 +909,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 body.classList.toggle("hidden");
                 const isHidden = body.classList.contains("hidden");
 
-                // при открытии комментариев дополнительно прячем ВСЕ поля ввода
+                // при открытии комментариев прячем формы и ответы
                 if (!isHidden) {
                     body.querySelectorAll(".comment-form, .reply-form")
-                        .forEach(f => f.classList.add("hidden"));
+                        .forEach(function (f) { f.classList.add("hidden"); });
+                    body.querySelectorAll(".replies-block")
+                        .forEach(function (b) { b.classList.add("hidden"); });
                 }
 
                 if (arrow) {
@@ -909,12 +923,13 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             return;
         }
-                // показать / скрыть блок "Ответы" у комментария
+
+        // показать / скрыть блок "Ответы" у комментария
         const repliesToggle = e.target.closest(".replies-toggle");
         if (repliesToggle) {
             const commentId = repliesToggle.dataset.commentId;
             const block = document.querySelector(
-                `.replies-block[data-parent-id="${commentId}"]`
+                '.replies-block[data-parent-id="' + commentId + '"]'
             );
             if (block) {
                 block.classList.toggle("hidden");
@@ -922,12 +937,12 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-
+        // показать / скрыть форму "Написать комментарий"
         const addToggle = e.target.closest(".comment-add-toggle");
         if (addToggle) {
             const postId = addToggle.dataset.postId;
             const form = document.querySelector(
-                `.comment-form[data-post-id="${postId}"]`
+                '.comment-form[data-post-id="' + postId + '"]'
             );
             if (form) {
                 form.classList.toggle("hidden");
@@ -935,11 +950,12 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        // показать / скрыть форму ответа
         const replyToggle = e.target.closest(".comment-reply-toggle");
         if (replyToggle) {
             const commentId = replyToggle.dataset.commentId;
             const form = document.querySelector(
-                `.reply-form[data-parent-id="${commentId}"]`
+                '.reply-form[data-parent-id="' + commentId + '"]'
             );
             if (form) {
                 form.classList.toggle("hidden");
@@ -949,8 +965,78 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
+document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("click", function (e) {
+
+        // открыть/закрыть меню поста (⋯)
+        const menuToggle = e.target.closest(".post-menu-toggle");
+        if (menuToggle) {
+            const postId = menuToggle.dataset.postId;
+            const menu = document.querySelector(
+                '.post-menu[data-post-id="' + postId + '"]'
+            );
+            if (menu) {
+                // закрываем другие меню
+                document.querySelectorAll(".post-menu").forEach(function (m) {
+                    if (m !== menu) m.classList.add("hidden");
+                });
+                menu.classList.toggle("hidden");
+            }
+            return;
+        }
+
+        // клик по "Поделиться"
+        const shareBtn = e.target.closest(".post-share-btn");
+        if (shareBtn) {
+            const postId = shareBtn.dataset.postId;
+            const link = window.location.origin +
+                         window.location.pathname +
+                         "#post-" + postId;
+
+            function copyToClipboard(text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    return navigator.clipboard.writeText(text);
+                }
+                return new Promise(function (resolve, reject) {
+                    const temp = document.createElement("input");
+                    temp.value = text;
+                    document.body.appendChild(temp);
+                    temp.select();
+                    try {
+                        document.execCommand("copy");
+                        resolve();
+                    } catch (err) {
+                        reject(err);
+                    }
+                    document.body.removeChild(temp);
+                });
+            }
+
+            copyToClipboard(link)
+                .then(function () {
+                    alert("Ссылка на пост скопирована");
+                })
+                .catch(function () {
+                    alert("Скопируйте ссылку вручную: " + link);
+                });
+
+            const menu = document.querySelector(
+                '.post-menu[data-post-id="' + postId + '"]'
+            );
+            if (menu) menu.classList.add("hidden");
+
+            return;
+        }
+
+        // клик вне меню — закрываем все меню
+        if (!e.target.closest(".post-menu") &&
+            !e.target.closest(".post-menu-toggle")) {
+            document.querySelectorAll(".post-menu").forEach(function (m) {
+                m.classList.add("hidden");
+            });
+        }
+    });
+});
 </script>
-
-
 
 {% endblock %}

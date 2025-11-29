@@ -6,6 +6,10 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
+from django.template.loader import render_to_string
+from django.http import JsonResponse
+from django.shortcuts import render, get_object_or_404
+from .models import Post
 
 
 from .forms import RegisterForm, PostForm, MessageForm, ProfileForm
@@ -97,7 +101,44 @@ def create_post(request):
             post = form.save(commit=False)
             post.author = request.user
             post.save()
+
+            # Если это AJAX-запрос — отдаем HTML одного поста
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                following_ids = list(
+                    Follow.objects.filter(follower=request.user)
+                    .values_list("following_id", flat=True)
+                )
+                liked_posts_ids = list(
+                    Like.objects.filter(user=request.user)
+                    .values_list("post_id", flat=True)
+                )
+                liked_comment_ids = list(
+                    CommentLike.objects.filter(user=request.user)
+                    .values_list("comment_id", flat=True)
+                )
+
+                html = render_to_string(
+                    "core/partials/post.html",
+                    {
+                        "post": post,
+                        "user": request.user,
+                        "liked_posts_ids": liked_posts_ids,
+                        "liked_comment_ids": liked_comment_ids,
+                        "following_ids": following_ids,
+                    },
+                    request=request,
+                )
+                return JsonResponse({"success": True, "html": html})
+
+            # обычный запрос — старое поведение
+            return redirect("feed")
+
+        # невалидная форма в AJAX
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+
     return redirect("feed")
+
 
 
 @login_required
@@ -247,7 +288,7 @@ def user_profile(request, username):
 
     is_owner = request.user.is_authenticated and request.user == profile_user
 
-    # подписан ли текущий пользователь на profile_user
+    # большая кнопка "Подписаться / Вы подписаны" в шапке профиля
     is_following = False
     if request.user.is_authenticated and not is_owner:
         is_following = Follow.objects.filter(
@@ -257,6 +298,8 @@ def user_profile(request, username):
 
     liked_posts_ids = []
     liked_comment_ids = []
+    following_ids = []
+
     if request.user.is_authenticated:
         liked_posts_ids = list(
             Like.objects.filter(user=request.user)
@@ -265,6 +308,10 @@ def user_profile(request, username):
         liked_comment_ids = list(
             CommentLike.objects.filter(user=request.user)
             .values_list("comment_id", flat=True)
+        )
+        following_ids = list(
+            Follow.objects.filter(follower=request.user)
+            .values_list("following_id", flat=True)
         )
 
     form = None
@@ -289,8 +336,11 @@ def user_profile(request, username):
             "form": form,
             "liked_posts_ids": liked_posts_ids,
             "liked_comment_ids": liked_comment_ids,
+            "following_ids": following_ids,  # <-- главное добавление
         },
     )
+
+
 
 
 # ============================
@@ -496,7 +546,37 @@ def add_reply(request, comment_id):
 
     return redirect(request.META.get("HTTP_REFERER", "feed"))
 
+def post_detail(request, pk):
+    post = get_object_or_404(
+        Post.objects.select_related("author")
+        .prefetch_related("likes", "comments__author", "comments__likes"),
+        pk=pk,
+    )
 
+    liked_posts_ids = []
+    liked_comment_ids = []
+    following_ids = []
+
+    if request.user.is_authenticated:
+        # возьми ту же логику, что у тебя в feed/profile
+        liked_posts_ids = list(
+            request.user.liked_posts.values_list("id", flat=True)
+        ) if hasattr(request.user, "liked_posts") else []
+        liked_comment_ids = list(
+            request.user.liked_comments.values_list("id", flat=True)
+        ) if hasattr(request.user, "liked_comments") else []
+        following_ids = list(
+            request.user.following.values_list("id", flat=True)
+        ) if hasattr(request.user, "following") else []
+
+    context = {
+        "post": post,
+        "posts": [post],  # если вдруг где-то ожидается posts
+        "liked_posts_ids": liked_posts_ids,
+        "liked_comment_ids": liked_comment_ids,
+        "following_ids": following_ids,
+    }
+    return render(request, "core/post_detail.html", context)
 
 def communities_view(request):
     return render(request, "core/communities.html")

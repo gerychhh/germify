@@ -1,0 +1,17 @@
+{% extends "core/base.html" %}
+
+{% block title %}Пост — Germify{% endblock %}
+
+{% block extra_head %}
+{# можно переиспользовать кусок стилей из feed, но особое ничего не нужно,
+   т.к. post.html уже стилизован #}
+{% endblock %}
+
+{% block content %}
+<div class="feed-page">
+    <section class="posts-list">
+        {# используем тот же partial, что и в ленте/профиле #}
+        {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
+    </section>
+</div>
+{% endblock %}
