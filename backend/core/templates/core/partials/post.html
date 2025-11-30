@@ -6,9 +6,9 @@
         <div class="post-main">
             <header class="post-header">
                 <div class="post-author">
-                    <div class="user-avatar-circle">
-                        {{ post.author.display_name|default:post.author.username|first|upper }}
-                    </div>
+
+                    {% include "core/partials/avatar.html" with user_obj=post.author size="md" %}
+
                     <div class="post-author-meta">
                         <a href="{% url 'user_profile' post.author.username %}"
                            class="post-author-name">
@@ -19,66 +19,69 @@
                         </div>
                     </div>
 
+                    {# follow/unfollow оставляем как было #}
                     {% if user.is_authenticated and user != post.author %}
                         <div style="margin-left:8px;">
                             {% if post.author.id in following_ids %}
-                                <a href="{% url 'unfollow_user' post.author.username %}"
-                                   class="primary-button"
-                                   style="padding:2px 10px; font-size:12px; background:#1f2937; color:#e5e7eb;">
+                                <button type="button"
+                                        class="primary-button follow-toggle-btn"
+                                        data-username="{{ post.author.username }}"
+                                        data-following="true"
+                                        style="padding:2px 10px; font-size:12px; background:#1f2937; color:#e5e7eb;">
                                     Вы подписаны
-                                </a>
+                                </button>
                             {% else %}
-                                <a href="{% url 'follow_user' post.author.username %}"
-                                   class="primary-button"
-                                   style="padding:2px 10px; font-size:12px;">
+                                <button type="button"
+                                        class="primary-button follow-toggle-btn"
+                                        data-username="{{ post.author.username }}"
+                                        data-following="false"
+                                        style="padding:2px 10px; font-size:12px;">
                                     Подписаться
-                                </a>
+                                </button>
                             {% endif %}
                         </div>
                     {% endif %}
                 </div>
 
-                <div class="post-header-right" style="display:flex; align-items:center; gap:8px;">
-                    {# Дата как ссылка на страницу поста #}
+                <div class="post-header-right">
+                    {# дата ведёт на страницу конкретного поста #}
                     <a href="{% url 'post_detail' post.id %}"
-                       class="post-date"
-                       style="text-decoration:none; color:#6b7280; font-size:12px;">
+                       class="post-date">
                         {{ post.created_at|date:"d.m.Y H:i" }}
                     </a>
 
                     {# меню из трёх точек #}
-                    <div class="post-menu-wrapper" style="position:relative;">
+                    <div class="post-menu-wrapper">
                         <button type="button"
                                 class="post-menu-toggle"
-                                data-post-id="{{ post.id }}"
-                                style="border:none;background:transparent;color:#9ca3af;font-size:18px;cursor:pointer;padding:4px;">
+                                data-post-id="{{ post.id }}">
                             ⋯
                         </button>
 
                         <div class="post-menu hidden"
-                             data-post-id="{{ post.id }}"
-                             style="position:absolute;right:0;top:100%;margin-top:4px;background:#020617;border:1px solid #1f2937;border-radius:8px;min-width:140px;z-index:20;display:flex;flex-direction:column;overflow:hidden;">
+                             data-post-id="{{ post.id }}">
                             <button type="button"
                                     class="post-menu-item post-share-btn"
                                     data-post-id="{{ post.id }}"
-                                    style="padding:6px 10px;border:none;background:transparent;color:#e5e7eb;font-size:13px;text-align:left;cursor:pointer;">
+                                    data-post-url="{% url 'post_detail' post.id %}">
                                 Поделиться
                             </button>
 
-                            {% if user == post.author or user.is_superuser %}
+                            {% if user.is_authenticated %}
+                                {% if user == post.author or user.is_superuser %}
+                                    <!-- твой код -->
+                                {% endif %}
+                            {% endif %}
                                 <form method="post"
                                       action="{% url 'delete_post' post.id %}"
                                       class="post-delete-form"
-                                      data-post-id="{{ post.id }}"
-                                      style="margin:0;">
+                                      data-post-id="{{ post.id }}">
                                     {% csrf_token %}
                                     <button type="submit"
-                                            class="post-menu-item post-menu-delete-btn"
-                                            style="padding:6px 10px;border:none;background:transparent;color:#fecaca;font-size:13px;text-align:left;cursor:pointer;width:100%;text-align:left;">
+                                            class="post-menu-item post-menu-delete-btn">
                                         Удалить
                                     </button>
                                 </form>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -95,9 +98,8 @@
                               data-post-id="{{ post.id }}">
                             {% csrf_token %}
                             <button type="submit"
-                                    class="like-button"
-                                    data-liked="{% if post.id in liked_posts_ids %}true{% else %}false{% endif %}"
-                                    style="border:none; background:transparent; cursor:pointer; font-size:18px;">
+                                    class="like-button{% if post.id in liked_posts_ids %} is-liked{% endif %}"
+                                    data-liked="{% if post.id in liked_posts_ids %}true{% else %}false{% endif %}">
                                 {% if post.id in liked_posts_ids %}
                                     ❤️
                                 {% else %}
@@ -108,8 +110,7 @@
                     {% endif %}
 
                     <span class="like-count"
-                          data-post-id="{{ post.id }}"
-                          style="font-size:13px; color:#9ca3af;">
+                          data-post-id="{{ post.id }}">
                         {{ post.likes.count }} лайков
                     </span>
                 </div>
@@ -122,10 +123,9 @@
                         data-post-id="{{ post.id }}">
                     <span class="comments-toggle-label">
                         💬 Комментарии
+                        <span class="comments-count-badge">{{ post.comments.count }}</span>
                     </span>
-                    <span class="comments-count-badge">
-                        {{ post.comments.count }}
-                    </span>
+                    <span class="comments-toggle-arrow">▾</span>
                 </button>
 
                 <div class="comments-body hidden"
@@ -151,7 +151,7 @@
                             {% csrf_token %}
                             <textarea name="text"
                                       class="comment-input"
-                                      placeholder="Оставьте комментарий..."
+                                      placeholder="Оставьте комментарий."
                                       required></textarea>
                             <button type="submit"
                                     class="comment-btn">

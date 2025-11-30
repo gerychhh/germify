@@ -1,3 +1,4 @@
+{# core/partials/comment.html #}
 {% load tz %}
 
 <div class="comment-item"
@@ -5,23 +6,23 @@
      data-post-id="{{ c.post.id }}"
      style="margin-left: {{ level }}px;">
 
-    <!-- HEADER -->
     <div class="comment-header">
-        <div class="comment-avatar">
-            {{ c.author.display_name|default:c.author.username|first|upper }}
-        </div>
+        {% include "core/partials/avatar.html" with user_obj=c.author size="sm" %}
 
         <div class="comment-author-block">
             <div class="comment-author-line">
-                <b class="comment-display-name">
+                <a href="{% url 'user_profile' c.author.username %}"
+                   class="comment-display-name"
+                   style="text-decoration:none;">
                     {{ c.author.display_name|default:c.author.username }}
-                </b>
+                </a>
 
-                <span class="comment-username">
+                <a href="{% url 'user_profile' c.author.username %}"
+                   class="comment-username"
+                   style="text-decoration:none;">
                     @{{ c.author.username }}
-                </span>
+                </a>
 
-                {# если это ответ на другой комментарий — показываем, на что именно #}
                 {% if c.parent %}
                     <span class="comment-reply-meta">
                         в ответ @{{ c.parent.author.username }}
@@ -34,6 +35,10 @@
                 </span>
             </div>
         </div>
+    </div>
+
+    <div class="comment-text">
+        {{ c.text }}
     </div>
 
     <!-- ТЕКСТ -->

@@ -6,11 +6,6 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
-from django.template.loader import render_to_string
-from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
-from .models import Post
-
 
 from .forms import RegisterForm, PostForm, MessageForm, ProfileForm
 from .models import (
@@ -24,10 +19,65 @@ from .models import (
 )
 
 
-# ============================
-# ЛЕНТА / ПОСТЫ
-# ============================
+# ======================================================
+# УТИЛИТЫ
+# ======================================================
 
+def get_user_state(user):
+    """Возвращает списки лайков, подписок — в одном месте, чтобы не дублировать."""
+    if not user.is_authenticated:
+        return {
+            "liked_posts_ids": [],
+            "liked_comment_ids": [],
+            "following_ids": [],
+        }
+
+    return {
+        "liked_posts_ids": list(
+            Like.objects.filter(user=user).values_list("post_id", flat=True)
+        ),
+        "liked_comment_ids": list(
+            CommentLike.objects.filter(user=user).values_list("comment_id", flat=True)
+        ),
+        "following_ids": list(
+            Follow.objects.filter(follower=user).values_list("following_id", flat=True)
+        ),
+    }
+
+
+def render_post_html(post, request):
+    """Рендер одного поста в HTML для AJAX."""
+    state = get_user_state(request.user)
+
+    return render_to_string(
+        "core/partials/post.html",
+        {
+            "post": post,
+            "user": request.user,
+            **state
+        },
+        request=request,
+    )
+
+
+def render_comment_html(comment, request, level):
+    """Рендер одного комментария в HTML (AJAX)."""
+    state = get_user_state(request.user)
+    return render_to_string(
+        "core/partials/comment.html",
+        {
+            "c": comment,
+            "user": request.user,
+            "level": level,
+            **state
+        },
+        request=request,
+    )
+
+
+# ======================================================
+# ЛЕНТА
+# ======================================================
 
 def feed(request):
     posts = (
@@ -37,108 +87,59 @@ def feed(request):
             "likes",
             "comments__author",
             "comments__likes",
-            "comments__replies",
+            "comments__replies"
         )
         .annotate(
-            top_comments_count=Count(
-                "comments", filter=Q(comments__parent__isnull=True)
-            )
+            top_comments_count=Count("comments", filter=Q(comments__parent__isnull=True))
         )
         .order_by("-created_at")
     )
 
+    state = get_user_state(request.user)
     form = PostForm()
 
-    if request.user.is_authenticated:
-        following_ids = list(
-            Follow.objects.filter(follower=request.user)
-            .values_list("following_id", flat=True)
-        )
-        liked_posts_ids = list(
-            Like.objects.filter(user=request.user)
-            .values_list("post_id", flat=True)
-        )
-        liked_comment_ids = list(
-            CommentLike.objects.filter(user=request.user)
-            .values_list("comment_id", flat=True)
-        )
-    else:
-        following_ids = []
-        liked_posts_ids = []
-        liked_comment_ids = []
-
-    # создание поста, если форма отправлена на /
-    if request.method == "POST":
+    # Обработка создания поста обычным POST-запросом
+    if request.method == "POST" and not request.headers.get("x-requested-with"):
         if not request.user.is_authenticated:
-            messages.error(request, "Чтобы писать посты, нужно войти.")
+            messages.error(request, "Чтобы написать пост — войдите.")
             return redirect("login")
 
         form = PostForm(request.POST)
         if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
+            p = form.save(commit=False)
+            p.author = request.user
+            p.save()
             return redirect("feed")
 
-    return render(
-        request,
-        "core/feed.html",
-        {
-            "posts": posts,
-            "form": form,
-            "following_ids": following_ids,
-            "liked_posts_ids": liked_posts_ids,
-            "liked_comment_ids": liked_comment_ids,
-        },
-    )
+    return render(request, "core/feed.html", {
+        "posts": posts,
+        "form": form,
+        **state
+    })
 
 
 @login_required
 def create_post(request):
-    if request.method == "POST":
-        form = PostForm(request.POST)
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
+    """Создание поста c поддержкой AJAX."""
+    if request.method != "POST":
+        return redirect("feed")
 
-            # Если это AJAX-запрос — отдаем HTML одного поста
-            if request.headers.get("x-requested-with") == "XMLHttpRequest":
-                following_ids = list(
-                    Follow.objects.filter(follower=request.user)
-                    .values_list("following_id", flat=True)
-                )
-                liked_posts_ids = list(
-                    Like.objects.filter(user=request.user)
-                    .values_list("post_id", flat=True)
-                )
-                liked_comment_ids = list(
-                    CommentLike.objects.filter(user=request.user)
-                    .values_list("comment_id", flat=True)
-                )
-
-                html = render_to_string(
-                    "core/partials/post.html",
-                    {
-                        "post": post,
-                        "user": request.user,
-                        "liked_posts_ids": liked_posts_ids,
-                        "liked_comment_ids": liked_comment_ids,
-                        "following_ids": following_ids,
-                    },
-                    request=request,
-                )
-                return JsonResponse({"success": True, "html": html})
-
-            # обычный запрос — старое поведение
-            return redirect("feed")
-
-        # невалидная форма в AJAX
-        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+    form = PostForm(request.POST)
+    if not form.is_valid():
+        if request.headers.get("x-requested-with"):
             return JsonResponse({"success": False, "errors": form.errors}, status=400)
+        return redirect("feed")
+
+    post = form.save(commit=False)
+    post.author = request.user
+    post.save()
+
+    # AJAX → вернуть HTML поста
+    if request.headers.get("x-requested-with"):
+        html = render_post_html(post, request)
+        return JsonResponse({"success": True, "html": html})
 
     return redirect("feed")
-
 
 
 @login_required
@@ -148,119 +149,138 @@ def delete_post(request, pk):
     if request.method == "POST":
         if request.user == post.author or request.user.is_superuser:
             post.delete()
+            if request.headers.get("x-requested-with"):
+                return JsonResponse({"ok": True})
 
     return redirect(request.META.get("HTTP_REFERER", "feed"))
 
 
 @login_required
 def toggle_like(request, pk):
-    """Лайк/анлайк поста (AJAX)."""
+    """Лайк поста (AJAX)."""
     post = get_object_or_404(Post, pk=pk)
 
-    if request.method == "POST":
-        like, created = Like.objects.get_or_create(user=request.user, post=post)
+    like, created = Like.objects.get_or_create(user=request.user, post=post)
+    liked = created
 
-        if not created:
-            like.delete()
-            liked = False
-        else:
-            liked = True
+    if not created:
+        like.delete()
 
-        likes_count = post.likes.count()
-
-        if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            return JsonResponse(
-                {
-                    "liked": liked,
-                    "likes_count": likes_count,
-                }
-            )
+    if request.headers.get("x-requested-with"):
+        return JsonResponse({
+            "liked": liked,
+            "likes_count": post.likes.count()
+        })
 
     return redirect("feed")
 
 
-# ============================
+# ======================================================
 # КОММЕНТАРИИ
-# ============================
-
+# ======================================================
 
 @login_required
 def add_comment(request, post_id):
+    """Добавление корневого комментария (AJAX + обычный POST)."""
     post = get_object_or_404(Post, pk=post_id)
 
-    if request.method == "POST":
-        text = request.POST.get("text", "").strip()
-        if text:
-            Comment.objects.create(
-                post=post,
-                author=request.user,
-                text=text,
-            )
+    if request.method != "POST":
+        return redirect("feed")
 
-    return redirect(request.META.get("HTTP_REFERER", "feed"))
+    text = request.POST.get("text", "").strip()
+    if not text:
+        if request.headers.get("x-requested-with"):
+            return JsonResponse({"error": "empty"}, status=400)
+        return redirect("feed")
+
+    c = Comment.objects.create(
+        post=post,
+        author=request.user,
+        text=text,
+    )
+
+    if request.headers.get("x-requested-with"):
+        html = render_comment_html(c, request, level=0)
+        return JsonResponse({
+            "html": html,
+            "post_id": post.id,
+            "comment_id": c.id,
+            "comments_count": post.comments.count(),
+        })
+
+    return redirect("feed")
 
 
 @login_required
 def add_reply(request, comment_id):
-    parent_comment = get_object_or_404(Comment, pk=comment_id)
+    """Добавление ответа на комментарий."""
+    parent = get_object_or_404(Comment, pk=comment_id)
 
-    if request.method == "POST":
-        text = request.POST.get("text", "").strip()
-        if text:
-            Comment.objects.create(
-                post=parent_comment.post,
-                author=request.user,
-                parent=parent_comment,
-                text=text,
-            )
+    text = request.POST.get("text", "").strip()
+    if not text:
+        if request.headers.get("x-requested-with"):
+            return JsonResponse({"error": "empty"}, status=400)
+        return redirect("feed")
 
-    return redirect(request.META.get("HTTP_REFERER", "feed"))
+    reply = Comment.objects.create(
+        post=parent.post,
+        author=request.user,
+        parent=parent,
+        text=text,
+    )
+
+    if request.headers.get("x-requested-with"):
+        html = render_comment_html(reply, request, level=20)
+        return JsonResponse({
+            "html": html,
+            "post_id": parent.post.id,
+            "parent_id": parent.id,
+            "comment_id": reply.id,
+            "comments_count": parent.post.comments.count(),
+        })
+
+    return redirect("feed")
 
 
 @login_required
 def delete_comment(request, comment_id):
-    comment = get_object_or_404(Comment, pk=comment_id)
+    c = get_object_or_404(Comment, pk=comment_id)
 
     if request.method == "POST":
-        if request.user == comment.author or request.user.is_superuser:
-            comment.delete()
+        if request.user == c.author or request.user.is_superuser:
+            post_id = c.post.id
+            c.delete()
+
+            if request.headers.get("x-requested-with"):
+                return JsonResponse({
+                    "ok": True,
+                    "post_id": post_id,
+                })
 
     return redirect(request.META.get("HTTP_REFERER", "feed"))
 
 
 @login_required
 def toggle_comment_like(request, comment_id):
-    """Лайк/анлайк комментария (AJAX)."""
-    comment = get_object_or_404(Comment, pk=comment_id)
+    c = get_object_or_404(Comment, pk=comment_id)
+    like, created = CommentLike.objects.get_or_create(user=request.user, comment=c)
 
-    if request.method == "POST":
-        like, created = CommentLike.objects.get_or_create(
-            user=request.user,
-            comment=comment,
-        )
-        if not created:
-            like.delete()
-            liked = False
-        else:
-            liked = True
+    liked = created
+    if not created:
+        like.delete()
 
-        likes_count = comment.likes.count()
-
-        if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            return JsonResponse(
-                {
-                    "liked": liked,
-                    "likes_count": likes_count,
-                }
-            )
+    if request.headers.get("x-requested-with"):
+        return JsonResponse({
+            "liked": liked,
+            "likes_count": c.likes.count()
+        })
 
     return redirect("feed")
 
 
-# ============================
+# ======================================================
 # ПРОФИЛИ
-# ============================
-
+# ======================================================
 
 @login_required
 def profile_view(request):
@@ -317,7 +337,12 @@ def user_profile(request, username):
     form = None
     if is_owner:
         if request.method == "POST":
-            form = ProfileForm(request.POST, instance=profile_user)
+            # ВАЖНО: передаём request.FILES
+            form = ProfileForm(
+                request.POST,
+                request.FILES,
+                instance=profile_user,
+            )
             if form.is_valid():
                 form.save()
                 messages.success(request, "Профиль обновлён.")
@@ -336,37 +361,125 @@ def user_profile(request, username):
             "form": form,
             "liked_posts_ids": liked_posts_ids,
             "liked_comment_ids": liked_comment_ids,
-            "following_ids": following_ids,  # <-- главное добавление
+            "following_ids": following_ids,
         },
     )
 
-
-
-
-# ============================
+# ======================================================
 # ПОДПИСКИ
-# ============================
-
+# ======================================================
 
 @login_required
 def follow_user(request, username):
     target = get_object_or_404(User, username=username)
+
     if target != request.user:
         Follow.objects.get_or_create(follower=request.user, following=target)
+
+    if request.headers.get("x-requested-with"):
+        return JsonResponse({
+            "ok": True,
+            "following": True,
+            "followers_count": Follow.objects.filter(following=target).count()
+        })
+
     return redirect("user_profile", username=username)
 
 
 @login_required
 def unfollow_user(request, username):
     target = get_object_or_404(User, username=username)
-    Follow.objects.filter(follower=request.user, following=target).delete()
+
+    if target != request.user:
+        Follow.objects.filter(follower=request.user, following=target).delete()
+
+    if request.headers.get("x-requested-with"):
+        return JsonResponse({
+            "ok": True,
+            "following": False,
+            "followers_count": Follow.objects.filter(following=target).count()
+        })
+
     return redirect("user_profile", username=username)
 
 
-# ============================
-# РЕГИСТРАЦИЯ / ЛОГИН / ЛОГАУТ
-# ============================
+# ======================================================
+# ПОСТ ДЕТАЙЛ (толко 1 пост на странице)
+# ======================================================
 
+def post_detail(request, pk):
+    post = get_object_or_404(
+        Post.objects.select_related("author")
+        .prefetch_related("likes", "comments__author", "comments__likes"),
+        pk=pk
+    )
+
+    state = get_user_state(request.user)
+
+    return render(request, "core/post_detail.html", {
+        "post": post,
+        "posts": [post],     # чтобы partial'ы не ломались
+        **state
+    })
+
+
+# ======================================================
+# МЕССЕНДЖЕР
+# ======================================================
+
+@login_required
+def messages_inbox(request):
+    qs = (
+        Message.objects.filter(Q(sender=request.user) | Q(recipient=request.user))
+        .select_related("sender", "recipient")
+        .order_by("-created_at")
+    )
+
+    conversations = {}
+    for msg in qs:
+        other = msg.recipient if msg.sender == request.user else msg.sender
+        if other not in conversations:
+            conversations[other] = msg
+
+    return render(request, "core/messages_inbox.html", {
+        "conversations": conversations
+    })
+
+
+@login_required
+def messages_thread(request, username):
+    other = get_object_or_404(User, username=username)
+
+    msgs = (
+        Message.objects.filter(
+            Q(sender=request.user, recipient=other) |
+            Q(sender=other, recipient=request.user)
+        )
+        .order_by("created_at")
+    )
+
+    if request.method == "POST":
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            Message.objects.create(
+                sender=request.user,
+                recipient=other,
+                text=form.cleaned_data["text"],
+            )
+            return redirect("messages_thread", username=other.username)
+    else:
+        form = MessageForm()
+
+    return render(request, "core/messages_thread.html", {
+        "other_user": other,
+        "messages": msgs,
+        "form": form
+    })
+
+
+# ======================================================
+# РЕГИСТРАЦИЯ / ЛОГИН / ЛОГАУТ
+# ======================================================
 
 def register_view(request):
     if request.method == "POST":
@@ -385,8 +498,7 @@ def login_view(request):
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            user = form.get_user()
-            login(request, user)
+            login(request, form.get_user())
             return redirect("feed")
     else:
         form = AuthenticationForm(request)
@@ -399,184 +511,9 @@ def logout_view(request):
     return redirect("feed")
 
 
-# ============================
-# ЛИЧНЫЕ СООБЩЕНИЯ
-# ============================
-
-
-@login_required
-def messages_inbox(request):
-    qs = (
-        Message.objects.filter(
-            Q(sender=request.user) | Q(recipient=request.user)
-        )
-        .select_related("sender", "recipient")
-        .order_by("-created_at")
-    )
-
-    conversations = {}
-    for msg in qs:
-        other = msg.recipient if msg.sender == request.user else msg.sender
-        if other not in conversations:
-            conversations[other] = msg
-
-    return render(
-        request,
-        "core/messages_inbox.html",
-        {"conversations": conversations},
-    )
-
-
-@login_required
-def messages_thread(request, username):
-    other_user = get_object_or_404(User, username=username)
-
-    messages_qs = (
-        Message.objects.filter(
-            Q(sender=request.user, recipient=other_user)
-            | Q(sender=other_user, recipient=request.user)
-        )
-        .select_related("sender", "recipient")
-        .order_by("created_at")
-    )
-
-    if request.method == "POST":
-        form = MessageForm(request.POST)
-        if form.is_valid():
-            Message.objects.create(
-                sender=request.user,
-                recipient=other_user,
-                text=form.cleaned_data["text"],
-            )
-            return redirect("messages_thread", username=other_user.username)
-    else:
-        form = MessageForm()
-
-    return render(
-        request,
-        "core/messages_thread.html",
-        {
-            "other_user": other_user,
-            "messages": messages_qs,
-            "form": form,
-        },
-    )
-
-@login_required
-def add_comment(request, post_id):
-    post = get_object_or_404(Post, pk=post_id)
-
-    if request.method == "POST":
-        text = request.POST.get("text", "").strip()
-        if not text:
-            # если AJAX — вернём ошибку, если обычный POST — просто редирект
-            if request.headers.get("x-requested-with") == "XMLHttpRequest":
-                return JsonResponse({"error": "empty"}, status=400)
-            return redirect(request.META.get("HTTP_REFERER", "feed"))
-
-        comment = Comment.objects.create(
-            post=post,
-            author=request.user,
-            text=text,
-        )
-
-        # AJAX-ветка — возвращаем HTML одного комментария
-        if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            html = render_to_string(
-                "core/partials/comment.html",
-                {
-                    "c": comment,
-                    "user": request.user,
-                    "liked_comment_ids": [],
-                    "level": 0,  # корневой комментарий
-                },
-                request=request,
-            )
-            return JsonResponse(
-                {
-                    "html": html,
-                    "post_id": post.id,
-                    "comment_id": comment.id,
-                    "comments_count": post.comments.count(),
-                }
-            )
-
-    # обычный POST — старая логика
-    return redirect(request.META.get("HTTP_REFERER", "feed"))
-
-
-@login_required
-def add_reply(request, comment_id):
-    parent_comment = get_object_or_404(Comment, pk=comment_id)
-
-    if request.method == "POST":
-        text = request.POST.get("text", "").strip()
-        if not text:
-            if request.headers.get("x-requested-with") == "XMLHttpRequest":
-                return JsonResponse({"error": "empty"}, status=400)
-            return redirect(request.META.get("HTTP_REFERER", "feed"))
-
-        reply = Comment.objects.create(
-            post=parent_comment.post,
-            author=request.user,
-            parent=parent_comment,
-            text=text,
-        )
-
-        if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            html = render_to_string(
-                "core/partials/comment.html",
-                {
-                    "c": reply,
-                    "user": request.user,
-                    "liked_comment_ids": [],
-                    "level": 20,  # первый уровень вложенности
-                },
-                request=request,
-            )
-            return JsonResponse(
-                {
-                    "html": html,
-                    "post_id": parent_comment.post.id,
-                    "comment_id": reply.id,
-                    "parent_id": parent_comment.id,
-                    "comments_count": parent_comment.post.comments.count(),
-                }
-            )
-
-    return redirect(request.META.get("HTTP_REFERER", "feed"))
-
-def post_detail(request, pk):
-    post = get_object_or_404(
-        Post.objects.select_related("author")
-        .prefetch_related("likes", "comments__author", "comments__likes"),
-        pk=pk,
-    )
-
-    liked_posts_ids = []
-    liked_comment_ids = []
-    following_ids = []
-
-    if request.user.is_authenticated:
-        # возьми ту же логику, что у тебя в feed/profile
-        liked_posts_ids = list(
-            request.user.liked_posts.values_list("id", flat=True)
-        ) if hasattr(request.user, "liked_posts") else []
-        liked_comment_ids = list(
-            request.user.liked_comments.values_list("id", flat=True)
-        ) if hasattr(request.user, "liked_comments") else []
-        following_ids = list(
-            request.user.following.values_list("id", flat=True)
-        ) if hasattr(request.user, "following") else []
-
-    context = {
-        "post": post,
-        "posts": [post],  # если вдруг где-то ожидается posts
-        "liked_posts_ids": liked_posts_ids,
-        "liked_comment_ids": liked_comment_ids,
-        "following_ids": following_ids,
-    }
-    return render(request, "core/post_detail.html", context)
+# ======================================================
+# КОМЬЮНИТИ-БОЛЬШАЯ КНОПКА
+# ======================================================
 
 def communities_view(request):
     return render(request, "core/communities.html")

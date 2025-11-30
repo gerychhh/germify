@@ -1,5 +1,6 @@
+# core/forms.py
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import UserCreationForm
 
 from .models import User, Post, Message, Comment
 
@@ -7,19 +8,7 @@ from .models import User, Post, Message, Comment
 class RegisterForm(UserCreationForm):
     class Meta:
         model = User
-        # username = @userid (задаётся при регистрации и потом не меняется)
         fields = ("username", "email", "display_name", "password1", "password2")
-
-
-class LoginForm(AuthenticationForm):
-    username = forms.CharField(
-        label="Логин",
-        widget=forms.TextInput(attrs={"placeholder": "Логин"})
-    )
-    password = forms.CharField(
-        label="Пароль",
-        widget=forms.PasswordInput(attrs={"placeholder": "Пароль"})
-    )
 
 
 class PostForm(forms.ModelForm):
@@ -30,7 +19,7 @@ class PostForm(forms.ModelForm):
             "text": forms.Textarea(
                 attrs={
                     "rows": 3,
-                    "placeholder": "О чём вы думаете?"
+                    "placeholder": "Напишите что-нибудь интересное...",
                 }
             )
         }
@@ -44,7 +33,7 @@ class MessageForm(forms.ModelForm):
             "text": forms.Textarea(
                 attrs={
                     "rows": 3,
-                    "placeholder": "Напишите сообщение..."
+                    "placeholder": "Напишите сообщение...",
                 }
             )
         }
@@ -52,36 +41,47 @@ class MessageForm(forms.ModelForm):
 
 class ProfileForm(forms.ModelForm):
     """
-    Форма редактирования профиля.
-    username (@userid) здесь НЕТ — его менять нельзя.
+    Форма редактирования профиля:
+    - display_name
+    - bio
+    - avatar (обычный FileInput, без 'Currently / Clear / Change')
     """
+
     class Meta:
         model = User
-        fields = ("display_name", "bio")
+        fields = ("display_name", "bio", "avatar")
         widgets = {
             "display_name": forms.TextInput(
                 attrs={
-                    "placeholder": "Ваше отображаемое имя",
                     "class": "profile-input",
+                    "placeholder": "Как тебя называть?",
                 }
             ),
             "bio": forms.Textarea(
                 attrs={
-                    "rows": 3,
-                    "placeholder": "Расскажите о себе",
                     "class": "profile-textarea",
+                    "rows": 3,
+                    "placeholder": "Расскажи о себе...",
+                }
+            ),
+            "avatar": forms.FileInput(          # важно: FileInput, не ClearableFileInput
+                attrs={
+                    "class": "profile-avatar-input",
+                    "accept": "image/*",
                 }
             ),
         }
 
+
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
-        fields = ["text"]
+        fields = ("text",)
         widgets = {
-            "text": forms.Textarea(attrs={
-                "rows": 2,
-                "placeholder": "Напишите комментарий...",
-                "class": "comment-textarea"
-            })
+            "text": forms.Textarea(
+                attrs={
+                    "rows": 2,
+                    "placeholder": "Оставьте комментарий...",
+                }
+            )
         }
