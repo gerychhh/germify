@@ -5,11 +5,14 @@
     <meta charset="UTF-8">
     <title>{% block title %}Germify{% endblock %}</title>
 
-        <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
+        <link rel="icon" type="image/x-icon" href="{% static 'core/favicon.ico' %}">
         <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
-        <link rel="stylesheet" href="{% static 'core/css/posts.css' %}">
+        <link rel="stylesheet" href="{% static 'core/css/posts.css' %}" defer>
         <link rel="stylesheet" href="{% static 'core/css/avatar.css' %}">
         <script src="{% static 'core/js/avatar.js' %}" defer></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
 
 
     <style>
@@ -148,7 +151,6 @@
     <nav class="topbar-nav">
         <a href="{% url 'feed' %}" class="nav-link">Лента</a>
 
-        {# тут убрали невозможный фильтр startswith и используем slice #}
         <a href="{% url 'messages_inbox' %}"
            class="nav-link {% if request.path|slice:':10' == '/messages/' %}active{% endif %}">
             Сообщения

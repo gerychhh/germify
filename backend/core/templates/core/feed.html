@@ -47,7 +47,105 @@
         margin-top: 10px;
         display: flex;
         justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
     }
+
+    /* FILE PREVIEW */
+    .file-preview {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .preview-img {
+        width: 90px;
+        height: auto;
+        border-radius: 8px;
+        border: 1px solid #1f2937;
+        display: block;
+    }
+
+    .file-preview-item {
+        font-size: 12px;
+        color: #9ca3af;
+        padding: 4px 6px;
+        background: #0f172a;
+        border-radius: 6px;
+        border: 1px solid #1e293b;
+    }
+
+    .attach-btn {
+        cursor: pointer;
+        color: #9ca3af;
+        font-size: 18px;
+        padding: 4px;
+        border-radius: 6px;
+        transition: 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .attach-btn:hover {
+        color: #fff;
+    }
+
+    .drop-zone {
+        margin-top: 10px;
+        padding: 16px;
+        text-align: center;
+        border: 2px dashed #334155;
+        border-radius: 12px;
+        color: #94a3b8;
+        transition: 0.2s;
+        font-size: 13px;
+    }
+
+    .drop-zone.dragover {
+        border-color: #22c55e;
+        background: rgba(34, 197, 94, 0.1);
+        color: #22c55e;
+    }
+
+    .file-info {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #9ca3af;
+        display: flex;
+        gap: 12px;
+    }
+
+    .file-info span {
+        white-space: nowrap;
+    }
+
+    .upload-progress {
+        margin-top: 8px;
+        width: 100%;
+        height: 6px;
+        border-radius: 999px;
+        background: #020617;
+        border: 1px solid #1f2937;
+        overflow: hidden;
+    }
+
+    .upload-progress.hidden {
+        display: none;
+    }
+
+    .upload-progress-bar {
+        height: 100%;
+        width: 0;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #22c55e, #16a34a);
+        transition: width 0.1s linear;
+    }
+    .hidden {
+    display: none !important;
+    }
+
 </style>
 {% endblock %}
 
@@ -58,17 +156,48 @@
     <section class="feed-new-post-card">
         <form method="post"
               action="{% url 'create_post' %}"
-              class="new-post-form">
+              class="new-post-form"
+              enctype="multipart/form-data">
+
             {% csrf_token %}
             <h2 class="feed-new-post-title">Чем поделишься сегодня?</h2>
+
             <textarea
                 name="text"
                 class="feed-new-post-textarea"
                 placeholder="Напишите что-нибудь интересное.">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
 
+            <!-- PREVIEW -->
+            <div class="file-preview" id="file-preview"></div>
+
+            <!-- FILE INPUT -->
+            <label class="attach-btn" title="Прикрепить файлы">
+                📎
+                <input type="file"
+                       name="attachments"
+                       multiple
+                       style="display:none;">
+            </label>
+
+            <!-- DRAG & DROP ZONE -->
+            <div id="drop-zone" class="drop-zone hidden">
+                Перетащи файлы сюда или нажми на скрепку
+            </div>
+
+            <!-- INFO + PROGRESS -->
+            <div class="file-info">
+                <span id="file-count">Файлы: 0</span>
+                <span id="file-size">Размер: 0 MB</span>
+            </div>
+
+            <div class="upload-progress hidden" id="upload-progress">
+                <div class="upload-progress-bar" id="upload-progress-bar"></div>
+            </div>
+
             <div class="feed-new-post-footer">
                 <button type="submit" class="primary-button">Опубликовать</button>
             </div>
+
         </form>
     </section>
 
@@ -78,7 +207,8 @@
             {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
         {% empty %}
             <p style="font-size:14px; color:#6b7280;">
-                В ленте пока нет постов. Будь первым, кто что-нибудь напишет 🙂</p>
+                В ленте пока нет постов. Будь первым, кто что-нибудь напишет 🙂
+            </p>
         {% endfor %}
     </section>
 

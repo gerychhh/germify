@@ -16,6 +16,7 @@ from .models import (
     Like,
     Comment,
     CommentLike,
+    PostAttachment,
 )
 
 
@@ -120,26 +121,50 @@ def feed(request):
 
 @login_required
 def create_post(request):
-    """Создание поста c поддержкой AJAX."""
+    """Создание поста с поддержкой файлов и AJAX."""
     if request.method != "POST":
         return redirect("feed")
 
+    # Форма без файловой обработки (только текст)
     form = PostForm(request.POST)
+
     if not form.is_valid():
         if request.headers.get("x-requested-with"):
             return JsonResponse({"success": False, "errors": form.errors}, status=400)
         return redirect("feed")
 
+    # Создаём пост
     post = form.save(commit=False)
     post.author = request.user
     post.save()
 
-    # AJAX → вернуть HTML поста
+    # === Обработка файлов ===
+    files = request.FILES.getlist("attachments")
+
+    MAX_SIZE_MB = 500
+    MAX_SIZE = MAX_SIZE_MB * 1024 * 1024
+
+    for f in files:
+        if f.size > MAX_SIZE:
+            return JsonResponse({
+                "success": False,
+                "error": f"Файл '{f.name}' превышает {MAX_SIZE_MB}MB."
+            }, status=400)
+
+        PostAttachment.objects.create(
+            post=post,
+            file=f,
+            original_name=f.name
+        )
+
+    # === AJAX ответ ===
     if request.headers.get("x-requested-with"):
         html = render_post_html(post, request)
         return JsonResponse({"success": True, "html": html})
 
+    # Обычный POST → редирект
     return redirect("feed")
+
 
 
 @login_required

@@ -1,8 +1,11 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser
+# core/models.py
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+import mimetypes
+
 
 class User(AbstractUser):
     # @userid — это username (унаследован от AbstractUser) — НЕ МЕНЯЕМ
@@ -157,3 +160,54 @@ class Message(models.Model):
     def __str__(self):
         return f"{self.sender} → {self.recipient}: {self.text[:30]}"
 
+
+class PostAttachment(models.Model):
+    post = models.ForeignKey(
+        Post,
+        related_name="attachments",
+        on_delete=models.CASCADE,
+        verbose_name="Пост",
+    )
+    file = models.FileField(
+        upload_to="attachments/",
+        verbose_name="Файл",
+    )
+    original_name = models.CharField(
+        "Оригинальное имя файла",
+        max_length=255,
+        blank=True,
+    )
+
+    def __str__(self):
+        return self.original_name or self.file.name
+
+    @property
+    def is_image(self):
+        """
+        Удобнее как @property, чтобы в шаблоне писать {{ att.is_image }}
+        без скобок.
+        """
+        type_, _ = mimetypes.guess_type(self.file.name)
+        return bool(type_ and type_.startswith("image/"))
+
+    def delete(self, *args, **kwargs):
+        """
+        При удалении записи удаляем и файл с диска.
+        Работает и при каскадном удалении поста.
+        """
+        storage = self.file.storage
+        name = self.file.name
+        super().delete(*args, **kwargs)
+        if name:
+            storage.delete(name)
+
+
+# Дополнительно, на случай если где-то используется bulk delete или ещё что-то
+@receiver(post_delete, sender=PostAttachment)
+def delete_attachment_file(sender, instance, **kwargs):
+    """
+    Подчистить файл, если по какой-то причине метод delete() не сработал.
+    (Например, при нестандартных операциях.)
+    """
+    if instance.file:
+        instance.file.delete(False)
