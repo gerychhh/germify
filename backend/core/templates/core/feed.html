@@ -167,36 +167,36 @@
                 class="feed-new-post-textarea"
                 placeholder="Напишите что-нибудь интересное.">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
 
-            <!-- PREVIEW -->
-            <div class="file-preview" id="file-preview"></div>
+                <!-- PREVIEW -->
+                <div class="file-preview" id="file-preview"></div>
 
-            <!-- FILE INPUT -->
-            <label class="attach-btn" title="Прикрепить файлы">
-                📎
-                <input type="file"
-                       name="attachments"
-                       multiple
-                       style="display:none;">
-            </label>
+                <!-- DRAG & DROP ZONE -->
+                <div id="drop-zone" class="drop-zone hidden">
+                    Перетащи файлы сюда или нажми на скрепку
+                </div>
 
-            <!-- DRAG & DROP ZONE -->
-            <div id="drop-zone" class="drop-zone hidden">
-                Перетащи файлы сюда или нажми на скрепку
-            </div>
+                <!-- INFO + PROGRESS -->
+                <div class="file-info">
+                    <span id="file-count">Файлы: 0</span>
+                    <span id="file-size">Размер: 0 MB</span>
+                </div>
 
-            <!-- INFO + PROGRESS -->
-            <div class="file-info">
-                <span id="file-count">Файлы: 0</span>
-                <span id="file-size">Размер: 0 MB</span>
-            </div>
+                <div class="upload-progress hidden" id="upload-progress">
+                    <div class="upload-progress-bar" id="upload-progress-bar"></div>
+                </div>
 
-            <div class="upload-progress hidden" id="upload-progress">
-                <div class="upload-progress-bar" id="upload-progress-bar"></div>
-            </div>
+                <div class="feed-new-post-footer">
+                    <label class="attach-btn" title="Прикрепить файлы">
+                        📎
+                        <input type="file"
+                               name="attachments"
+                               multiple
+                               style="display:none;">
+                    </label>
 
-            <div class="feed-new-post-footer">
-                <button type="submit" class="primary-button">Опубликовать</button>
-            </div>
+                    <button type="submit" class="primary-button">Опубликовать</button>
+                </div>
+
 
         </form>
     </section>
