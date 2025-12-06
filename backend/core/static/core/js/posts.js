@@ -32,8 +32,8 @@ document.addEventListener("DOMContentLoaded", function () {
     //           ПОДДЕРЖКА ВЛОЖЕНИЙ ДЛЯ НОВОГО ПОСТА
     // ==========================================================
 
-    const MAX_FILE_SIZE = 500 * 1024 * 1024;      // 10 MB на файл
-    const MAX_TOTAL_SIZE = 500 * 1024 * 1024;     // 50 MB суммарно
+    const MAX_FILE_SIZE = 25 * 1024 * 1024;      // 25 MB на файл
+    const MAX_TOTAL_SIZE = 25 * 1024 * 1024;     // 25 MB суммарно
     const MAX_FILE_COUNT = 25;                   // максимум файлов
 
     const fileInput = document.querySelector("input[name='attachments']");

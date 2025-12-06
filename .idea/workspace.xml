@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="2d5614a6-939c-4f99-a314-b1c6afd6ce92" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/static/core/js/posts.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/js/posts.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/germify/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/germify/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -12,9 +17,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 0
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
   <component name="ProjectId" id="35zMt2IvzFB8glJEdixprk35rFD" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
@@ -25,6 +30,10 @@
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "vue.rearranger.settings.migration": "true"
   }
@@ -71,6 +80,14 @@
       <option name="presentableId" value="Default" />
       <updated>1764108658227</updated>
       <workItem from="1764108659254" duration="12000" />
+      <workItem from="1764600254962" duration="33611000" />
+      <workItem from="1764685128481" duration="1634000" />
+      <workItem from="1764702572546" duration="71000" />
+      <workItem from="1764716914357" duration="95000" />
+      <workItem from="1764950145609" duration="3235000" />
+      <workItem from="1765053365706" duration="117000" />
+      <workItem from="1765053550024" duration="14000" />
+      <workItem from="1765053568982" duration="1060000" />
     </task>
     <servers />
   </component>
