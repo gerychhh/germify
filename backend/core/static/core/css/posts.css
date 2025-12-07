@@ -697,47 +697,120 @@
 
 /* ===== ВЛОЖЕНИЯ (картинки + видео + аудио + файлы) ===== */
 
-.attachments {
-    margin: 8px 0 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+/* ===== КАРТИНКИ В ПОСТЕ (оригинальное соотношение сторон) ===== */
 
-/* ===== КАРТИНКИ В ПОСТЕ (уменьшенная сетка) ===== */
+/* ===== КАРТИНКИ В ПОСТЕ — «умная» плитка ===== */
 
 .attachment-gallery {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-auto-rows: 120px;
     gap: 4px;
-    border-radius: 10px;
+    border-radius: 0;      /* без закруглений */
     overflow: hidden;
 }
 
-.attachment-gallery .gallery-item:only-child {
-    grid-column: 1 / -1;
-    grid-row: span 2;
-    height: 260px;
+/* количество картинок в посте — берём из data-count */
+.attachment-gallery[data-count="1"] {
+    grid-template-columns: 1fr;
 }
 
+.attachment-gallery[data-count="2"],
+.attachment-gallery[data-count="3"],
+.attachment-gallery[data-count="4"],
+.attachment-gallery[data-count="5"],
+.attachment-gallery[data-count="6"],
+.attachment-gallery[data-count="7"],
+.attachment-gallery[data-count="8"],
+.attachment-gallery[data-count="9"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* две колонки */
+}
+
+/* как в ВК: 3/5/7 фоток — первая широкая, остальные плиткой */
+.attachment-gallery[data-count="3"] .gallery-item:first-child,
+.attachment-gallery[data-count="5"] .gallery-item:first-child,
+.attachment-gallery[data-count="7"] .gallery-item:first-child {
+    grid-column: span 2;
+}
+
+/* общая ячейка */
 .gallery-item {
     position: relative;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 0;
+    background: #020617;
 }
 
-.gallery-img {
+/* одна картинка — показываем максимально похоже на оригинал */
+.attachment-gallery[data-count="1"] .gallery-item {
+    aspect-ratio: auto;
+}
+
+.attachment-gallery[data-count="1"] .gallery-img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;   /* без обрезки, как обычное фото в посте */
+}
+
+/* 2+ картинок: плитка 4:3, аккуратно обрезаем по центру */
+.attachment-gallery[data-count]:not([data-count="1"]) .gallery-item {
+    aspect-ratio: 4 / 3;   /* одинаковая высота тайлов */
+}
+
+.attachment-gallery[data-count]:not([data-count="1"]) .gallery-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: cover;     /* как в ВК/ТГ/инсте: кадрируем, но не тянем */
     cursor: zoom-in;
-    transition: transform 0.2s ease;
+    transition: transform 0.15s ease;
 }
 
 .gallery-img:hover {
-    transform: scale(1.03);
+    transform: scale(1.02);
 }
+
+/* на мобильных оставляем две колонки, просто чуть меньше зазор */
+@media (max-width: 640px) {
+    .attachment-gallery {
+        gap: 3px;
+    }
+}
+
+/* ==== 1 изображение — показываем максимально целиком ==== */
+
+.attachment-gallery .gallery-item:only-child {
+    grid-column: 1 / -1;  /* занимает всю ширину */
+    grid-row: auto;
+    height: auto;
+}
+
+.attachment-gallery .gallery-item:only-child .gallery-img {
+    height: auto;
+    max-height: 520px;
+    object-fit: contain;   /* НЕ обрезаем, подгоняем по высоте */
+    background: #000;      /* аккуратные «рамки» по бокам */
+}
+
+/* ==== 3 изображения — классическая раскладка VK:
+       одно большое слева, два поменьше справа ==== */
+
+/* условие: в галерее ровно 3 плитки */
+.attachment-gallery .gallery-item:first-child:nth-last-child(3) {
+    grid-row: 1 / span 2;  /* первая плитка тянется на две строки */
+}
+
+/* вторая и третья — справа, одна под другой */
+.attachment-gallery .gallery-item:first-child:nth-last-child(3) ~ .gallery-item:nth-child(2),
+.attachment-gallery .gallery-item:first-child:nth-last-child(3) ~ .gallery-item:nth-child(3) {
+    grid-row: auto;
+}
+
+/* немного страховки по высоте, чтобы не было артефактов */
+.attachment-gallery .gallery-item:first-child:nth-last-child(3),
+.attachment-gallery .gallery-item:first-child:nth-last-child(3) ~ .gallery-item {
+    min-height: 0;
+}
+
+/* 2, 4, 5+ изображений просто ложатся в плитку 2×N */
+
 
 /* ===== FULLSCREEN VIEWER (листает картинки) ===== */
 
@@ -754,7 +827,7 @@
 .viewer-img {
     max-width: 90%;
     max-height: 90%;
-    border-radius: 12px;
+    border-radius: 0px;
     user-select: none;
 }
 

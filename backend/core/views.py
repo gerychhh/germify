@@ -3,9 +3,11 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count
-from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
+from django.core.paginator import Paginator
+from django.http import JsonResponse, HttpResponseForbidden
+
 
 from .forms import RegisterForm, PostForm, MessageForm, ProfileForm
 from .models import (
@@ -81,25 +83,61 @@ def render_comment_html(comment, request, level):
 # ======================================================
 
 def feed(request):
-    posts = (
+    """Лента постов с пагинацией (7 штук) и поддержкой бесконечной прокрутки через AJAX."""
+    # Базовый queryset
+    base_qs = (
         Post.objects
         .select_related("author")
         .prefetch_related(
             "likes",
             "comments__author",
             "comments__likes",
-            "comments__replies"
+            "comments__replies",
         )
         .annotate(
-            top_comments_count=Count("comments", filter=Q(comments__parent__isnull=True))
+            top_comments_count=Count(
+                "comments",
+                filter=Q(comments__parent__isnull=True),
+            )
         )
         .order_by("-created_at")
     )
 
+    # Пагинация по 7 постов
+    paginator = Paginator(base_qs, 7)
+
+    # Номер страницы из ?page=...
+    page_param = request.GET.get("page")
+    try:
+        page_number = int(page_param)
+        if page_number < 1:
+            page_number = 1
+    except (TypeError, ValueError):
+        page_number = 1
+
+    page_obj = paginator.get_page(page_number)
+
+    # лайки/подписки
     state = get_user_state(request.user)
+
+    # ---------- AJAX: подгрузка постов ----------
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        posts_html = "".join(
+            render_post_html(post, request) for post in page_obj.object_list
+        )
+        return JsonResponse(
+            {
+                "success": True,
+                "html": posts_html,
+                "has_next": page_obj.has_next(),
+                "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+            }
+        )
+
+    # ---------- Обычный GET + запасной POST ----------
     form = PostForm()
 
-    # Обработка создания поста обычным POST-запросом
+    # запасной вариант создания поста обычным POST (если когда-то понадобится)
     if request.method == "POST" and not request.headers.get("x-requested-with"):
         if not request.user.is_authenticated:
             messages.error(request, "Чтобы написать пост — войдите.")
@@ -112,11 +150,17 @@ def feed(request):
             p.save()
             return redirect("feed")
 
-    return render(request, "core/feed.html", {
-        "posts": posts,
+    context = {
+        "posts": page_obj.object_list,          # только текущие 7 постов
         "form": form,
-        **state
-    })
+        "page_obj": page_obj,
+        "has_next": page_obj.has_next(),
+        "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+        **state,
+    }
+
+    return render(request, "core/feed.html", context)
+
 
 
 @login_required
@@ -171,12 +215,24 @@ def create_post(request):
 def delete_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
 
-    if request.method == "POST":
-        if request.user == post.author or request.user.is_superuser:
-            post.delete()
-            if request.headers.get("x-requested-with"):
-                return JsonResponse({"ok": True})
+    # Разрешаем удалять только автору или суперюзеру
+    if request.user != post.author and not request.user.is_superuser:
+        # AJAX-запрос
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return HttpResponseForbidden("Нельзя удалить чужой пост")
+        # обычный запрос
+        return HttpResponseForbidden("Нельзя удалить чужой пост")
 
+    # Разрешено, но только через POST
+    if request.method == "POST":
+        post.delete()
+
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"ok": True})
+
+        return redirect("feed")
+
+    # Если не POST — просто редиректим назад/в ленту
     return redirect(request.META.get("HTTP_REFERER", "feed"))
 
 

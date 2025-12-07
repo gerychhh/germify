@@ -4,16 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}Germify{% endblock %}</title>
-
-        <link rel="icon" type="image/x-icon" href="{% static 'core/favicon.ico' %}">
-        <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
-        <link rel="stylesheet" href="{% static 'core/css/posts.css' %}" defer>
-        <link rel="stylesheet" href="{% static 'core/css/avatar.css' %}">
-        <script src="{% static 'core/js/avatar.js' %}" defer></script>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="{% static 'core/favicon.ico' %}">
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/posts.css' %}" defer>
+    <link rel="stylesheet" href="{% static 'core/css/avatar.css' %}">
+    <script src="{% static 'core/js/avatar.js' %}" defer></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="{% static 'core/js/voice_recorder.js' %}?v=3" defer></script>
 
     <style>
         body {
@@ -82,7 +81,6 @@
             transform: translateY(-1px);
         }
 
-        /* активный пункт меню */
         .nav-link.active {
             background: #1f2937;
             color: #e5e7eb;
@@ -136,10 +134,145 @@
         .auth-small-link:hover {
             color: #e5e7eb;
         }
+
+        /* ============================
+           МОБИЛЬНОЕ НИЖНЕЕ МЕНЮ
+           ============================ */
+
+        .mobile-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: #020617;
+            border-top: 1px solid #1f2937;
+            display: none; /* включаем только в media */
+            align-items: center;
+            justify-content: space-around;
+            z-index: 9999;
+        }
+
+        .mobile-nav-item,
+        .mobile-nav-item:visited {
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            color: #8b96a8;
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 2px;
+        }
+
+        .mobile-nav-item--active,
+        .mobile-nav-item--active:visited {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .mobile-nav-icon {
+            font-size: 17px;
+            margin-bottom: 1px;
+        }
+
+        .mobile-nav-label {
+            line-height: 1;
+        }
+
+        /* ============================
+           МОБИЛЬНАЯ ВЕРСТКА
+           ============================ */
+        @media (max-width: 768px) {
+
+            /* верхнее меню на телефоне скрываем, остаётся только логотип */
+            .topbar-nav {
+                display: none;
+            }
+
+            /* если где-то есть футер с ссылкой на домен — прячем */
+            footer {
+                display: none !important;
+            }
+
+            /* контент — отступ снизу под меню */
+            .page-wrapper {
+                max-width: 960px;
+                margin: 16px auto 0;
+                padding: 0 12px 80px; /* 80px = запас под нижнее меню */
+            }
+
+            /* на случай, если используется .content */
+            .content {
+                padding-bottom: 80px !important;
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+
+            /* компактнее карточки на телефоне */
+            .post-card,
+            .feed-new-post-card,
+            .profile-card,
+            .comment-item {
+                padding: 10px;
+                border-radius: 12px;
+            }
+
+            .feed-new-post-textarea,
+            .input-textarea,
+            .comment-input {
+                font-size: 14px;
+                min-height: 60px;
+            }
+
+            .primary-button,
+            .comment-btn {
+                padding: 8px 14px;
+                font-size: 13px;
+                border-radius: 10px;
+            }
+
+            /* включаем нижнее меню */
+            .mobile-bottom-nav {
+                display: flex;
+            }
+
+            /* чат — фиксированная форма ввода над меню */
+            .message-thread-wrapper {
+                height: calc(100vh - 120px);
+                padding-bottom: 10px;
+            }
+
+            .thread-form {
+                position: fixed;
+                bottom: 50px; /* ровно над нижним меню */
+                left: 0;
+                right: 0;
+                padding: 6px 10px;
+                background: #020617;
+                border-top: 1px solid #1f2937;
+                z-index: 9998;
+            }
+
+            .thread-form-row textarea {
+                font-size: 14px;
+                min-height: 40px;
+            }
+
+            /* Чтобы iOS не делал авто-зум при фокусе на полях ввода */
+            input,
+            textarea,
+            select {
+                font-size: 16px !important;
+            }
+    }
     </style>
 
     {% block extra_head %}{% endblock %}
 </head>
+
 <body>
 <header class="topbar">
     <div class="topbar-left">
@@ -176,6 +309,44 @@
 <main class="page-wrapper">
     {% block content %}{% endblock %}
 </main>
-    <script src="{% static 'core/js/posts.js' %}"></script>
+
+{% with current=request.resolver_match.url_name %}
+<nav class="mobile-bottom-nav">
+    <a href="{% url 'feed' %}"
+       class="mobile-nav-item{% if current == 'feed' %} mobile-nav-item--active{% endif %}">
+        <span class="mobile-nav-icon">🏠</span>
+        <span class="mobile-nav-label">Лента</span>
+    </a>
+
+    {% if request.user.is_authenticated %}
+        <a href="{% url 'messages_inbox' %}"
+           class="mobile-nav-item{% if current == 'messages_inbox' or current == 'messages_thread' %} mobile-nav-item--active{% endif %}">
+            <span class="mobile-nav-icon">💬</span>
+            <span class="mobile-nav-label">Сообщения</span>
+        </a>
+
+        <a href="{% url 'profile' %}"
+           class="mobile-nav-item{% if current == 'profile' or current == 'user_profile' %} mobile-nav-item--active{% endif %}">
+            <span class="mobile-nav-icon">👤</span>
+            <span class="mobile-nav-label">Профиль</span>
+        </a>
+    {% else %}
+        <a href="{% url 'login' %}"
+           class="mobile-nav-item{% if current == 'login' %} mobile-nav-item--active{% endif %}">
+            <span class="mobile-nav-icon">🔐</span>
+            <span class="mobile-nav-label">Войти</span>
+        </a>
+
+        <a href="{% url 'register' %}"
+           class="mobile-nav-item{% if current == 'register' %} mobile-nav-item--active{% endif %}">
+            <span class="mobile-nav-icon">➕</span>
+            <span class="mobile-nav-label">Регистрация</span>
+        </a>
+    {% endif %}
+</nav>
+{% endwith %}
+
+
+<script src="{% static 'core/js/posts.js' %}"></script>
 </body>
 </html>

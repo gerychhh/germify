@@ -207,29 +207,39 @@ document.addEventListener("DOMContentLoaded", function () {
         const blocks = root.querySelectorAll(".post-text-block");
 
         blocks.forEach(block => {
-            if (block.dataset.textInited === "1") return;
-            block.dataset.textInited = "1";
-
             const wrapper = block.querySelector(".post-text-wrapper");
             const toggle  = block.querySelector(".post-text-toggle");
-
             if (!wrapper || !toggle) return;
 
-            // если контент (текст + вложения) невысокий — не сворачиваем
-            if (wrapper.scrollHeight <= MAX_POST_TEXT_HEIGHT + 10) {
+            const expanded = toggle.dataset.expanded === "1";
+            const fullHeight = wrapper.scrollHeight;
+
+            // Контент низкий — не сворачиваем вообще
+            if (fullHeight <= MAX_POST_TEXT_HEIGHT + 10) {
+                wrapper.style.maxHeight = "";
+                wrapper.classList.remove("is-collapsed");
+                toggle.classList.add("hidden");
                 return;
             }
 
-            wrapper.style.maxHeight = MAX_POST_TEXT_HEIGHT + "px";
-            wrapper.classList.add("is-collapsed");
+            // Кнопка нужна
             toggle.classList.remove("hidden");
-            toggle.dataset.expanded = "0";
+
+            if (expanded) {
+                // уже развернутый пост
+                wrapper.style.maxHeight = fullHeight + "px";
+                wrapper.classList.remove("is-collapsed");
+                toggle.dataset.expanded = "1";
+            } else {
+                // свернутый пост
+                wrapper.style.maxHeight = MAX_POST_TEXT_HEIGHT + "px";
+                wrapper.classList.add("is-collapsed");
+                toggle.dataset.expanded = "0";
+            }
         });
     }
 
-
     // ---------- ВИДЕО ----------
-
     function initVideoPlayers(root = document) {
         if (!root.querySelectorAll) return;
 
@@ -554,7 +564,23 @@ document.addEventListener("DOMContentLoaded", function () {
             e.preventDefault();
 
             const fd = new FormData(form);
+
+            // обычные файлы из предпросмотра
             selectedFiles.forEach(f => fd.append("attachments", f));
+
+            // голосовое сообщение, если записано (Blob из voice_recorder.js)
+            if (form._voiceBlob && !form._voiceBlobUsed) {
+                const blob = form._voiceBlob;
+                const name = form._voiceFilename || "voice-message.webm";
+                const type = form._voiceMime || blob.type || "audio/webm";
+
+                const voiceFile = (blob instanceof File)
+                    ? blob
+                    : new File([blob], name, { type });
+
+                fd.append("attachments", voiceFile);
+                form._voiceBlobUsed = true; // чтобы не дублировать
+            }
 
             if (uploadProgress && uploadProgressBar) {
                 uploadProgress.classList.remove("hidden");
@@ -604,22 +630,22 @@ document.addEventListener("DOMContentLoaded", function () {
                         if (dropZone) dropZone.classList.add("hidden");
 
                     } else {
+                        // если пришёл не JSON (например, редирект на логин) — просто перезагружаем
                         window.location.reload();
                     }
+                } else {
+                    let msg = "Ошибка при отправке поста";
+                    if (xhr.status === 413) {
+                        msg = "Файл слишком большой (ошибка 413 от сервера). Увеличь client_max_body_size в nginx.";
+                    } else if (xhr.status === 403) {
+                        msg = "Ошибка 403 (возможно, CSRF).";
+                    } else if (xhr.status === 500) {
+                        msg = "Внутренняя ошибка сервера (500). Проверь логи Django.";
                     } else {
-                        let msg = "Ошибка при отправке поста";
-                        // попробуем подсказать, если это именно лимит размера
-                        if (xhr.status === 413) {
-                            msg = "Файл слишком большой (ошибка 413 от сервера). Увеличь client_max_body_size в nginx.";
-                        } else if (xhr.status === 403) {
-                            msg = "Ошибка 403 (возможно, CSRF).";
-                        } else if (xhr.status === 500) {
-                            msg = "Внутренняя ошибка сервера (500). Проверь логи Django.";
-                        } else {
-                            msg = "Ошибка при отправке поста (HTTP " + xhr.status + ")";
-                        }
-                        alert(msg);
+                        msg = "Ошибка при отправке поста (HTTP " + xhr.status + ")";
                     }
+                    alert(msg);
+                }
             };
 
             xhr.onerror = function () {
@@ -793,7 +819,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             return;
         }
-
         // ---------- УДАЛЕНИЕ ПОСТА ----------
         if (form.classList.contains("post-delete-form")) {
             e.preventDefault();
@@ -801,13 +826,28 @@ document.addEventListener("DOMContentLoaded", function () {
             const postCard = form.closest(".post-card");
 
             ajaxPost(form.action, form)
-                .then(() => {
+                .then((response) => {
+                    if (!response.ok) {
+                        // Сервер вернул ошибку (403, 500 и т.п.)
+                        if (response.status === 403) {
+                            alert("Вы не можете удалить этот пост");
+                        } else {
+                            alert("Ошибка при удалении поста (HTTP " + response.status + ")");
+                        }
+                        return;
+                    }
+
+                    // Всё ок — удаляем карточку из DOM
                     if (postCard) postCard.remove();
                 })
-                .catch(err => console.error("delete post error:", err));
+                .catch(err => {
+                    console.error("delete post error:", err);
+                    alert("Ошибка сети при удалении поста");
+                });
 
             return;
         }
+
     });
 
     // ==========================
@@ -827,13 +867,11 @@ document.addEventListener("DOMContentLoaded", function () {
             const expanded = textToggle.dataset.expanded === "1";
 
             if (expanded) {
-                // свернуть обратно
                 wrapper.style.maxHeight = MAX_POST_TEXT_HEIGHT + "px";
                 wrapper.classList.add("is-collapsed");
                 textToggle.textContent = "Показать полностью";
                 textToggle.dataset.expanded = "0";
             } else {
-                // развернуть на всю высоту контента (текст + вложения)
                 wrapper.style.maxHeight = wrapper.scrollHeight + "px";
                 wrapper.classList.remove("is-collapsed");
                 textToggle.textContent = "Свернуть";
@@ -841,7 +879,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             return;
         }
-
 
         // ----- МЕНЮ ПОСТА (⋯) -----
         const postMenuToggle = e.target.closest(".post-menu-toggle");
@@ -951,7 +988,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // ----- ПОДПИСКА (старые кнопки .follow-btn) -----
+        // ----- ПОДПИСКА (.follow-btn) -----
         const followBtn = e.target.closest(".follow-btn");
         if (followBtn) {
             e.preventDefault();
@@ -1004,6 +1041,85 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    // ================================
+    // Бесконечная подгрузка постов
+    // ================================
+    (function initInfiniteScroll() {
+        const container = document.getElementById("posts-list");
+        if (!container) return;
+
+        let isLoading = false;
+        let hasNext = container.dataset.hasNext === "1";
+        let nextPage = parseInt(container.dataset.nextPage || "0", 10) || 0;
+
+        const loader = document.getElementById("feed-loading");
+
+        async function loadMore() {
+            if (isLoading || !hasNext || !nextPage) return;
+
+            isLoading = true;
+            if (loader) loader.style.display = "block";
+
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set("page", String(nextPage));
+
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = await response.json();
+                if (!data || !data.success || !data.html) {
+                    return;
+                }
+
+                // Добавляем новые посты в конец списка
+                container.insertAdjacentHTML("beforeend", data.html);
+
+                // Инициализируем функционал для новых постов
+                initPostTextCollapsing(container);
+                initVideoPlayers(container);
+                initAudioPlayers(container);
+
+                hasNext = !!data.has_next;
+                if (hasNext && data.next_page) {
+                    nextPage = data.next_page;
+                    container.dataset.nextPage = String(nextPage);
+                    container.dataset.hasNext = "1";
+                } else {
+                    container.dataset.hasNext = "0";
+                }
+            } catch (e) {
+                console.error("Ошибка подгрузки постов:", e);
+            } finally {
+                isLoading = false;
+                if (loader) loader.style.display = "none";
+            }
+        }
+
+        function onScroll() {
+            if (!hasNext || isLoading) return;
+
+            const scrollPosition = window.innerHeight + window.scrollY;
+            const threshold = document.body.offsetHeight - 300;
+
+            if (scrollPosition >= threshold) {
+                loadMore();
+            }
+        }
+
+        window.addEventListener("scroll", onScroll);
+
+        // На случай очень коротких страниц
+        onScroll();
+    })();
+
     // --------------------------------------------
     // Инициализируем медиа и свёртку текста
     // --------------------------------------------
@@ -1012,6 +1128,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initAudioPlayers(document);
 
 }); // конец DOMContentLoaded
+
 
 // ================================
 // FULLSCREEN IMAGE VIEWER + SLIDES

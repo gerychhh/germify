@@ -245,5 +245,39 @@
         white-space: nowrap;
         padding-inline: 16px;
     }
+
+    /* Мобильная версия: фиксируем ввод внизу, как в мессенджере */
+    @media (max-width: 768px) {
+        .thread-layout {
+            height: calc(100vh - 80px);
+            padding-bottom: 0;
+        }
+
+        .thread-messages {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .thread-form {
+            position: fixed;
+            bottom: 60px; /* над нижним меню */
+            left: 0;
+            right: 0;
+            padding: 6px 10px;
+            background: #020617;
+            border-top: 1px solid #1f2937;
+        }
+
+        .thread-form-row textarea {
+            font-size: 15px;
+            min-height: 44px;
+        }
+
+        .thread-send-btn {
+            padding-inline: 14px;
+            padding-block: 8px;
+            font-size: 13px;
+        }
+    }
 </style>
 {% endblock %}

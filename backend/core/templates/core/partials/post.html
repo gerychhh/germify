@@ -19,21 +19,26 @@
                         </div>
                     </div>
 
+                    {# ===== КНОПКА ПОДПИСКИ В КАРТОЧКЕ ПОСТА ===== #}
                     {% if user.is_authenticated and user != post.author %}
                         <div style="margin-left:8px;">
                             {% if post.author.id in following_ids %}
                                 <button type="button"
-                                        class="primary-button follow-toggle-btn"
+                                        class="primary-button follow-btn"
                                         data-username="{{ post.author.username }}"
-                                        data-following="true"
+                                        data-following="1"
+                                        data-follow-url="{% url 'follow_user' post.author.username %}"
+                                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}"
                                         style="padding:2px 10px; font-size:12px; background:#1f2937; color:#e5e7eb;">
                                     Вы подписаны
                                 </button>
                             {% else %}
                                 <button type="button"
-                                        class="primary-button follow-toggle-btn"
+                                        class="primary-button follow-btn"
                                         data-username="{{ post.author.username }}"
-                                        data-following="false"
+                                        data-following="0"
+                                        data-follow-url="{% url 'follow_user' post.author.username %}"
+                                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}"
                                         style="padding:2px 10px; font-size:12px;">
                                     Подписаться
                                 </button>
@@ -55,32 +60,33 @@
                             ⋯
                         </button>
 
-                        <div class="post-menu hidden"
-                             data-post-id="{{ post.id }}">
-                            <button type="button"
-                                    class="post-menu-item post-share-btn"
-                                    data-post-id="{{ post.id }}"
-                                    data-post-url="{% url 'post_detail' post.id %}">
-                                Поделиться
-                            </button>
+                       <div class="post-menu hidden"
+                         data-post-id="{{ post.id }}">
+                        <button type="button"
+                                class="post-menu-item post-share-btn"
+                                data-post-id="{{ post.id }}"
+                                data-post-url="{% url 'post_detail' post.id %}">
+                            Поделиться
+                        </button>
 
-                            {% if user.is_authenticated %}
-                                {% if user == post.author or user.is_superuser %}
-                                    {# тут можно добавить "Редактировать" #}
-                                {% endif %}
+                        {% if user.is_authenticated %}
+                            {% if user == post.author or user.is_superuser %}
+                                {# тут можно добавить "Редактировать" #}
+
+                                <form method="post"
+                                      action="{% url 'delete_post' post.id %}"
+                                      class="post-delete-form"
+                                      data-post-id="{{ post.id }}">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="post-menu-item post-menu-delete-btn">
+                                        Удалить
+                                    </button>
+                                </form>
                             {% endif %}
+                        {% endif %}
+                    </div>
 
-                            <form method="post"
-                                  action="{% url 'delete_post' post.id %}"
-                                  class="post-delete-form"
-                                  data-post-id="{{ post.id }}">
-                                {% csrf_token %}
-                                <button type="submit"
-                                        class="post-menu-item post-menu-delete-btn">
-                                    Удалить
-                                </button>
-                            </form>
-                        </div>
                     </div>
                 </div>
             </header>
@@ -95,7 +101,8 @@
                     <div class="attachments">
 
                         {# КАРТИНКИ — сетка #}
-                        <div class="attachment-gallery">
+                        <div class="attachment-gallery"
+                             data-count="{{ post.attachments.all|length }}">
                             {% for att in post.attachments.all %}
                                 {% if att.is_image %}
                                     <div class="gallery-item">
@@ -108,11 +115,12 @@
                             {% endfor %}
                         </div>
 
-                        {# ВИДЕО (mp4/mov/webm/ogg) — кастомный плеер #}
+
+                        {# ВИДЕО — только настоящие видео (mp4/mov) #}
                         <div class="attachment-videos">
                             {% for att in post.attachments.all %}
                                 {% with name=att.original_name|lower %}
-                                    {% if ".mp4" in name or ".mov" in name or ".webm" in name or ".ogg" in name %}
+                                    {% if ".mp4" in name or ".mov" in name %}
                                         <div class="video-wrapper">
                                             <div class="video-inner">
                                                 <video class="video-player" preload="metadata">
@@ -150,11 +158,11 @@
                             {% endfor %}
                         </div>
 
-                        {# АУДИО (mp3/wav/ogg) — кастомный плеер #}
+                        {# АУДИО (mp3/wav/ogg/webm) — кастомный плеер #}
                         <div class="attachment-audios">
                             {% for att in post.attachments.all %}
                                 {% with name=att.original_name|lower %}
-                                    {% if ".mp3" in name or ".wav" in name or ".ogg" in name %}
+                                    {% if ".mp3" in name or ".wav" in name or ".ogg" in name or ".webm" in name %}
                                         <div class="audio-wrapper">
 
                                             <audio class="audio-player">
@@ -197,7 +205,7 @@
                         <div class="attachment-files">
                             {% for att in post.attachments.all %}
                                 {% with name=att.original_name|lower %}
-                                    {% if not att.is_image and ".mp3" not in name and ".wav" not in name and ".ogg" not in name and ".mp4" not in name and ".mov" not in name and ".webm" not in name %}
+                                    {% if not att.is_image and ".mp3" not in name and ".wav" not in name and ".ogg" not in name and ".webm" not in name and ".mp4" not in name and ".mov" not in name %}
                                         <a class="file-card" href="{{ att.file.url }}" download>
                                             <div class="file-icon">
                                                 {% if ".pdf" in name %}

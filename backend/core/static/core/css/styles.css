@@ -138,8 +138,6 @@ body {
     transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 
-
-
 .btn-primary:hover {
     background: #2563eb;
     box-shadow: 0 10px 25px rgba(37, 99, 235, 0.45);
@@ -175,9 +173,9 @@ body {
 .post-text {
     font-size: 14px;
     line-height: 1.5;
-    white-space: pre-wrap;      /* сохраняем переносы и пробелы */
-    word-wrap: break-word;      /* старое, но ещё используется */
-    overflow-wrap: break-word;  /* современный вариант */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .new-post-form {
@@ -187,7 +185,7 @@ body {
     background: #0b1120;
     padding: 20px;
     border-radius: 12px;
-    border: 1px solid #1e293b;
+    border: 1px солид #1e293b;
     box-shadow: 0 8px 25px rgba(0,0,0,0.3);
 }
 
@@ -213,7 +211,6 @@ body {
     box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
 }
 
-/* более узкий стиль только для кнопки внутри формы нового поста */
 .new-post-form .primary-button {
     align-self: flex-end;
     background: #3b82f6;
@@ -270,7 +267,7 @@ body {
     padding: 4px 10px;
     font-size: 12px;
     cursor: pointer;
-    background: #b91c1c; /* тёмно-красный */
+    background: #b91c1c;
     color: #f9fafb;
     transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
@@ -281,7 +278,6 @@ body {
     box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
 }
 
-/* Универсальный кружок-аватар для постов и сообщений */
 .user-avatar-circle {
     width: 40px;
     height: 40px;
@@ -307,7 +303,6 @@ body {
     overflow-y: auto;
 }
 
-/* одна строка диалога (in/out) */
 .message-row {
     display: flex;
     margin-bottom: 8px;
@@ -321,34 +316,31 @@ body {
     justify-content: flex-start;
 }
 
-/* сам «пузырёк» */
 .message-bubble {
     max-width: 60%;
-    padding: 6px 10px;               /* меньше паддинг → компактнее */
-    border-radius: 10px;             /* меньше скругление */
+    padding: 6px 10px;
+    border-radius: 10px;
     background: #1f2937;
     color: #e5e7eb;
     font-size: 14px;
-    line-height: 1.35;               /* плотнее текст */
+    line-height: 1.35;
 }
 
-/* Сообщения собеседника */
 .message-left {
     background: #1e293b;
-    align-self: flex-start;
+    align-self: флекс-старт;
     border-bottom-left-radius: 4px;
 }
 
-/* Сообщения пользователя */
 .message-right {
     background: #2563eb;
-    align-self: flex-end;
+    align-self: флекс-энд;
     border-bottom-right-radius: 4px;
 }
 
 .message-outgoing .message-bubble {
     background: #2563eb;
-    padding: 6px 10px;               /* компактнее */
+    padding: 6px 10px;
     border-radius: 10px;
 }
 
@@ -358,11 +350,10 @@ body {
     color: #e5e7eb;
 }
 
-/* текст в сообщении — как в постах: слева и без странного отступа */
 .message-text {
     margin: 0;
     text-align: left;
-    white-space: pre-wrap;      /* сохраняет переносы пользователя */
+    white-space: pre-wrap;
     word-wrap: break-word;
 }
 
@@ -453,6 +444,7 @@ body {
 .comment-btn:hover {
     background: #1d4ed8;
 }
+
 .post-header-right {
     display: flex;
     align-items: center;
@@ -508,4 +500,128 @@ body {
 
 .post-menu-delete-btn {
     color: #fecaca;
+}
+
+/* ==========================================================
+   Мобильная навигация — фиксированное меню как в приложении
+   ========================================================== */
+
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: #0c1220;
+    border-top: 1px solid #1f2937;
+    display: none;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 9999;
+}
+
+.mobile-nav-item,
+.mobile-nav-item:visited {
+    flex: 1;
+    text-align: center;
+    text-decoration: none;
+    color: #8b96a8;
+    font-size: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 2px;
+}
+
+.mobile-nav-item--active,
+.mobile-nav-item--active:visited {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.mobile-nav-icon {
+    font-size: 17px;
+    margin-bottom: 1px;
+}
+
+/* ==========================================================
+   Адаптивная версия сайта (до 768px)
+   ========================================================== */
+@media (max-width: 768px) {
+
+    /* верхнее десктопное меню на телефоне не нужно */
+    .topbar-nav {
+        display: none;
+    }
+
+    /* футер (если есть) на мобилке убираем, чтобы не мешал навигации */
+    footer {
+        display: none !important;
+    }
+
+    .mobile-bottom-nav {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    /* основной контент: отступ снизу, чтобы не залезал под меню */
+    .page-wrapper {
+        padding-bottom: 80px !important;
+        padding-left: 12px;
+        padding-right: 12px;
+        margin: 16px auto 0;
+    }
+
+    .content {
+        padding-bottom: 80px !important;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .post-card,
+    .feed-new-post-card,
+    .profile-card,
+    .comment-item {
+        padding: 10px;
+        border-radius: 12px;
+    }
+
+    .feed-new-post-textarea,
+    .input-textarea,
+    .comment-input {
+        font-size: 14px;
+        min-height: 60px;
+    }
+
+    .primary-button,
+    .comment-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+        border-radius: 10px;
+    }
+
+    .message-thread-wrapper {
+        height: calc(100vh - 120px);
+        padding-bottom: 10px;
+    }
+
+    .thread-form {
+        position: fixed;
+        bottom: 50px;
+        left: 0;
+        right: 0;
+        padding: 6px 10px;
+        background: #0c1220;
+        border-top: 1px solid #1f2937;
+        z-index: 9998;
+    }
+
+    .thread-form-row textarea {
+        font-size: 14px;
+        min-height: 40px;
+    }
 }
