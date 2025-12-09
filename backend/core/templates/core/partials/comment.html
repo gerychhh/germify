@@ -1,11 +1,13 @@
 {# core/partials/comment.html #}
 {% load tz %}
 
-<div class="comment-item"
+{% with depth=level %}
+<div class="comment-item {% if depth > 0 %}reply-item{% endif %}
+            comment-depth-{% if depth > 3 %}3{% else %}{{ depth }}{% endif %}"
      data-comment-id="{{ c.id }}"
-     data-post-id="{{ c.post.id }}"
-     style="margin-left: {{ level }}px;">
+     data-post-id="{{ c.post.id }}">
 
+    <!-- HEADER -->
     <div class="comment-header">
         {% include "core/partials/avatar.html" with user_obj=c.author size="sm" %}
 
@@ -36,7 +38,8 @@
             </div>
         </div>
     </div>
-    <!-- ТЕКСТ -->
+
+    <!-- TEXT -->
     <div class="comment-text">
         {{ c.text }}
     </div>
@@ -98,14 +101,13 @@
         {% endif %}
     </div>
 
-    {# ФОРМА ОТВЕТА (скрыта по умолчанию, открывается по кнопке "Ответить") #}
+    {# ФОРМА ОТВЕТА (по умолчанию скрыта, открывается по кнопке "Ответить") #}
     {% if user.is_authenticated %}
         <form method="post"
               action="{% url 'add_reply' c.id %}"
               class="reply-form hidden"
               data-parent-id="{{ c.id }}"
-              data-post-id="{{ c.post.id }}"
-              style="margin-left:10px;">
+              data-post-id="{{ c.post.id }}">
             {% csrf_token %}
             <textarea name="text"
                       class="reply-input"
@@ -120,9 +122,10 @@
         <div class="replies-block hidden"
              data-parent-id="{{ c.id }}">
             {% for r in c.replies.all %}
-                {% include "core/partials/comment.html" with c=r user=user liked_comment_ids=liked_comment_ids level=level|add:20 %}
+                {% include "core/partials/comment.html" with c=r user=user liked_comment_ids=liked_comment_ids level=depth|add:"1" %}
             {% endfor %}
         </div>
     {% endif %}
 
 </div>
+{% endwith %}
