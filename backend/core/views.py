@@ -508,6 +508,10 @@ def post_detail(request, pk):
 # МЕССЕНДЖЕР
 # ======================================================
 
+# ======================================================
+# МЕССЕНДЖЕР
+# ======================================================
+
 @login_required
 def messages_inbox(request):
     qs = (
@@ -516,14 +520,29 @@ def messages_inbox(request):
         .order_by("-created_at")
     )
 
-    conversations = {}
+    threads = []
+    seen_ids = set()
+
     for msg in qs:
         other = msg.recipient if msg.sender == request.user else msg.sender
-        if other not in conversations:
-            conversations[other] = msg
+        if other.id in seen_ids:
+            continue
+
+        unread_count = Message.objects.filter(
+            sender=other,
+            recipient=request.user,
+            is_read=False,
+        ).count()
+
+        threads.append({
+            "other_user": other,
+            "last_message": msg,
+            "unread_count": unread_count,
+        })
+        seen_ids.add(other.id)
 
     return render(request, "core/messages_inbox.html", {
-        "conversations": conversations,
+        "threads": threads,
     })
 
 
@@ -542,15 +561,30 @@ def messages_inbox_poll(request):
         .order_by("-created_at")
     )
 
-    conversations = {}
+    threads = []
+    seen_ids = set()
+
     for msg in qs:
         other = msg.recipient if msg.sender == request.user else msg.sender
-        if other not in conversations:
-            conversations[other] = msg
+        if other.id in seen_ids:
+            continue
+
+        unread_count = Message.objects.filter(
+            sender=other,
+            recipient=request.user,
+            is_read=False,
+        ).count()
+
+        threads.append({
+            "other_user": other,
+            "last_message": msg,
+            "unread_count": unread_count,
+        })
+        seen_ids.add(other.id)
 
     html = render_to_string(
         "core/partials/messages_inbox_list.html",
-        {"conversations": conversations},
+        {"threads": threads},
         request=request,
     )
     return JsonResponse({"html": html})
@@ -560,21 +594,27 @@ def messages_inbox_poll(request):
 def messages_thread(request, username):
     """
     Страница одного диалога.
-    GET — просто отрисовка.
+    GET — отрисовка и пометка сообщений как прочитанных.
     POST — запасной вариант без JS (редирект как раньше).
     """
     other = get_object_or_404(User, username=username)
 
-    msgs = (
-        Message.objects.filter(
-            Q(sender=request.user, recipient=other) |
-            Q(sender=other, recipient=request.user)
-        )
-        .order_by("created_at")
-    )
+    msgs_qs = Message.objects.filter(
+        Q(sender=request.user, recipient=other) |
+        Q(sender=other, recipient=request.user)
+    ).order_by("created_at")
+
+    msgs = list(msgs_qs)
 
     # last_id для realtime-пула
-    last_id = msgs.last().id if msgs.exists() else 0
+    last_id = msgs[-1].id if msgs else 0
+
+    # помечаем все входящие от собеседника как прочитанные
+    Message.objects.filter(
+        sender=other,
+        recipient=request.user,
+        is_read=False,
+    ).update(is_read=True)
 
     if request.method == "POST" and not request.headers.get("x-requested-with"):
         # Фолбэк без JS
@@ -631,7 +671,8 @@ def messages_send(request, username):
 def messages_poll(request, username):
     """
     AJAX-пул новых сообщений в одном диалоге.
-    ?after=<last_id> — возвращаем только новые.
+    ?after=<last_id> — возвращаем только новые,
+    и сразу помечаем входящие как прочитанные.
     """
     other = get_object_or_404(User, username=username)
 
@@ -640,14 +681,18 @@ def messages_poll(request, username):
     except (TypeError, ValueError):
         last_id = 0
 
-    new_msgs = (
-        Message.objects.filter(
-            Q(sender=request.user, recipient=other) |
-            Q(sender=other, recipient=request.user)
-        )
-        .filter(id__gt=last_id)
-        .order_by("created_at")
-    )
+    new_msgs_qs = Message.objects.filter(
+        Q(sender=request.user, recipient=other) |
+        Q(sender=other, recipient=request.user)
+    ).filter(id__gt=last_id).order_by("created_at")
+
+    new_msgs = list(new_msgs_qs)
+
+    # помечаем новые входящие как прочитанные
+    to_mark_ids = [m.id for m in new_msgs
+                   if m.recipient_id == request.user.id and not m.is_read]
+    if to_mark_ids:
+        Message.objects.filter(id__in=to_mark_ids).update(is_read=True)
 
     html = "".join(
         render_to_string(
@@ -658,8 +703,7 @@ def messages_poll(request, username):
         for m in new_msgs
     )
 
-    return JsonResponse({"html": html, "count": new_msgs.count()})
-
+    return JsonResponse({"html": html, "count": len(new_msgs)})
 
 # ======================================================
 # РЕГИСТРАЦИЯ / ЛОГИН / ЛОГАУТ

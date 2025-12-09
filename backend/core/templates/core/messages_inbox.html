@@ -59,13 +59,19 @@
         display: flex;
         justify-content: space-between;
         gap: 8px;
-        align-items: baseline;
+        align-items: center;
     }
 
     .dialog-username {
         font-size: 14px;
         font-weight: 600;
         color: #e5e7eb;
+    }
+
+    .dialog-top-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
 
     .dialog-date {
@@ -92,6 +98,41 @@
         margin-top: 16px;
         font-size: 14px;
         color: #9ca3af;
+    }
+
+    .dialog-unread-badge {
+        min-width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #f9fafb;
+        font-size: 11px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+        box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
+    }
+
+    .dialog-item.has-unread .dialog-username {
+        color: #f9fafb;
+    }
+
+    @keyframes pulse-badge {
+        0% {
+            box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 8px rgba(248, 113, 113, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
+        }
+    }
+
+    .dialog-unread-badge--pulse {
+        animation: pulse-badge 0.8s ease-out;
     }
 
     @media (max-width: 768px) {
@@ -127,7 +168,7 @@
     <section class="dialogs-wrapper"
              id="dialogs-wrapper"
              data-poll-url="{% url 'messages_inbox_poll' %}">
-        {% include "core/partials/messages_inbox_list.html" with conversations=conversations %}
+        {% include "core/partials/messages_inbox_list.html" with threads=threads %}
     </section>
 
 </div>
