@@ -1,0 +1,36 @@
+{# core/partials/messages_inbox_list.html #}
+{% if conversations %}
+    {% for other_user, last_message in conversations.items %}
+        <a href="{% url 'messages_thread' other_user.username %}" class="dialog-item">
+            {% include "core/partials/avatar.html" with user_obj=other_user size="sm" %}
+
+            <div class="dialog-main">
+                <div class="dialog-top-row">
+                    <span class="dialog-username">
+                        {{ other_user.display_name|default:other_user.username }}
+                    </span>
+                    <span class="dialog-date">
+                        {{ last_message.created_at|date:"d.m.Y H:i" }}
+                    </span>
+                </div>
+
+                <div class="dialog-last-line">
+                    <span>
+                        {% if last_message.sender == request.user %}
+                            Вы:
+                        {% else %}
+                            {{ last_message.sender.display_name|default:last_message.sender.username }}:
+                        {% endif %}
+                    </span>
+                    <span class="dialog-last-text">
+                        {{ last_message.text|truncatechars:60 }}
+                    </span>
+                </div>
+            </div>
+        </a>
+    {% endfor %}
+{% else %}
+    <p class="messages-empty">
+        Пока нет ни одного диалога. Откройте профиль пользователя и нажмите «Написать сообщение».
+    </p>
+{% endif %}

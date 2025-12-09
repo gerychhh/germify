@@ -523,12 +523,46 @@ def messages_inbox(request):
             conversations[other] = msg
 
     return render(request, "core/messages_inbox.html", {
-        "conversations": conversations
+        "conversations": conversations,
     })
 
 
 @login_required
+def messages_inbox_poll(request):
+    """
+    AJAX-обновление списка диалогов.
+    Возвращает HTML того же списка, что и на обычной странице.
+    """
+    if request.headers.get("x-requested-with") != "XMLHttpRequest":
+        return JsonResponse({"error": "Bad request"}, status=400)
+
+    qs = (
+        Message.objects.filter(Q(sender=request.user) | Q(recipient=request.user))
+        .select_related("sender", "recipient")
+        .order_by("-created_at")
+    )
+
+    conversations = {}
+    for msg in qs:
+        other = msg.recipient if msg.sender == request.user else msg.sender
+        if other not in conversations:
+            conversations[other] = msg
+
+    html = render_to_string(
+        "core/partials/messages_inbox_list.html",
+        {"conversations": conversations},
+        request=request,
+    )
+    return JsonResponse({"html": html})
+
+
+@login_required
 def messages_thread(request, username):
+    """
+    Страница одного диалога.
+    GET — просто отрисовка.
+    POST — запасной вариант без JS (редирект как раньше).
+    """
     other = get_object_or_404(User, username=username)
 
     msgs = (
@@ -539,7 +573,11 @@ def messages_thread(request, username):
         .order_by("created_at")
     )
 
-    if request.method == "POST":
+    # last_id для realtime-пула
+    last_id = msgs.last().id if msgs.exists() else 0
+
+    if request.method == "POST" and not request.headers.get("x-requested-with"):
+        # Фолбэк без JS
         form = MessageForm(request.POST)
         if form.is_valid():
             Message.objects.create(
@@ -554,8 +592,73 @@ def messages_thread(request, username):
     return render(request, "core/messages_thread.html", {
         "other_user": other,
         "messages": msgs,
-        "form": form
+        "form": form,
+        "last_id": last_id,
     })
+
+
+@login_required
+def messages_send(request, username):
+    """
+    AJAX-отправка одного сообщения из чата.
+    Возвращает HTML одного сообщения.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST"}, status=400)
+
+    other = get_object_or_404(User, username=username)
+    text = request.POST.get("text", "").strip()
+
+    if not text:
+        return JsonResponse({"error": "empty"}, status=400)
+
+    msg = Message.objects.create(
+        sender=request.user,
+        recipient=other,
+        text=text,
+    )
+
+    html = render_to_string(
+        "core/partials/message_item.html",
+        {"message": msg},
+        request=request,
+    )
+
+    return JsonResponse({"html": html, "id": msg.id})
+
+
+@login_required
+def messages_poll(request, username):
+    """
+    AJAX-пул новых сообщений в одном диалоге.
+    ?after=<last_id> — возвращаем только новые.
+    """
+    other = get_object_or_404(User, username=username)
+
+    try:
+        last_id = int(request.GET.get("after", 0))
+    except (TypeError, ValueError):
+        last_id = 0
+
+    new_msgs = (
+        Message.objects.filter(
+            Q(sender=request.user, recipient=other) |
+            Q(sender=other, recipient=request.user)
+        )
+        .filter(id__gt=last_id)
+        .order_by("created_at")
+    )
+
+    html = "".join(
+        render_to_string(
+            "core/partials/message_item.html",
+            {"message": m},
+            request=request,
+        )
+        for m in new_msgs
+    )
+
+    return JsonResponse({"html": html, "count": new_msgs.count()})
 
 
 # ======================================================

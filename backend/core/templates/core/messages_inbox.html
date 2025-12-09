@@ -4,6 +4,23 @@
 
 {% block extra_head %}
 <style>
+    .messages-header {
+        margin-bottom: 16px;
+    }
+
+    .messages-header h1 {
+        margin: 0 0 4px;
+        font-size: 20px;
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+
+    .messages-subtitle {
+        margin: 0;
+        font-size: 13px;
+        color: #9ca3af;
+    }
+
     .dialogs-wrapper {
         display: flex;
         flex-direction: column;
@@ -14,41 +31,28 @@
     .dialog-item {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         padding: 10px 12px;
         border-radius: 12px;
-        text-decoration: none;
+        border: 1px solid #1f2937;
         background: #020617;
-        border: 1px solid #111827;
-        transition: background .15s ease, border-color .15s ease, transform .1s ease;
+        text-decoration: none;
+        color: inherit;
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
     }
 
     .dialog-item:hover {
         background: #020617;
-        border-color: #1f2937;
+        border-color: #374151;
         transform: translateY(-1px);
     }
 
-    .dialog-avatar-circle {
-        width: 40px;
-        height: 40px;
-        border-radius: 999px;
-        background: radial-gradient(circle at 30% 30%, #22c55e, #16a34a);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 18px;
-        color: #022c22;
-        flex-shrink: 0;
-    }
-
     .dialog-main {
+        flex: 1;
+        min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 3px;
-        min-width: 0;
-        width: 100%;
+        gap: 4px;
     }
 
     .dialog-top-row {
@@ -62,22 +66,19 @@
         font-size: 14px;
         font-weight: 600;
         color: #e5e7eb;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
     .dialog-date {
-        font-size: 12px;
-        color: #6b7280;
+        font-size: 11px;
+        color: #9ca3af;
         white-space: nowrap;
     }
 
     .dialog-last-line {
-        font-size: 13px;
-        color: #9ca3af;
         display: flex;
         gap: 4px;
+        font-size: 13px;
+        color: #9ca3af;
         min-width: 0;
     }
 
@@ -88,26 +89,34 @@
     }
 
     .messages-empty {
-        margin-top: 8px;
-        font-size: 14px;
-        color: #6b7280;
-    }
-
-    .messages-header h1 {
-        margin: 0 0 4px;
-        font-size: 22px;
-    }
-
-    .messages-subtitle {
-        margin: 0;
+        margin-top: 16px;
         font-size: 14px;
         color: #9ca3af;
+    }
+
+    @media (max-width: 768px) {
+        .dialog-item {
+            padding: 8px 10px;
+        }
+
+        .dialog-username {
+            font-size: 14px;
+        }
+
+        .dialog-last-line {
+            font-size: 12px;
+        }
+
+        .messages-header h1 {
+            font-size: 18px;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="card">
+
     <section class="messages-header">
         <h1>Сообщения</h1>
         <p class="messages-subtitle">
@@ -115,41 +124,11 @@
         </p>
     </section>
 
-    <section class="dialogs-wrapper">
-        {% if conversations %}
-            {# conversations: other_user -> last_message #}
-            {% for other_user, last_message in conversations.items %}
-                <a href="{% url 'messages_thread' other_user.username %}" class="dialog-item">
-                    <div class="dialog-avatar-circle">
-                        {{ other_user.display_name|default:other_user.username|first|upper }}
-                    </div>
-
-                    <div class="dialog-main">
-                        <div class="dialog-top-row">
-                            <span class="dialog-username">
-                                {{ other_user.display_name|default:other_user.username }}
-                            </span>
-                            <span class="dialog-date">
-                                {{ last_message.created_at|date:"d.m.Y H:i" }}
-                            </span>
-                        </div>
-
-                        <div class="dialog-last-line">
-                            <span>
-                                {% if last_message.sender == user %}Вы:{% else %}{{ last_message.sender.display_name|default:last_message.sender.username }}:{% endif %}
-                            </span>
-                            <span class="dialog-last-text">
-                                {{ last_message.text|truncatechars:60 }}
-                            </span>
-                        </div>
-                    </div>
-                </a>
-            {% endfor %}
-        {% else %}
-            <p class="messages-empty">
-                Пока нет ни одного диалога. Откройте профиль пользователя и нажмите «Написать сообщение».
-            </p>
-        {% endif %}
+    <section class="dialogs-wrapper"
+             id="dialogs-wrapper"
+             data-poll-url="{% url 'messages_inbox_poll' %}">
+        {% include "core/partials/messages_inbox_list.html" with conversations=conversations %}
     </section>
+
 </div>
 {% endblock %}

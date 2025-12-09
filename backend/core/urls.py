@@ -17,7 +17,10 @@ from .views import (
 
     # сообщения
     messages_inbox,
+    messages_inbox_poll,
     messages_thread,
+    messages_send,
+    messages_poll,
 
     # профили
     profile_view,
@@ -64,7 +67,10 @@ urlpatterns = [
 
     # сообщения
     path("messages/", messages_inbox, name="messages_inbox"),
+    path("messages/poll-inbox/", messages_inbox_poll, name="messages_inbox_poll"),
     path("messages/<str:username>/", messages_thread, name="messages_thread"),
+    path("messages/<str:username>/send/", messages_send, name="messages_send"),
+    path("messages/<str:username>/poll/", messages_poll, name="messages_poll"),
 
     # профили
     path("profile/", profile_view, name="profile"),
