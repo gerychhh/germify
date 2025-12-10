@@ -2,73 +2,230 @@
 
 {% block title %}Чат с {{ other_user.display_name|default:other_user.username }} — Germify{% endblock %}
 
-{% block content %}
-<div class="thread-layout">
-
-    <header class="thread-header" style="display:flex;align-items:start;gap:12px;margin-bottom:16px;">
-        <a href="{% url 'messages_inbox' %}" style="color:#9ca3af;text-decoration:none;font-size:13px;">
-            ← Все диалоги
-        </a>
-
-        <div style="display:flex;align-items:center;gap:10px;">
-            {% include "core/partials/avatar.html" with user_obj=other_user size="md" %}
-
-            <div class="thread-header-text">
-                <div class="thread-username">
-                    {{ other_user.display_name|default:other_user.username }}
-                </div>
-                <div class="thread-userid">
-                    @{{ other_user.username }}
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <section class="thread-messages">
-        <div id="messages-list"
-             data-poll-url="{% url 'messages_poll' other_user.username %}"
-             data-last-id="{{ last_id|default:'0' }}">
-            {% if messages %}
-                {% for msg in messages %}
-                    {% include "core/partials/message_item.html" with message=msg %}
-                {% endfor %}
-            {% else %}
-                <p class="empty-thread">
-                    Сообщений пока нет. Напишите первое 👇
-                </p>
-            {% endif %}
-        </div>
-    </section>
-
-    <section class="thread-form">
-        <form id="message-form"
-              method="post"
-              data-send-url="{% url 'messages_send' other_user.username %}">
-            {% csrf_token %}
-            {{ form.non_field_errors }}
-            <div class="thread-form-row">
-                {{ form.text.errors }}
-                {{ form.text }}
-                <button type="submit" class="primary-button thread-send-btn">
-                    Отправить
-                </button>
-            </div>
-        </form>
-    </section>
-</div>
-
+{% block extra_head %}
 <style>
+    /* Только на странице чата: скролл у колонок, а не у body (десктоп) */
+    body {
+        overflow-y: hidden;
+    }
+
+    /* Двухколоночный layout: слева диалоги, справа чат */
+    .messages-layout {
+        display: flex;
+        gap: 16px;
+        height: calc(100vh - 80px); /* с учётом верхнего топбара */
+    }
+
+    /* ===== ЛЕВАЯ КОЛОНКА — СПИСОК ДИАЛОГОВ ===== */
+
+    .dialogs-sidebar {
+        width: 280px;
+        min-width: 260px;
+        max-width: 320px;
+        background: #020617;
+        border-radius: 16px;
+        border: 1px solid #1e293b;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .dialogs-header {
+        padding: 10px 14px;
+        border-bottom: 1px solid #1f2937;
+        font-size: 14px;
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+
+    .dialogs-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 8px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .dialogs-empty-text {
+        font-size: 13px;
+        color: #9ca3af;
+        padding: 6px 4px;
+    }
+
+    /* Карточка диалога (одна и та же везде) */
+    .dialog-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        text-decoration: none;
+        color: #e5e7eb;
+        background: #020617;
+        border: 1px solid transparent;
+        transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+    }
+
+    .dialog-item:hover {
+        background: #0b1120;
+        border-color: #1f2937;
+        transform: translateY(-1px);
+    }
+
+    .dialog-item.has-unread {
+        background: #020617;
+        border-color: #1d4ed8;
+    }
+
+    .dialog-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .dialog-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .dialog-username {
+        font-size: 14px;
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+
+    .dialog-top-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: #9ca3af;
+        white-space: nowrap;
+    }
+
+    .dialog-date {
+        opacity: 0.9;
+    }
+
+    .dialog-last-line {
+        font-size: 12px;
+        color: #9ca3af;
+        display: flex;
+        gap: 4px;
+        align-items: baseline;
+        min-width: 0;
+    }
+
+    .dialog-last-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    .dialog-unread-badge {
+        min-width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #f9fafb;
+        font-size: 11px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+        box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
+    }
+
+    @keyframes dialog-unread-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
+        70% { box-shadow: 0 0 0 8px rgba(248, 113, 113, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
+    }
+
+    .dialog-item.has-unread .dialog-unread-badge {
+        animation: dialog-unread-pulse 0.8s ease-out;
+    }
+
+    /* ===== ПРАВАЯ КОЛОНКА — ЧАТ (островки Messenger) ===== */
+
     .thread-layout {
+        flex: 1;
         max-width: 720px;
         margin: 0 auto;
         display: flex;
         flex-direction: column;
         gap: 12px;
-        height: calc(100vh - 80px);
+        height: 100%;
+    }
+
+    .thread-header {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .thread-back-link {
+        color: #9ca3af;
+        text-decoration: none;
+        font-size: 13px;
+    }
+
+    .thread-back-link:hover {
+        color: #e5e7eb;
+    }
+
+    .thread-header-user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .thread-header-user .avatar {
+        flex-shrink: 0;
+    }
+
+    .thread-header-user .avatar.avatar--md {
+        width: 44px;
+        height: 44px;
+    }
+
+    .thread-header-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .thread-username {
+        font-size: 15px;
+        font-weight: 600;
+        color: #e5e7eb;
+    }
+
+    .thread-userid {
+        font-size: 13px;
+        color: #9ca3af;
+    }
+
+    .thread-main {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
 
     .thread-messages {
+        position: relative;
         flex: 1;
+        min-height: 0;
         padding: 10px 0;
         border-radius: 12px;
         background: #111827;
@@ -81,43 +238,74 @@
     #messages-list {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-        padding: 0 10px 10px;
+        gap: 4px;
+        padding: 0 10px 16px; /* низ увеличим на мобиле */
     }
+
+    /* === Островки в стиле Facebook Messenger === */
 
     .message-item {
         display: flex;
-        gap: 8px;
-        max-width: 80%;
+        align-items: flex-end;
+        width: 100%;
+        min-width: 0;
+        margin-block: 2px;
+        gap: 6px;
     }
 
-    .message-item.me {
-        margin-left: auto;
-        flex-direction: row-reverse;
-    }
-
-    .message-item.other {
-        margin-right: auto;
-    }
-
-    .message-body {
-        background: #1f2937;
-        border-radius: 12px;
-        padding: 8px 10px;
-        font-size: 14px;
-        color: #e5e7eb;
+    .message-item.me .avatar {
+        order: 2;
+        margin-left: 4px;
     }
 
     .message-item.me .message-body {
+        order: 1;
+        margin-left: auto;
         background: #2563eb;
+        color: #f9fafb;
+        border-bottom-right-radius: 4px;
+    }
+
+    .message-item.other .avatar {
+        order: 1;
+        margin-right: 4px;
+    }
+
+    .message-item.other .message-body {
+        order: 2;
+        margin-right: auto;
+        background: #1f2937;
+        color: #e5e7eb;
+        border-bottom-left-radius: 4px;
+    }
+
+    .message-item .avatar {
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+    }
+
+    .message-body {
+        border-radius: 18px;
+        padding: 6px 10px;
+        font-size: 13px;
+        line-height: 1.4;
+        width: auto;
+        max-width: min(320px, 70%);
+        display: inline-block;
+        box-sizing: border-box;
+        overflow-wrap: break-word;
+        word-break: break-word;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.5);
     }
 
     .message-text {
         white-space: pre-wrap;
+        overflow-wrap: anywhere;
     }
 
     .message-time {
-        margin-top: 4px;
+        margin-top: 3px;
         font-size: 11px;
         opacity: 0.8;
         text-align: right;
@@ -129,6 +317,8 @@
         font-size: 14px;
         color: #9ca3af;
     }
+
+    /* форма отправки */
 
     .thread-form {
         margin-top: 4px;
@@ -158,25 +348,80 @@
         padding-inline: 16px;
     }
 
+    /* Стрелка вниз — fixed, но ближе к чату */
+    .scroll-bottom-btn {
+        position: fixed;
+        right: 64px;   /* ближе к правому краю чата */
+        bottom: 96px;  /* над формой отправки */
+        border: none;
+        border-radius: 999px;
+        background: #0b1120;
+        color: #e5e7eb;
+        font-size: 16px;
+        padding: 6px 10px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        border: 1px solid #1f2937;
+        opacity: 0.96;
+        z-index: 9998;
+    }
+
+    .scroll-bottom-btn:hover {
+        background: #111827;
+    }
+
+    .scroll-bottom-unread {
+        min-width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #f9fafb;
+        font-size: 11px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+    }
+
+    /* ===== МОБИЛЬНАЯ ВЕРСИЯ ===== */
     @media (max-width: 768px) {
+
+        /* даём странице скролл */
+        body {
+            overflow-y: auto;
+        }
+
+        /* одна колонка, но всё равно держим минимум по высоте экрана */
+        .messages-layout {
+            flex-direction: column;
+            min-height: calc(100vh - 80px);
+            height: auto;
+        }
+
+        .dialogs-sidebar {
+            display: none;
+        }
+
         .thread-layout {
-            height: calc(100vh - 80px);
-            padding-bottom: 0;
+            max-width: 100%;
+        }
+
+        .thread-main {
+            flex: 1;
         }
 
         .thread-messages {
             flex: 1;
-            overflow-y: auto;
+            min-height: 0;
         }
 
-        .thread-form {
-            position: fixed;
-            bottom: 60px;
-            left: 0;
-            right: 0;
-            padding: 6px 10px;
-            background: #020617;
-            border-top: 1px solid #1f2937;
+        /* добавляем запас снизу под поле ввода + нижние панели */
+        #messages-list {
+            padding-bottom: 140px;
         }
 
         .thread-form-row textarea {
@@ -189,6 +434,72 @@
             padding-block: 8px;
             font-size: 13px;
         }
+
+        /* стрелка — выше, чтобы её ничего не перекрывало */
+        .scroll-bottom-btn {
+            right: 20px;
+            bottom: 160px;
+        }
+
+        .message-body {
+            max-width: min(320px, 80%);
+        }
     }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="messages-layout">
+
+    <aside class="dialogs-sidebar">
+        <div class="dialogs-header">Сообщения</div>
+        <div class="dialogs-wrapper" id="dialogs-wrapper" data-poll-url="{% url 'messages_inbox_poll' %}">
+            <div class="dialogs-empty-text">Загрузка диалогов...</div>
+        </div>
+    </aside>
+
+    <div class="thread-layout">
+        <header class="thread-header">
+            <a href="{% url 'messages_inbox' %}" class="thread-back-link">← Все диалоги</a>
+            <div class="thread-header-user">
+                {% include "core/partials/avatar.html" with user_obj=other_user size="md" %}
+                <div class="thread-header-text">
+                    <div class="thread-username">{{ other_user.display_name|default:other_user.username }}</div>
+                    <div class="thread-userid">@{{ other_user.username }}</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="thread-main">
+            <section class="thread-messages">
+                <div id="messages-list" data-poll-url="{% url 'messages_poll' other_user.username %}" data-last-id="{{ last_id|default:'0' }}">
+                    {% if messages %}
+                        {% for message in messages %}
+                            {% include "core/partials/message_item.html" with message=message %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-thread">Сообщений пока нет. Напишите первое 👇</p>
+                    {% endif %}
+                </div>
+
+                <button type="button" id="scroll-bottom-btn" class="scroll-bottom-btn" style="display:none;">
+                    ↓
+                    <span class="scroll-bottom-unread" style="display:none;">0</span>
+                </button>
+            </section>
+
+            <section class="thread-form">
+                <form id="message-form" method="post" data-send-url="{% url 'messages_send' other_user.username %}">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    <div class="thread-form-row">
+                        {{ form.text.errors }}
+                        {{ form.text }}
+                        <button type="submit" class="primary-button thread-send-btn">Отправить</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</div>
 {% endblock %}

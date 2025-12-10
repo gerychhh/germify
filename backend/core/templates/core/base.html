@@ -5,15 +5,17 @@
     <meta charset="UTF-8">
     <title>{% block title %}Germify{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <link rel="icon" type="image/x-icon" href="{% static 'core/favicon.ico' %}">
     <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'core/css/posts.css' %}" defer>
+    <link rel="stylesheet" href="{% static 'core/css/posts.css' %}">
     <link rel="stylesheet" href="{% static 'core/css/avatar.css' %}">
-    <script src="{% static 'core/js/avatar.js' %}" defer></script>
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <script src="{% static 'core/js/avatar.js' %}" defer></script>
     <script src="{% static 'core/js/voice_recorder.js' %}?v=3" defer></script>
-    <script src="{% static 'core/js/messages.js' %}"></script>
 
     <style>
         body {
@@ -74,6 +76,9 @@
             padding: 6px 10px;
             border-radius: 999px;
             transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .nav-link:hover {
@@ -85,6 +90,32 @@
         .nav-link.active {
             background: #1f2937;
             color: #e5e7eb;
+        }
+
+        .messages-unread-badge {
+            min-width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #f9fafb;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            margin-left: 6px;
+            box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
+        }
+
+        @keyframes pulse-badge {
+            0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(248, 113, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
+        }
+
+        .messages-unread-badge--pulse {
+            animation: pulse-badge 0.8s ease-out;
         }
 
         .page-wrapper {
@@ -148,7 +179,7 @@
             height: 50px;
             background: #020617;
             border-top: 1px solid #1f2937;
-            display: none; /* включаем только в media */
+            display: none;
             align-items: center;
             justify-content: space-around;
             z-index: 9999;
@@ -183,36 +214,27 @@
             line-height: 1;
         }
 
-        /* ============================
-           МОБИЛЬНАЯ ВЕРСТКА
-           ============================ */
         @media (max-width: 768px) {
-
-            /* верхнее меню на телефоне скрываем, остаётся только логотип */
             .topbar-nav {
                 display: none;
             }
 
-            /* если где-то есть футер с ссылкой на домен — прячем */
             footer {
                 display: none !important;
             }
 
-            /* контент — отступ снизу под меню */
             .page-wrapper {
                 max-width: 960px;
                 margin: 16px auto 0;
-                padding: 0 12px 80px; /* 80px = запас под нижнее меню */
+                padding: 0 12px 80px;
             }
 
-            /* на случай, если используется .content */
             .content {
                 padding-bottom: 80px !important;
                 padding-left: 12px;
                 padding-right: 12px;
             }
 
-            /* компактнее карточки на телефоне */
             .post-card,
             .feed-new-post-card,
             .profile-card,
@@ -235,12 +257,10 @@
                 border-radius: 10px;
             }
 
-            /* включаем нижнее меню */
             .mobile-bottom-nav {
                 display: flex;
             }
 
-            /* чат — фиксированная форма ввода над меню */
             .message-thread-wrapper {
                 height: calc(100vh - 120px);
                 padding-bottom: 10px;
@@ -248,7 +268,7 @@
 
             .thread-form {
                 position: fixed;
-                bottom: 50px; /* ровно над нижним меню */
+                bottom: 50px;
                 left: 0;
                 right: 0;
                 padding: 6px 10px;
@@ -262,19 +282,18 @@
                 min-height: 40px;
             }
 
-            /* Чтобы iOS не делал авто-зум при фокусе на полях ввода */
             input,
             textarea,
             select {
                 font-size: 16px !important;
             }
-    }
+        }
     </style>
 
     {% block extra_head %}{% endblock %}
 </head>
 
-<body>
+<body{% if request.user.is_authenticated %} data-unread-url="{% url 'messages_unread_count' %}"{% endif %}>
 <header class="topbar">
     <div class="topbar-left">
         <a href="{% url 'feed' %}" class="logo">
@@ -288,6 +307,18 @@
         <a href="{% url 'messages_inbox' %}"
            class="nav-link {% if request.path|slice:':10' == '/messages/' %}active{% endif %}">
             Сообщения
+            {% if request.user.is_authenticated %}
+                {% if unread_messages_count %}
+                    <span id="global-unread-desktop"
+                          class="messages-unread-badge">
+                        {{ unread_messages_count }}
+                    </span>
+                {% else %}
+                    <span id="global-unread-desktop"
+                          class="messages-unread-badge"
+                          style="display:none;">0</span>
+                {% endif %}
+            {% endif %}
         </a>
 
         <a href="{% url 'communities' %}" class="nav-link">Сообщества</a>
@@ -322,7 +353,19 @@
     {% if request.user.is_authenticated %}
         <a href="{% url 'messages_inbox' %}"
            class="mobile-nav-item{% if current == 'messages_inbox' or current == 'messages_thread' %} mobile-nav-item--active{% endif %}">
-            <span class="mobile-nav-icon">💬</span>
+            <span class="mobile-nav-icon">
+                💬
+                {% if unread_messages_count %}
+                    <span id="global-unread-mobile"
+                          class="messages-unread-badge">
+                        {{ unread_messages_count }}
+                    </span>
+                {% else %}
+                    <span id="global-unread-mobile"
+                          class="messages-unread-badge"
+                          style="display:none;">0</span>
+                {% endif %}
+            </span>
             <span class="mobile-nav-label">Сообщения</span>
         </a>
 
@@ -347,7 +390,8 @@
 </nav>
 {% endwith %}
 
-
+<script src="{% static 'core/js/messages.js' %}"></script>
+<script src="{% static 'core/js/messages_thread.js' %}"></script>
 <script src="{% static 'core/js/posts.js' %}"></script>
 </body>
 </html>

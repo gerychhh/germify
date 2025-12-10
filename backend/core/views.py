@@ -592,11 +592,6 @@ def messages_inbox_poll(request):
 
 @login_required
 def messages_thread(request, username):
-    """
-    Страница одного диалога.
-    GET — отрисовка и пометка сообщений как прочитанных.
-    POST — запасной вариант без JS (редирект как раньше).
-    """
     other = get_object_or_404(User, username=username)
 
     msgs_qs = Message.objects.filter(
@@ -605,11 +600,9 @@ def messages_thread(request, username):
     ).order_by("created_at")
 
     msgs = list(msgs_qs)
-
-    # last_id для realtime-пула
     last_id = msgs[-1].id if msgs else 0
 
-    # помечаем все входящие от собеседника как прочитанные
+    # помечаем входящие как прочитанные при входе в чат
     Message.objects.filter(
         sender=other,
         recipient=request.user,
@@ -617,7 +610,6 @@ def messages_thread(request, username):
     ).update(is_read=True)
 
     if request.method == "POST" and not request.headers.get("x-requested-with"):
-        # Фолбэк без JS
         form = MessageForm(request.POST)
         if form.is_valid():
             Message.objects.create(
@@ -639,16 +631,11 @@ def messages_thread(request, username):
 
 @login_required
 def messages_send(request, username):
-    """
-    AJAX-отправка одного сообщения из чата.
-    Возвращает HTML одного сообщения.
-    """
     if request.method != "POST":
         return JsonResponse({"error": "Only POST"}, status=400)
 
     other = get_object_or_404(User, username=username)
     text = request.POST.get("text", "").strip()
-
     if not text:
         return JsonResponse({"error": "empty"}, status=400)
 
@@ -663,17 +650,19 @@ def messages_send(request, username):
         {"message": msg},
         request=request,
     )
-
     return JsonResponse({"html": html, "id": msg.id})
 
+@login_required
+def messages_unread_count(request):
+    """Возвращает общее количество непрочитанных входящих сообщений."""
+    total = Message.objects.filter(
+        recipient=request.user,
+        is_read=False,
+    ).count()
+    return JsonResponse({"count": total})
 
 @login_required
 def messages_poll(request, username):
-    """
-    AJAX-пул новых сообщений в одном диалоге.
-    ?after=<last_id> — возвращаем только новые,
-    и сразу помечаем входящие как прочитанные.
-    """
     other = get_object_or_404(User, username=username)
 
     try:

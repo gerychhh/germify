@@ -1,75 +1,102 @@
 // static/core/js/messages.js
 
 document.addEventListener("DOMContentLoaded", function () {
-    const dialogsWrapper = document.querySelector("#dialogs-wrapper[data-poll-url]");
-    if (!dialogsWrapper) {
-        return;
+    // =========================================================
+    // 1. Глобовый счётчик непрочитанных в шапке
+    // =========================================================
+    const body = document.body;
+    const unreadUrl = body.dataset.unreadUrl || null;
+
+    const badgeDesktop = document.getElementById("global-unread-desktop");
+    const badgeMobile = document.getElementById("global-unread-mobile");
+
+    let lastGlobalCount = null;
+
+    function setBadge(el, count) {
+        if (!el) return;
+
+        if (count > 0) {
+            el.textContent = String(count);
+            el.style.display = "inline-flex";
+
+            // Лёгкий "пульс", если число выросло
+            el.classList.remove("messages-unread-badge--pulse");
+            void el.offsetWidth; // форсим reflow
+            el.classList.add("messages-unread-badge--pulse");
+        } else {
+            el.textContent = "0";
+            el.style.display = "none";
+            el.classList.remove("messages-unread-badge--pulse");
+        }
     }
 
-    const pollUrl = dialogsWrapper.dataset.pollUrl;
+    async function pollGlobalUnread() {
+        if (!unreadUrl || (!badgeDesktop && !badgeMobile)) return;
 
-    function getUnreadMap(root) {
-        const map = {};
-        root.querySelectorAll(".dialog-item[data-username]").forEach(item => {
-            const username = item.dataset.username;
-            const unread = parseInt(item.dataset.unread || "0");
-            map[username] = unread;
-        });
-        return map;
-    }
-
-    async function updateDialogs() {
-        const oldMap = getUnreadMap(document);
-
-        let response;
         try {
-            response = await fetch(pollUrl, {
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest"
-                },
+            const resp = await fetch(unreadUrl, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
                 cache: "no-store"
             });
-        } catch (err) {
-            console.error("Ошибка при обновлении списка диалогов:", err);
-            return;
-        }
+            if (!resp.ok) return;
 
-        if (!response.ok) {
-            console.warn("messages_inbox_poll bad status:", response.status);
-            return;
-        }
+            const data = await resp.json();
+            const count = Number(data.count) || 0;
 
-        const data = await response.json();
-        if (!data.html) return;
+            // пульс только при увеличении
+            const increased = lastGlobalCount !== null && count > lastGlobalCount;
+            lastGlobalCount = count;
 
-        const temp = document.createElement("div");
-        temp.innerHTML = data.html.trim();
+            setBadge(badgeDesktop, count);
+            setBadge(badgeMobile, count);
 
-        // Заменяем содержимое
-        dialogsWrapper.innerHTML = "";
-        while (temp.firstChild) {
-            dialogsWrapper.appendChild(temp.firstChild);
-        }
-
-        // После вставки — считаем новые значения и ставим анимацию, где нужно
-        const newItems = dialogsWrapper.querySelectorAll(".dialog-item[data-username]");
-        newItems.forEach(item => {
-            const username = item.dataset.username;
-            const newUnread = parseInt(item.dataset.unread || "0");
-            const oldUnread = oldMap[username] || 0;
-
-            if (newUnread > oldUnread && newUnread > 0) {
-                const badge = item.querySelector(".dialog-unread-badge");
-                if (badge) {
-                    badge.classList.add("dialog-unread-badge--pulse");
-                    setTimeout(() => {
-                        badge.classList.remove("dialog-unread-badge--pulse");
-                    }, 1000);
-                }
+            if (!increased) {
+                // если не выросло — убираем анимацию
+                if (badgeDesktop) badgeDesktop.classList.remove("messages-unread-badge--pulse");
+                if (badgeMobile) badgeMobile.classList.remove("messages-unread-badge--pulse");
             }
-        });
+        } catch (e) {
+            console.error("Ошибка при запросе непрочитанных сообщений:", e);
+        }
     }
 
-    setTimeout(updateDialogs, 500);
-    setInterval(updateDialogs, 2000);
+    if (unreadUrl && (badgeDesktop || badgeMobile)) {
+        // первый запрос чуть позже, потом — периодически
+        setTimeout(pollGlobalUnread, 500);
+        setInterval(pollGlobalUnread, 2000);
+    }
+
+    // =========================================================
+    // 2. Пуллинг списка диалогов в левой колонке
+    // =========================================================
+    const dialogsWrapper = document.querySelector("#dialogs-wrapper[data-poll-url]");
+    let lastDialogsHtml = null;
+
+    async function pollInbox() {
+        if (!dialogsWrapper) return;
+
+        const pollUrl = dialogsWrapper.dataset.pollUrl;
+        if (!pollUrl) return;
+
+        try {
+            const resp = await fetch(pollUrl, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                cache: "no-store"
+            });
+            if (!resp.ok) return;
+
+            const data = await resp.json();
+            if (data.html && data.html !== lastDialogsHtml) {
+                dialogsWrapper.innerHTML = data.html; // ВАЖНО: innerHTML, не textContent
+                lastDialogsHtml = data.html;
+            }
+        } catch (e) {
+            console.error("Ошибка при обновлении списка диалогов:", e);
+        }
+    }
+
+    if (dialogsWrapper) {
+        setTimeout(pollInbox, 500);
+        setInterval(pollInbox, 1000);
+    }
 });
