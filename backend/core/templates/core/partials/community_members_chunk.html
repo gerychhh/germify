@@ -1,0 +1,18 @@
+{% for m in memberships %}
+  <div class="community-member-row">
+    {% include "core/partials/avatar.html" with user_obj=m.user size="sm" %}
+
+    <div class="community-member-meta">
+      <a href="{% url 'user_profile' m.user.username %}" style="color:#e5e7eb; text-decoration:none; font-weight:600;">
+        {{ m.user.display_name|default:m.user.username }}{% if user.is_authenticated and m.user_id == user.id %} <span style="color:#64748b; font-weight:500;">(вы)</span>{% endif %}
+      </a>
+      <div class="community-subtle">
+        @{{ m.user.username }}{% if m.is_admin %} · админ{% endif %} · вступил {{ m.joined_at|date:"d.m.Y" }}
+      </div>
+    </div>
+
+    {% if m.is_admin %}
+      <span class="community-badge">Админ</span>
+    {% endif %}
+  </div>
+{% endfor %}

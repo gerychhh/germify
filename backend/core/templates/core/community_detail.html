@@ -2,70 +2,164 @@
 
 {% block title %}{{ community.name }} — Germify{% endblock %}
 
+{% block extra_head %}
+<style>
+  .community-page{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+  .community-aside{position:sticky;top:84px}
+  .community-members-list{display:flex;flex-direction:column;gap:10px;margin-top:12px;max-height:420px;overflow:auto;padding-right:4px}
+  .community-member-row{display:flex;align-items:center;gap:10px}
+  .community-member-meta{min-width:0}
+  .community-badge{margin-left:auto;font-size:11px;padding:4px 8px;border-radius:999px;background:#1f2937;color:#e5e7eb;white-space:nowrap}
+  .community-subtle{color:#64748b;font-size:12px;margin-top:2px}
+  @media (max-width:980px){.community-page{grid-template-columns:1fr}.community-aside{position:static}}
+</style>
+{% endblock %}
+
 {% block content %}
 
-<div class="card">
-    <div style="display:flex; align-items:center; gap:14px;">
+<div class="community-page">
+
+  <div class="community-main">
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:14px;">
         {% include "core/partials/avatar.html" with user_obj=community size="lg" %}
+
         <div style="flex:1; min-width:0;">
-            <h1 style="margin:0;">{{ community.name }}</h1>
-            <div style="margin-top:6px; color:#64748b; font-size:13px;">#{{ community.slug }} · {{ community.members_count }} участников</div>
-            {% if community.description %}
-                <div style="margin-top:10px; color:#cbd5e1;">{{ community.description }}</div>
-            {% endif %}
+          <h1 style="margin:0;">{{ community.name }}</h1>
+          <div style="margin-top:6px; color:#64748b; font-size:13px;">
+            #{{ community.slug }} · {{ community.members_count }} участников
+          </div>
+          {% if community.description %}
+            <div style="margin-top:10px; color:#cbd5e1;">{{ community.description }}</div>
+          {% endif %}
         </div>
-
-        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-            {% if user.is_authenticated %}
-                {% if is_member %}
-                    <form method="post" action="{% url 'community_leave' community.slug %}" style="margin:0;">
-                        {% csrf_token %}
-                        <button type="submit" class="primary-button" style="background:#1f2937; color:#e5e7eb;">Выйти</button>
-                    </form>
-                {% else %}
-                    <form method="post" action="{% url 'community_join' community.slug %}" style="margin:0;">
-                        {% csrf_token %}
-                        <button type="submit" class="primary-button">Вступить</button>
-                    </form>
-                {% endif %}
-
-                {% if is_admin %}
-                    <a href="{% url 'community_edit' community.slug %}" class="primary-button" style="text-decoration:none; background:#1f2937; color:#e5e7eb;">Настройки</a>
-                {% endif %}
-            {% else %}
-                <a href="{% url 'login' %}" class="primary-button" style="text-decoration:none;">Войти чтобы вступить</a>
-            {% endif %}
-        </div>
+      </div>
     </div>
-</div>
 
-{% if post_form %}
-    <div class="card" style="margin-top:16px;">
+    {% if post_form %}
+      <div class="card" style="margin-top:16px;">
         <h3 style="margin-top:0;">Новый пост</h3>
         <form method="post" action="{% url 'community_create_post' community.slug %}" style="display:flex; flex-direction:column; gap:10px;">
-            {% csrf_token %}
-            {{ post_form.text }}
-
-            {% if is_admin %}
-                <label style="display:flex; align-items:center; gap:8px; color:#cbd5e1; font-size:13px;">
-                    {{ post_form.post_as_community }}
-                    <span>Опубликовать от лица сообщества</span>
-                </label>
-            {% endif %}
-
-            <div style="display:flex; gap:10px; align-items:center;">
-                <button type="submit" class="primary-button">Опубликовать</button>
-            </div>
+          {% csrf_token %}
+          {{ post_form.text }}
+          {% if is_admin %}
+            <label style="display:flex; align-items:center; gap:8px; color:#cbd5e1; font-size:13px;">
+              {{ post_form.post_as_community }}
+              <span>Опубликовать от лица сообщества</span>
+            </label>
+          {% endif %}
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button type="submit" class="primary-button">Опубликовать</button>
+          </div>
         </form>
-    </div>
-{% endif %}
+      </div>
+    {% endif %}
 
-<div style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">
-    {% for post in posts %}
+    <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">
+      {% for post in posts %}
         {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids admin_community_ids=admin_community_ids member_community_ids=member_community_ids %}
-    {% empty %}
+      {% empty %}
         <div class="card" style="color:#9ca3af;">Пока нет постов. Будьте первым 🙂</div>
-    {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <aside class="community-aside">
+
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div>
+          <div style="font-weight:700;">Сообщество</div>
+          <div class="community-subtle">
+            {% if user.is_authenticated %}
+              {% if is_member %}Вы участник{% else %}Вы не участник{% endif %}{% if is_admin %} · админ{% endif %}
+            {% else %}
+              Войдите, чтобы вступить
+            {% endif %}
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+          {% if user.is_authenticated %}
+            {% if is_member %}
+              <form method="post" action="{% url 'community_leave' community.slug %}" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="primary-button" style="background:#1f2937; color:#e5e7eb;">Выйти</button>
+              </form>
+            {% else %}
+              <form method="post" action="{% url 'community_join' community.slug %}" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" class="primary-button">Подписаться</button>
+              </form>
+            {% endif %}
+          {% else %}
+            <a href="{% url 'login' %}" class="primary-button" style="text-decoration:none;">Подписаться</a>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if is_admin %}
+        <div style="margin-top:10px;">
+          <a href="{% url 'community_edit' community.slug %}"
+             class="primary-button"
+             style="text-decoration:none; background:#1f2937; color:#e5e7eb; display:inline-flex;">
+            Настройки сообщества
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <h3 style="margin:0;">Участники</h3>
+        <div style="color:#9ca3af; font-size:13px;">{{ members_total }}</div>
+      </div>
+
+      <div id="community-members-list" class="community-members-list" data-offset="{{ memberships|length }}">
+        {% include "core/partials/community_members_chunk.html" with memberships=memberships %}
+      </div>
+
+      {% if members_has_more %}
+        <button type="button" id="community-members-more" class="primary-button" data-url="{% url 'community_members_chunk' community.slug %}"
+                style="margin-top:12px; width:100%; background:#1f2937; color:#e5e7eb;">
+          Показать ещё
+        </button>
+      {% endif %}
+    </div>
+
+  </aside>
+
 </div>
+
+<script>
+(function(){
+  const btn=document.getElementById("community-members-more");
+  const list=document.getElementById("community-members-list");
+  if(!btn||!list) return;
+
+  btn.addEventListener("click",async()=>{
+    const url=btn.dataset.url;
+    let offset=parseInt(list.dataset.offset||"0",10);
+    if(!url||Number.isNaN(offset)) offset=0;
+
+    btn.disabled=true;
+    const oldText=btn.textContent;
+    btn.textContent="Загрузка...";
+
+    try{
+      const resp=await fetch(url+"?offset="+offset,{cache:"no-store"});
+      if(!resp.ok) throw new Error("bad status "+resp.status);
+      const data=await resp.json();
+      if(data.html) list.insertAdjacentHTML("beforeend",data.html);
+      list.dataset.offset=String(data.next_offset||(offset+7));
+      if(!data.has_more){btn.remove();}
+      else{btn.disabled=false;btn.textContent=oldText;}
+    }catch(e){
+      btn.disabled=false;
+      btn.textContent="Ошибка. Ещё раз";
+    }
+  });
+})();
+</script>
 
 {% endblock %}

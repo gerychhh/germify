@@ -1,75 +1,119 @@
 {% extends "core/base.html" %}
+{% load static %}
 
 {% block title %}Сообщества — Germify{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-        <div>
-            <h1 style="margin:0;">Сообщества</h1>
-            <div style="margin-top:6px; color:#9ca3af; font-size:14px;">Любой может вступить и писать. Админы могут публиковать от лица сообщества.</div>
+
+<form method="get" action="{% url 'communities' %}" id="communities-search-form" class="card" style="margin-bottom:16px; display:flex; gap:10px; align-items:center;">
+  <input type="text" id="communities-search-input" name="q" value="{{ q|default:'' }}" placeholder="Поиск сообществ…"
+         autocomplete="off"
+         style="flex:1; padding:10px 12px; border-radius:12px; border:1px solid #1e293b; background:#0b1220; color:#e5e7eb; outline:none;">
+  <button type="submit" class="primary-button" id="communities-search-btn">Найти</button>
+  {% if q %}
+    <a href="{% url 'communities' %}" class="primary-button" style="text-decoration:none; background:#1f2937; color:#e5e7eb;">Сбросить</a>
+  {% endif %}
+</form>
+
+{% if user.is_authenticated %}
+  <div style="margin-bottom:16px;">
+    <a href="{% url 'community_create' %}" class="primary-button" style="text-decoration:none;">Создать сообщество</a>
+  </div>
+{% endif %}
+
+<div id="communities-list" style="display:flex; flex-direction:column; gap:12px;">
+  {% for c in communities %}
+    <div class="card" style="display:flex; align-items:center; gap:14px;">
+      {% include "core/partials/avatar.html" with user_obj=c size="md" %}
+      <div style="flex:1; min-width:0;">
+        <a href="{% url 'community_detail' c.slug %}" style="color:#e5e7eb; text-decoration:none; font-weight:800; font-size:16px;">
+          {{ c.name }}
+        </a>
+        <div style="margin-top:4px; color:#64748b; font-size:13px;">
+          #{{ c.slug }} · {{ c.members_total }} участников
         </div>
+        {% if c.description %}
+          <div style="margin-top:8px; color:#cbd5e1;">{{ c.description|truncatechars:140 }}</div>
+        {% endif %}
+      </div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+        <a href="{% url 'community_detail' c.slug %}" class="primary-button" style="text-decoration:none; background:#1f2937; color:#e5e7eb;">Открыть</a>
 
         {% if user.is_authenticated %}
-            <a href="{% url 'community_create' %}" class="primary-button" style="text-decoration:none;">Создать</a>
-        {% else %}
-            <a href="{% url 'login' %}" class="primary-button" style="text-decoration:none;">Войти</a>
+          {% if c.id in member_community_ids %}
+            <form method="post" action="{% url 'community_leave' c.slug %}" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="primary-button" style="background:#1f2937; color:#e5e7eb;">Выйти</button>
+            </form>
+          {% else %}
+            <form method="post" action="{% url 'community_join' c.slug %}" style="margin:0;">
+              {% csrf_token %}
+              <button type="submit" class="primary-button">Вступить</button>
+            </form>
+          {% endif %}
         {% endif %}
+      </div>
     </div>
-
-    <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">
-        {% for c in communities %}
-            <div style="display:flex; gap:12px; align-items:center; padding:12px; border:1px solid #1e293b; border-radius:14px; background:#0b1224;">
-                {% include "core/partials/avatar.html" with user_obj=c size="sm" %}
-
-                <div style="flex:1; min-width:0;">
-                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <a href="{% url 'community_detail' c.slug %}" style="color:#e5e7eb; text-decoration:none; font-weight:700;">
-                            {{ c.name }}
-                        </a>
-                        {% if c.id in admin_ids %}
-                            <span style="font-size:12px; padding:2px 8px; border-radius:999px; background:#1f2937; color:#e5e7eb;">Админ</span>
-                        {% elif c.id in member_ids %}
-                            <span style="font-size:12px; padding:2px 8px; border-radius:999px; background:#0f2a1d; color:#86efac;">Вы участник</span>
-                        {% endif %}
-                    </div>
-
-                    {% if c.description %}
-                        <div style="margin-top:4px; color:#cbd5e1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                            {{ c.description }}
-                        </div>
-                    {% endif %}
-
-                    <div style="margin-top:6px; color:#64748b; font-size:12px;">
-                        #{{ c.slug }} · {{ c.members_count }} участников
-                    </div>
-                </div>
-
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <a href="{% url 'community_detail' c.slug %}" class="primary-button" style="text-decoration:none; padding:6px 12px; font-size:13px;">Открыть</a>
-
-                    {% if user.is_authenticated %}
-                        {% if c.id in member_ids %}
-                            <form method="post" action="{% url 'community_leave' c.slug %}" style="margin:0;">
-                                {% csrf_token %}
-                                <button type="submit" class="primary-button" style="padding:6px 12px; font-size:13px; background:#1f2937; color:#e5e7eb;">
-                                    Выйти
-                                </button>
-                            </form>
-                        {% else %}
-                            <form method="post" action="{% url 'community_join' c.slug %}" style="margin:0;">
-                                {% csrf_token %}
-                                <button type="submit" class="primary-button" style="padding:6px 12px; font-size:13px;">
-                                    Вступить
-                                </button>
-                            </form>
-                        {% endif %}
-                    {% endif %}
-                </div>
-            </div>
-        {% empty %}
-            <div style="color:#9ca3af;">Сообществ пока нет. Создайте первое 🙂</div>
-        {% endfor %}
-    </div>
+  {% empty %}
+    <div class="card" style="color:#9ca3af;">Ничего не найдено.</div>
+  {% endfor %}
 </div>
+
+<script>
+(function(){
+  const form = document.getElementById("communities-search-form");
+  const input = document.getElementById("communities-search-input");
+  const list = document.getElementById("communities-list");
+  const btn = document.getElementById("communities-search-btn");
+  if(!form || !input || !list) return;
+
+  let t = null;
+  let ctrl = null;
+
+  function setBtnLoading(on){
+    if(!btn) return;
+    if(!btn.dataset.oldText) btn.dataset.oldText = btn.textContent || "Найти";
+    btn.textContent = on ? "Ищем..." : btn.dataset.oldText;
+  }
+
+  async function run(){
+    const url = new URL(form.action, window.location.origin);
+    url.searchParams.set("q", input.value || "");
+
+    if(ctrl) ctrl.abort();
+    ctrl = new AbortController();
+
+    setBtnLoading(true);
+    try{
+      const resp = await fetch(url.toString(), {
+        headers: {"X-Requested-With":"XMLHttpRequest"},
+        cache: "no-store",
+        signal: ctrl.signal
+      });
+      if(!resp.ok) return;
+      const html = await resp.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const newList = doc.getElementById("communities-list");
+      if(newList) list.innerHTML = newList.innerHTML;
+      window.history.replaceState({}, "", url.pathname + url.search);
+    }catch(e){
+    }finally{
+      setBtnLoading(false);
+    }
+  }
+
+  input.addEventListener("input", ()=>{
+    clearTimeout(t);
+    t = setTimeout(run, 250);
+  });
+
+  form.addEventListener("submit", (e)=>{
+    e.preventDefault();
+    clearTimeout(t);
+    run();
+  });
+})();
+</script>
+
 {% endblock %}
