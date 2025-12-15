@@ -9,7 +9,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 
 
-from .forms import RegisterForm, PostForm, MessageForm, ProfileForm
+from .forms import RegisterForm, PostForm, MessageForm, ProfileForm, CommunityForm, CommunityPostForm
 from .models import (
     Post,
     User,
@@ -19,6 +19,8 @@ from .models import (
     Comment,
     CommentLike,
     PostAttachment,
+    Community,
+    CommunityMembership,
 )
 
 
@@ -33,6 +35,8 @@ def get_user_state(user):
             "liked_posts_ids": [],
             "liked_comment_ids": [],
             "following_ids": [],
+            "admin_community_ids": [],
+            "member_community_ids": [],
         }
 
     return {
@@ -44,6 +48,12 @@ def get_user_state(user):
         ),
         "following_ids": list(
             Follow.objects.filter(follower=user).values_list("following_id", flat=True)
+        ),
+        "admin_community_ids": list(
+            CommunityMembership.objects.filter(user=user, is_admin=True).values_list("community_id", flat=True)
+        ),
+        "member_community_ids": list(
+            CommunityMembership.objects.filter(user=user).values_list("community_id", flat=True)
         ),
     }
 
@@ -87,7 +97,7 @@ def feed(request):
     # Базовый queryset
     base_qs = (
         Post.objects
-        .select_related("author")
+        .select_related("author", "community")
         .prefetch_related(
             "likes",
             "comments__author",
@@ -215,8 +225,19 @@ def create_post(request):
 def delete_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
 
-    # Разрешаем удалять только автору или суперюзеру
-    if request.user != post.author and not request.user.is_superuser:
+    # Разрешаем удалять:
+    # - автору
+    # - суперюзеру
+    # - администратору сообщества (только если пост опубликован от лица сообщества)
+    is_community_admin = False
+    if post.community_id and post.as_community and request.user.is_authenticated:
+        is_community_admin = CommunityMembership.objects.filter(
+            community_id=post.community_id,
+            user=request.user,
+            is_admin=True,
+        ).exists()
+
+    if request.user != post.author and not request.user.is_superuser and not is_community_admin:
         # AJAX-запрос
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return HttpResponseForbidden("Нельзя удалить чужой пост")
@@ -490,7 +511,7 @@ def unfollow_user(request, username):
 
 def post_detail(request, pk):
     post = get_object_or_404(
-        Post.objects.select_related("author")
+        Post.objects.select_related("author", "community")
         .prefetch_related("likes", "comments__author", "comments__likes"),
         pk=pk
     )
@@ -741,4 +762,168 @@ def logout_view(request):
 # ======================================================
 
 def communities_view(request):
-    return render(request, "core/communities.html")
+    """Список сообществ."""
+    communities = Community.objects.all().order_by("name")
+
+    member_ids = set()
+    admin_ids = set()
+    if request.user.is_authenticated:
+        qs = CommunityMembership.objects.filter(user=request.user)
+        member_ids = set(qs.values_list("community_id", flat=True))
+        admin_ids = set(qs.filter(is_admin=True).values_list("community_id", flat=True))
+
+    return render(request, "core/communities.html", {
+        "communities": communities,
+        "member_ids": member_ids,
+        "admin_ids": admin_ids,
+    })
+
+
+@login_required
+def community_create(request):
+    if request.method == "POST":
+        form = CommunityForm(request.POST, request.FILES)
+        if form.is_valid():
+            community = form.save(commit=False)
+            community.created_by = request.user
+            community.save()
+
+            CommunityMembership.objects.get_or_create(
+                community=community,
+                user=request.user,
+                defaults={"is_admin": True},
+            )
+            return redirect("community_detail", slug=community.slug)
+    else:
+        form = CommunityForm()
+
+    return render(request, "core/community_create.html", {"form": form})
+
+
+def community_detail(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+
+    is_member = False
+    is_admin = False
+    if request.user.is_authenticated:
+        m = CommunityMembership.objects.filter(community=community, user=request.user).first()
+        is_member = bool(m)
+        is_admin = bool(m and m.is_admin)
+
+    posts_qs = (
+        Post.objects.filter(community=community)
+        .select_related("author", "community")
+        .prefetch_related(
+            "likes",
+            "comments__author",
+            "comments__likes",
+            "comments__replies",
+        )
+        .annotate(
+            top_comments_count=Count(
+                "comments",
+                filter=Q(comments__parent__isnull=True),
+            )
+        )
+        .order_by("-created_at")
+    )
+
+    state = get_user_state(request.user)
+
+    post_form = None
+    if request.user.is_authenticated and is_member:
+        post_form = CommunityPostForm()
+
+    return render(request, "core/community_detail.html", {
+        "community": community,
+        "is_member": is_member,
+        "is_admin": is_admin,
+        "posts": posts_qs,
+        "post_form": post_form,
+        **state,
+    })
+
+
+@login_required
+def community_join(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    if request.method != "POST":
+        return redirect("community_detail", slug=slug)
+
+    CommunityMembership.objects.get_or_create(
+        community=community,
+        user=request.user,
+        defaults={"is_admin": False},
+    )
+    return redirect("community_detail", slug=slug)
+
+
+@login_required
+def community_leave(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    if request.method != "POST":
+        return redirect("community_detail", slug=slug)
+
+    membership = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not membership:
+        return redirect("community_detail", slug=slug)
+
+    # Создатель сообщества не может выйти (минимальная защита от "сироты")
+    if community.created_by_id == request.user.id:
+        messages.error(request, "Создатель сообщества не может выйти. Передайте управление другому администратору (позже добавим).")
+        return redirect("community_detail", slug=slug)
+
+    # Если пользователь админ и он последний админ — не даём выйти
+    if membership.is_admin:
+        admins_count = CommunityMembership.objects.filter(community=community, is_admin=True).count()
+        if admins_count <= 1:
+            messages.error(request, "Нельзя выйти: вы последний администратор сообщества.")
+            return redirect("community_detail", slug=slug)
+
+    membership.delete()
+    return redirect("communities")
+
+
+@login_required
+def community_edit(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    if not community.is_admin(request.user) and not request.user.is_superuser:
+        return HttpResponseForbidden("Нет доступа")
+
+    if request.method == "POST":
+        form = CommunityForm(request.POST, request.FILES, instance=community)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Сообщество обновлено.")
+            return redirect("community_detail", slug=community.slug)
+    else:
+        form = CommunityForm(instance=community)
+
+    return render(request, "core/community_edit.html", {"community": community, "form": form})
+
+
+@login_required
+def community_create_post(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    if request.method != "POST":
+        return redirect("community_detail", slug=slug)
+
+    membership = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not membership:
+        messages.error(request, "Чтобы писать в сообществе — сначала вступите.")
+        return redirect("community_detail", slug=slug)
+
+    form = CommunityPostForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Пост не может быть пустым.")
+        return redirect("community_detail", slug=slug)
+
+    post = form.save(commit=False)
+    post.author = request.user
+    post.community = community
+
+    want_as = bool(request.POST.get("post_as_community"))
+    post.as_community = bool(want_as and membership.is_admin)
+    post.save()
+
+    return redirect("community_detail", slug=slug)

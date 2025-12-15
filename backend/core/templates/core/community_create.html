@@ -1,0 +1,28 @@
+{% extends "core/base.html" %}
+
+{% block title %}Создать сообщество — Germify{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:640px; margin:0 auto;">
+    <h1 style="margin-top:0;">Создать сообщество</h1>
+    <div style="color:#9ca3af; margin-bottom:12px;">После создания вы автоматически станете администратором.</div>
+
+    <form method="post" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:10px;">
+        {% csrf_token %}
+
+        <label style="font-size:13px; color:#9ca3af;">Название</label>
+        {{ form.name }}
+
+        <label style="font-size:13px; color:#9ca3af; margin-top:6px;">Описание</label>
+        {{ form.description }}
+
+        <label style="font-size:13px; color:#9ca3af; margin-top:6px;">Иконка (необязательно)</label>
+        {{ form.icon }}
+
+        <div style="display:flex; gap:10px; margin-top:8px;">
+            <button type="submit" class="primary-button">Создать</button>
+            <a href="{% url 'communities' %}" class="primary-button" style="text-decoration:none; background:#1f2937; color:#e5e7eb;">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

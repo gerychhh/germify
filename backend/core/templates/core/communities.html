@@ -4,7 +4,72 @@
 
 {% block content %}
 <div class="card">
-    <h1>Сообщества</h1>
-    <p>Здесь позже будут сообщества.</p>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div>
+            <h1 style="margin:0;">Сообщества</h1>
+            <div style="margin-top:6px; color:#9ca3af; font-size:14px;">Любой может вступить и писать. Админы могут публиковать от лица сообщества.</div>
+        </div>
+
+        {% if user.is_authenticated %}
+            <a href="{% url 'community_create' %}" class="primary-button" style="text-decoration:none;">Создать</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="primary-button" style="text-decoration:none;">Войти</a>
+        {% endif %}
+    </div>
+
+    <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">
+        {% for c in communities %}
+            <div style="display:flex; gap:12px; align-items:center; padding:12px; border:1px solid #1e293b; border-radius:14px; background:#0b1224;">
+                {% include "core/partials/avatar.html" with user_obj=c size="sm" %}
+
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <a href="{% url 'community_detail' c.slug %}" style="color:#e5e7eb; text-decoration:none; font-weight:700;">
+                            {{ c.name }}
+                        </a>
+                        {% if c.id in admin_ids %}
+                            <span style="font-size:12px; padding:2px 8px; border-radius:999px; background:#1f2937; color:#e5e7eb;">Админ</span>
+                        {% elif c.id in member_ids %}
+                            <span style="font-size:12px; padding:2px 8px; border-radius:999px; background:#0f2a1d; color:#86efac;">Вы участник</span>
+                        {% endif %}
+                    </div>
+
+                    {% if c.description %}
+                        <div style="margin-top:4px; color:#cbd5e1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            {{ c.description }}
+                        </div>
+                    {% endif %}
+
+                    <div style="margin-top:6px; color:#64748b; font-size:12px;">
+                        #{{ c.slug }} · {{ c.members_count }} участников
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <a href="{% url 'community_detail' c.slug %}" class="primary-button" style="text-decoration:none; padding:6px 12px; font-size:13px;">Открыть</a>
+
+                    {% if user.is_authenticated %}
+                        {% if c.id in member_ids %}
+                            <form method="post" action="{% url 'community_leave' c.slug %}" style="margin:0;">
+                                {% csrf_token %}
+                                <button type="submit" class="primary-button" style="padding:6px 12px; font-size:13px; background:#1f2937; color:#e5e7eb;">
+                                    Выйти
+                                </button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{% url 'community_join' c.slug %}" style="margin:0;">
+                                {% csrf_token %}
+                                <button type="submit" class="primary-button" style="padding:6px 12px; font-size:13px;">
+                                    Вступить
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <div style="color:#9ca3af;">Сообществ пока нет. Создайте первое 🙂</div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

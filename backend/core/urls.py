@@ -34,6 +34,12 @@ from .views import (
 
     # прочее
     communities_view,
+    community_create,
+    community_detail,
+    community_join,
+    community_leave,
+    community_edit,
+    community_create_post,
 
     # аккаунты
     register_view,
@@ -87,6 +93,12 @@ urlpatterns = [
 
     # прочее
     path("communities/", communities_view, name="communities"),
+    path("communities/create/", community_create, name="community_create"),
+    path("communities/<str:slug>/", community_detail, name="community_detail"),
+    path("communities/<str:slug>/join/", community_join, name="community_join"),
+    path("communities/<str:slug>/leave/", community_leave, name="community_leave"),
+    path("communities/<str:slug>/edit/", community_edit, name="community_edit"),
+    path("communities/<str:slug>/post/", community_create_post, name="community_create_post"),
 
     # аккаунты
     path("register/", register_view, name="register"),

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User, Post, Message, Follow, Like
+from .models import User, Post, Message, Follow, Like, Community, CommunityMembership
 
 
 # ========= Пользователь =========
@@ -20,9 +20,9 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ("id", "author", "short_text", "created_at")
-    list_filter = ("created_at",)
-    search_fields = ("text", "author__username", "author__display_name")
+    list_display = ("id", "author", "community", "as_community", "short_text", "created_at")
+    list_filter = ("created_at", "as_community", "community")
+    search_fields = ("text", "author__username", "author__display_name", "community__name", "community__slug")
 
     def short_text(self, obj):
         return (obj.text[:50] + "…") if len(obj.text) > 50 else obj.text
@@ -48,3 +48,16 @@ class FollowAdmin(admin.ModelAdmin):
 class LikeAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "post", "created_at")
     search_fields = ("user__username",)
+
+
+@admin.register(Community)
+class CommunityAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "slug", "created_by", "created_at")
+    search_fields = ("name", "slug", "description")
+
+
+@admin.register(CommunityMembership)
+class CommunityMembershipAdmin(admin.ModelAdmin):
+    list_display = ("id", "community", "user", "is_admin", "joined_at")
+    list_filter = ("is_admin", "community")
+    search_fields = ("community__name", "user__username", "user__display_name")

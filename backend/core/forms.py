@@ -2,7 +2,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import User, Post, Message, Comment
+from .models import User, Post, Message, Comment, Community
 
 
 class RegisterForm(UserCreationForm):
@@ -82,6 +82,51 @@ class CommentForm(forms.ModelForm):
                 attrs={
                     "rows": 2,
                     "placeholder": "Оставьте комментарий...",
+                }
+            )
+        }
+
+
+class CommunityForm(forms.ModelForm):
+    class Meta:
+        model = Community
+        fields = ("name", "description", "icon")
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "placeholder": "Название сообщества",
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "placeholder": "Короткое описание...",
+                }
+            ),
+            "icon": forms.FileInput(
+                attrs={
+                    "accept": "image/*",
+                }
+            ),
+        }
+
+
+class CommunityPostForm(forms.ModelForm):
+    """Текст поста + опция "от лица сообщества"."""
+
+    post_as_community = forms.BooleanField(
+        required=False,
+        label="Опубликовать от лица сообщества",
+    )
+
+    class Meta:
+        model = Post
+        fields = ("text",)
+        widgets = {
+            "text": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "placeholder": "Напишите пост для сообщества...",
                 }
             )
         }

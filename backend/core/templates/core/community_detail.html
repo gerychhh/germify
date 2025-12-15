@@ -1,0 +1,71 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ community.name }} — Germify{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div style="display:flex; align-items:center; gap:14px;">
+        {% include "core/partials/avatar.html" with user_obj=community size="lg" %}
+        <div style="flex:1; min-width:0;">
+            <h1 style="margin:0;">{{ community.name }}</h1>
+            <div style="margin-top:6px; color:#64748b; font-size:13px;">#{{ community.slug }} · {{ community.members_count }} участников</div>
+            {% if community.description %}
+                <div style="margin-top:10px; color:#cbd5e1;">{{ community.description }}</div>
+            {% endif %}
+        </div>
+
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+            {% if user.is_authenticated %}
+                {% if is_member %}
+                    <form method="post" action="{% url 'community_leave' community.slug %}" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" class="primary-button" style="background:#1f2937; color:#e5e7eb;">Выйти</button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{% url 'community_join' community.slug %}" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" class="primary-button">Вступить</button>
+                    </form>
+                {% endif %}
+
+                {% if is_admin %}
+                    <a href="{% url 'community_edit' community.slug %}" class="primary-button" style="text-decoration:none; background:#1f2937; color:#e5e7eb;">Настройки</a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'login' %}" class="primary-button" style="text-decoration:none;">Войти чтобы вступить</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if post_form %}
+    <div class="card" style="margin-top:16px;">
+        <h3 style="margin-top:0;">Новый пост</h3>
+        <form method="post" action="{% url 'community_create_post' community.slug %}" style="display:flex; flex-direction:column; gap:10px;">
+            {% csrf_token %}
+            {{ post_form.text }}
+
+            {% if is_admin %}
+                <label style="display:flex; align-items:center; gap:8px; color:#cbd5e1; font-size:13px;">
+                    {{ post_form.post_as_community }}
+                    <span>Опубликовать от лица сообщества</span>
+                </label>
+            {% endif %}
+
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button type="submit" class="primary-button">Опубликовать</button>
+            </div>
+        </form>
+    </div>
+{% endif %}
+
+<div style="margin-top:16px; display:flex; flex-direction:column; gap:12px;">
+    {% for post in posts %}
+        {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids admin_community_ids=admin_community_ids member_community_ids=member_community_ids %}
+    {% empty %}
+        <div class="card" style="color:#9ca3af;">Пока нет постов. Будьте первым 🙂</div>
+    {% endfor %}
+</div>
+
+{% endblock %}

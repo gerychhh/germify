@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+
+{% block title %}Настройки — {{ community.name }} — Germify{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:640px; margin:0 auto;">
+    <div style="display:flex; align-items:center; gap:12px;">
+        {% include "core/partials/avatar.html" with user_obj=community size="sm" %}
+        <div>
+            <h1 style="margin:0;">Настройки сообщества</h1>
+            <div style="color:#9ca3af; font-size:13px;">#{{ community.slug }}</div>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">
+        {% csrf_token %}
+
+        <label style="font-size:13px; color:#9ca3af;">Название</label>
+        {{ form.name }}
+
+        <label style="font-size:13px; color:#9ca3af; margin-top:6px;">Описание</label>
+        {{ form.description }}
+
+        <label style="font-size:13px; color:#9ca3af; margin-top:6px;">Иконка</label>
+        {{ form.icon }}
+
+        <div style="display:flex; gap:10px; margin-top:8px;">
+            <button type="submit" class="primary-button">Сохранить</button>
+            <a href="{% url 'community_detail' community.slug %}" class="primary-button" style="text-decoration:none; background:#1f2937; color:#e5e7eb;">Назад</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
