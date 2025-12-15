@@ -1,0 +1,10 @@
+{# core/partials/message_item.html #}
+{% load tz %}
+
+<div class="message-item {% if message.sender == request.user %}me{% else %}other{% endif %}" data-id="{{ message.id }}">
+    {% include "core/partials/avatar.html" with user_obj=message.sender size="sm" %}
+    <div class="message-body">
+        <div class="message-text">{{ message.text }}</div>
+        <div class="message-time">{{ message.created_at|localtime|date:"H:i" }}</div>
+    </div>
+</div>
