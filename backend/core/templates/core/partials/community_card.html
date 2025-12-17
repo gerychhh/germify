@@ -1,0 +1,33 @@
+{% load static %}
+<div class="card" style="display:flex; align-items:flex-start; gap:14px;">
+  {% include "core/partials/avatar.html" with user_obj=c size="md" %}
+  <div style="flex:1; min-width:0;">
+    <a href="{% url 'community_detail' c.slug %}" style="color:#e5e7eb; text-decoration:none; font-weight:800; font-size:16px;">
+      {{ c.name }}
+    </a>
+    <div style="margin-top:4px; color:#64748b; font-size:13px;">
+      #{{ c.slug }} · {{ c.members_total }} участников
+    </div>
+    {% if c.description %}
+      <div style="margin-top:8px; color:#cbd5e1; overflow-wrap:anywhere; word-break:break-word;">{{ c.description|truncatechars:140 }}</div>
+    {% endif %}
+  </div>
+
+  <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; align-self:flex-start;">
+    <a href="{% url 'community_detail' c.slug %}" class="primary-button" style="text-decoration:none; background:#1f2937; color:#e5e7eb;">Открыть</a>
+
+    {% if user.is_authenticated %}
+      {% if c.id in member_community_ids %}
+        <form method="post" action="{% url 'community_leave' c.slug %}" style="margin:0;">
+          {% csrf_token %}
+          <button type="submit" class="primary-button" style="background:#1f2937; color:#e5e7eb;">Выйти</button>
+        </form>
+      {% else %}
+        <form method="post" action="{% url 'community_join' c.slug %}" style="margin:0;">
+          {% csrf_token %}
+          <button type="submit" class="primary-button">Вступить</button>
+        </form>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>

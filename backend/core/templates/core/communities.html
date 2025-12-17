@@ -23,42 +23,19 @@
 
 <div id="communities-list" style="display:flex; flex-direction:column; gap:12px;">
   {% for c in communities %}
-    <div class="card" style="display:flex; align-items:center; gap:14px;">
-      {% include "core/partials/avatar.html" with user_obj=c size="md" %}
-      <div style="flex:1; min-width:0;">
-        <a href="{% url 'community_detail' c.slug %}" style="color:#e5e7eb; text-decoration:none; font-weight:800; font-size:16px;">
-          {{ c.name }}
-        </a>
-        <div style="margin-top:4px; color:#64748b; font-size:13px;">
-          #{{ c.slug }} · {{ c.members_total }} участников
-        </div>
-        {% if c.description %}
-          <div style="margin-top:8px; color:#cbd5e1;">{{ c.description|truncatechars:140 }}</div>
-        {% endif %}
-      </div>
-
-      <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-        <a href="{% url 'community_detail' c.slug %}" class="primary-button" style="text-decoration:none; background:#1f2937; color:#e5e7eb;">Открыть</a>
-
-        {% if user.is_authenticated %}
-          {% if c.id in member_community_ids %}
-            <form method="post" action="{% url 'community_leave' c.slug %}" style="margin:0;">
-              {% csrf_token %}
-              <button type="submit" class="primary-button" style="background:#1f2937; color:#e5e7eb;">Выйти</button>
-            </form>
-          {% else %}
-            <form method="post" action="{% url 'community_join' c.slug %}" style="margin:0;">
-              {% csrf_token %}
-              <button type="submit" class="primary-button">Вступить</button>
-            </form>
-          {% endif %}
-        {% endif %}
-      </div>
-    </div>
+    {% include "core/partials/community_card.html" with c=c %}
   {% empty %}
     <div class="card" style="color:#9ca3af;">Ничего не найдено.</div>
   {% endfor %}
 </div>
+
+<button type="button" id="communities-load-more"
+        class="primary-button"
+        style="margin-top:14px; width:100%; background:#1f2937; color:#e5e7eb; display:{% if has_next %}block{% else %}none{% endif %};">
+  Показать ещё
+</button>
+
+<div id="communities-sentinel" style="height:1px;"></div>
 
 <script>
 (function(){
@@ -66,10 +43,15 @@
   const input = document.getElementById("communities-search-input");
   const list = document.getElementById("communities-list");
   const btn = document.getElementById("communities-search-btn");
-  if(!form || !input || !list) return;
+  const moreBtn = document.getElementById("communities-load-more");
+  const sentinel = document.getElementById("communities-sentinel");
+  if(!form || !input || !list || !sentinel) return;
 
-  let t = null;
-  let ctrl = null;
+  let debounceTimer = null;
+  let loading = false;
+  let hasNext = {{ has_next|yesno:"true,false" }};
+  let nextPage = {{ next_page|default:"null" }};
+  let abortCtrl = null;
 
   function setBtnLoading(on){
     if(!btn) return;
@@ -77,42 +59,102 @@
     btn.textContent = on ? "Ищем..." : btn.dataset.oldText;
   }
 
-  async function run(){
+  function setMoreVisible(){
+    if(!moreBtn) return;
+    moreBtn.style.display = (hasNext && nextPage) ? "block" : "none";
+  }
+
+  function buildUrl(page){
     const url = new URL(form.action, window.location.origin);
     url.searchParams.set("q", input.value || "");
+    if(page) url.searchParams.set("page", String(page));
+    return url;
+  }
 
-    if(ctrl) ctrl.abort();
-    ctrl = new AbortController();
+  async function fetchPage(page, mode){
+    if(loading) return;
+    loading = true;
 
-    setBtnLoading(true);
+    if(abortCtrl) abortCtrl.abort();
+    abortCtrl = new AbortController();
+
+    if(mode === "replace") setBtnLoading(true);
+    if(mode === "append" && moreBtn){
+      moreBtn.disabled = true;
+      moreBtn.textContent = "Загрузка...";
+    }
+
     try{
+      const url = buildUrl(page);
       const resp = await fetch(url.toString(), {
         headers: {"X-Requested-With":"XMLHttpRequest"},
         cache: "no-store",
-        signal: ctrl.signal
+        signal: abortCtrl.signal
       });
       if(!resp.ok) return;
-      const html = await resp.text();
-      const doc = new DOMParser().parseFromString(html, "text/html");
-      const newList = doc.getElementById("communities-list");
-      if(newList) list.innerHTML = newList.innerHTML;
-      window.history.replaceState({}, "", url.pathname + url.search);
+      const data = await resp.json();
+      if(!data || data.success !== true) return;
+
+      if(mode === "append"){
+        if(data.html) list.insertAdjacentHTML("beforeend", data.html);
+      } else {
+        list.innerHTML = data.html || "";
+        window.scrollTo({top: 0, behavior: "instant"});
+      }
+
+      hasNext = !!data.has_next;
+      nextPage = data.next_page;
+
+      const cleanUrl = buildUrl(null);
+      window.history.replaceState({}, "", cleanUrl.pathname + cleanUrl.search);
     }catch(e){
     }finally{
-      setBtnLoading(false);
+      if(mode === "replace") setBtnLoading(false);
+      loading = false;
+      if(mode === "append" && moreBtn){
+        moreBtn.disabled = false;
+        moreBtn.textContent = "Показать ещё";
+      }
+      setMoreVisible();
     }
   }
 
+  function loadNext(){
+    if(loading) return;
+    if(!hasNext || !nextPage) return;
+    fetchPage(nextPage, "append");
+  }
+
   input.addEventListener("input", ()=>{
-    clearTimeout(t);
-    t = setTimeout(run, 250);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(()=>fetchPage(1, "replace"), 250);
   });
 
   form.addEventListener("submit", (e)=>{
     e.preventDefault();
-    clearTimeout(t);
-    run();
+    clearTimeout(debounceTimer);
+    fetchPage(1, "replace");
   });
+
+  if(moreBtn){
+    moreBtn.addEventListener("click", loadNext);
+  }
+
+  const io = new IntersectionObserver((entries)=>{
+    const ent = entries[0];
+    if(!ent || !ent.isIntersecting) return;
+    loadNext();
+  }, {root: null, rootMargin: "1200px 0px 1200px 0px", threshold: 0.01});
+
+  io.observe(sentinel);
+
+  window.addEventListener("scroll", ()=>{
+    if(loading) return;
+    const nearBottom = (window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 900);
+    if(nearBottom) loadNext();
+  }, {passive:true});
+
+  setMoreVisible();
 })();
 </script>
 

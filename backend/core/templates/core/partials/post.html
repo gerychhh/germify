@@ -308,17 +308,7 @@
                     </span>
                     <span class="comments-toggle-arrow">▾</span>
                 </button>
-
-                <div class="comments-body hidden"
-                     data-post-id="{{ post.id }}">
-
-                    {% for c in post.comments.all %}
-                        {% if not c.parent %}
-                            {% include "core/partials/comment.html" with c=c user=user liked_comment_ids=liked_comment_ids level=0 %}
-                        {% endif %}
-                    {% endfor %}
-
-                    {% if user.is_authenticated %}
+                {% if user.is_authenticated %}
                         <button type="button"
                                 class="comment-add-toggle"
                                 data-post-id="{{ post.id }}">
@@ -340,6 +330,16 @@
                             </button>
                         </form>
                     {% endif %}
+                <div class="comments-body hidden"
+                     data-post-id="{{ post.id }}">
+
+                    {% for c in post.comments.all %}
+                        {% if not c.parent %}
+                            {% include "core/partials/comment.html" with c=c user=user liked_comment_ids=liked_comment_ids level=0 %}
+                        {% endif %}
+                    {% endfor %}
+
+
                 </div>
             </div>
 

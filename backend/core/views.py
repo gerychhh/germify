@@ -2,14 +2,15 @@ from difflib import SequenceMatcher
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
-from django.core.paginator import Paginator
-from django.db.models import Q, Count, Case, When, Value, IntegerField
-from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q, Count, Case, When, Value, IntegerField, Max
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
+from django.core.paginator import Paginator
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.utils.text import slugify
+
 
 from .forms import RegisterForm, PostForm, MessageForm, ProfileForm, CommunityForm, CommunityPostForm
 from .models import (
@@ -57,9 +58,14 @@ def get_user_state(user):
 
 def render_post_html(post, request):
     state = get_user_state(request.user)
+
     return render_to_string(
         "core/partials/post.html",
-        {"post": post, "user": request.user, **state},
+        {
+            "post": post,
+            "user": request.user,
+            **state
+        },
         request=request,
     )
 
@@ -68,7 +74,12 @@ def render_comment_html(comment, request, level):
     state = get_user_state(request.user)
     return render_to_string(
         "core/partials/comment.html",
-        {"c": comment, "user": request.user, "level": level, **state},
+        {
+            "c": comment,
+            "user": request.user,
+            "level": level,
+            **state
+        },
         request=request,
     )
 
@@ -151,6 +162,7 @@ def create_post(request):
         return redirect("feed")
 
     form = PostForm(request.POST)
+
     if not form.is_valid():
         if request.headers.get("x-requested-with"):
             return JsonResponse({"success": False, "errors": form.errors}, status=400)
@@ -161,16 +173,22 @@ def create_post(request):
     post.save()
 
     files = request.FILES.getlist("attachments")
+
     MAX_SIZE_MB = 500
     MAX_SIZE = MAX_SIZE_MB * 1024 * 1024
 
     for f in files:
         if f.size > MAX_SIZE:
-            return JsonResponse(
-                {"success": False, "error": f"Файл '{f.name}' превышает {MAX_SIZE_MB}MB."},
-                status=400,
-            )
-        PostAttachment.objects.create(post=post, file=f, original_name=f.name)
+            return JsonResponse({
+                "success": False,
+                "error": f"Файл '{f.name}' превышает {MAX_SIZE_MB}MB."
+            }, status=400)
+
+        PostAttachment.objects.create(
+            post=post,
+            file=f,
+            original_name=f.name
+        )
 
     if request.headers.get("x-requested-with"):
         html = render_post_html(post, request)
@@ -192,12 +210,16 @@ def delete_post(request, pk):
         ).exists()
 
     if request.user != post.author and not request.user.is_superuser and not is_community_admin:
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return HttpResponseForbidden("Нельзя удалить чужой пост")
         return HttpResponseForbidden("Нельзя удалить чужой пост")
 
     if request.method == "POST":
         post.delete()
+
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({"ok": True})
+
         return redirect("feed")
 
     return redirect(request.META.get("HTTP_REFERER", "feed"))
@@ -209,11 +231,15 @@ def toggle_like(request, pk):
 
     like, created = Like.objects.get_or_create(user=request.user, post=post)
     liked = created
+
     if not created:
         like.delete()
 
     if request.headers.get("x-requested-with"):
-        return JsonResponse({"liked": liked, "likes_count": post.likes.count()})
+        return JsonResponse({
+            "liked": liked,
+            "likes_count": post.likes.count()
+        })
 
     return redirect("feed")
 
@@ -231,18 +257,20 @@ def add_comment(request, post_id):
             return JsonResponse({"error": "empty"}, status=400)
         return redirect("feed")
 
-    c = Comment.objects.create(post=post, author=request.user, text=text)
+    c = Comment.objects.create(
+        post=post,
+        author=request.user,
+        text=text,
+    )
 
     if request.headers.get("x-requested-with"):
         html = render_comment_html(c, request, level=0)
-        return JsonResponse(
-            {
-                "html": html,
-                "post_id": post.id,
-                "comment_id": c.id,
-                "comments_count": post.comments.count(),
-            }
-        )
+        return JsonResponse({
+            "html": html,
+            "post_id": post.id,
+            "comment_id": c.id,
+            "comments_count": post.comments.count(),
+        })
 
     return redirect("feed")
 
@@ -266,15 +294,13 @@ def add_reply(request, comment_id):
 
     if request.headers.get("x-requested-with"):
         html = render_comment_html(reply, request, level=20)
-        return JsonResponse(
-            {
-                "html": html,
-                "post_id": parent.post.id,
-                "parent_id": parent.id,
-                "comment_id": reply.id,
-                "comments_count": parent.post.comments.count(),
-            }
-        )
+        return JsonResponse({
+            "html": html,
+            "post_id": parent.post.id,
+            "parent_id": parent.id,
+            "comment_id": reply.id,
+            "comments_count": parent.post.comments.count(),
+        })
 
     return redirect("feed")
 
@@ -287,8 +313,12 @@ def delete_comment(request, comment_id):
         if request.user == c.author or request.user.is_superuser:
             post_id = c.post.id
             c.delete()
+
             if request.headers.get("x-requested-with"):
-                return JsonResponse({"ok": True, "post_id": post_id})
+                return JsonResponse({
+                    "ok": True,
+                    "post_id": post_id,
+                })
 
     return redirect(request.META.get("HTTP_REFERER", "feed"))
 
@@ -303,7 +333,10 @@ def toggle_comment_like(request, comment_id):
         like.delete()
 
     if request.headers.get("x-requested-with"):
-        return JsonResponse({"liked": liked, "likes_count": c.likes.count()})
+        return JsonResponse({
+            "liked": liked,
+            "likes_count": c.likes.count()
+        })
 
     return redirect("feed")
 
@@ -347,13 +380,16 @@ def user_profile(request, username):
 
     if request.user.is_authenticated:
         liked_posts_ids = list(
-            Like.objects.filter(user=request.user).values_list("post_id", flat=True)
+            Like.objects.filter(user=request.user)
+            .values_list("post_id", flat=True)
         )
         liked_comment_ids = list(
-            CommentLike.objects.filter(user=request.user).values_list("comment_id", flat=True)
+            CommentLike.objects.filter(user=request.user)
+            .values_list("comment_id", flat=True)
         )
         following_ids = list(
-            Follow.objects.filter(follower=request.user).values_list("following_id", flat=True)
+            Follow.objects.filter(follower=request.user)
+            .values_list("following_id", flat=True)
         )
 
     form = None
@@ -395,13 +431,11 @@ def follow_user(request, username):
         Follow.objects.get_or_create(follower=request.user, following=target)
 
     if request.headers.get("x-requested-with"):
-        return JsonResponse(
-            {
-                "ok": True,
-                "following": True,
-                "followers_count": Follow.objects.filter(following=target).count(),
-            }
-        )
+        return JsonResponse({
+            "ok": True,
+            "following": True,
+            "followers_count": Follow.objects.filter(following=target).count()
+        })
 
     return redirect("user_profile", username=username)
 
@@ -414,13 +448,11 @@ def unfollow_user(request, username):
         Follow.objects.filter(follower=request.user, following=target).delete()
 
     if request.headers.get("x-requested-with"):
-        return JsonResponse(
-            {
-                "ok": True,
-                "following": False,
-                "followers_count": Follow.objects.filter(following=target).count(),
-            }
-        )
+        return JsonResponse({
+            "ok": True,
+            "following": False,
+            "followers_count": Follow.objects.filter(following=target).count()
+        })
 
     return redirect("user_profile", username=username)
 
@@ -429,16 +461,16 @@ def post_detail(request, pk):
     post = get_object_or_404(
         Post.objects.select_related("author", "community")
         .prefetch_related("likes", "comments__author", "comments__likes"),
-        pk=pk,
+        pk=pk
     )
 
     state = get_user_state(request.user)
 
-    return render(
-        request,
-        "core/post_detail.html",
-        {"post": post, "posts": [post], **state},
-    )
+    return render(request, "core/post_detail.html", {
+        "post": post,
+        "posts": [post],
+        **state
+    })
 
 
 @login_required
@@ -463,7 +495,8 @@ def messages_inbox_poll(request):
 
 def build_threads_for_user(user):
     qs = (
-        Message.objects.filter(Q(sender=user) | Q(recipient=user))
+        Message.objects
+        .filter(Q(sender=user) | Q(recipient=user))
         .select_related("sender", "recipient")
         .order_by("-created_at")
     )
@@ -482,9 +515,11 @@ def build_threads_for_user(user):
             is_read=False,
         ).count()
 
-        threads.append(
-            {"other_user": other, "last_message": msg, "unread_count": unread_count}
-        )
+        threads.append({
+            "other_user": other,
+            "last_message": msg,
+            "unread_count": unread_count,
+        })
         seen_ids.add(other.id)
 
     return threads
@@ -495,15 +530,18 @@ def messages_thread(request, username):
     other = get_object_or_404(User, username=username)
 
     msgs_qs = Message.objects.filter(
-        Q(sender=request.user, recipient=other) | Q(sender=other, recipient=request.user)
+        Q(sender=request.user, recipient=other) |
+        Q(sender=other, recipient=request.user)
     ).order_by("created_at")
 
     msgs = list(msgs_qs)
     last_id = msgs[-1].id if msgs else 0
 
-    Message.objects.filter(sender=other, recipient=request.user, is_read=False).update(
-        is_read=True
-    )
+    Message.objects.filter(
+        sender=other,
+        recipient=request.user,
+        is_read=False,
+    ).update(is_read=True)
 
     if request.method == "POST" and not request.headers.get("x-requested-with"):
         form = MessageForm(request.POST)
@@ -548,7 +586,8 @@ def messages_delete_thread(request, username):
         return redirect("messages_inbox")
 
     Message.objects.filter(
-        Q(sender=request.user, recipient=other) | Q(sender=other, recipient=request.user)
+        Q(sender=request.user, recipient=other) |
+        Q(sender=other, recipient=request.user)
     ).delete()
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
@@ -567,7 +606,11 @@ def messages_send(request, username):
     if not text:
         return JsonResponse({"error": "empty"}, status=400)
 
-    msg = Message.objects.create(sender=request.user, recipient=other, text=text)
+    msg = Message.objects.create(
+        sender=request.user,
+        recipient=other,
+        text=text,
+    )
 
     html = render_to_string(
         "core/partials/message_item.html",
@@ -579,7 +622,10 @@ def messages_send(request, username):
 
 @login_required
 def messages_unread_count(request):
-    total = Message.objects.filter(recipient=request.user, is_read=False).count()
+    total = Message.objects.filter(
+        recipient=request.user,
+        is_read=False,
+    ).count()
     return JsonResponse({"count": total})
 
 
@@ -592,19 +638,15 @@ def messages_poll(request, username):
     except (TypeError, ValueError):
         last_id = 0
 
-    new_msgs_qs = (
-        Message.objects.filter(
-            Q(sender=request.user, recipient=other) | Q(sender=other, recipient=request.user)
-        )
-        .filter(id__gt=last_id)
-        .order_by("created_at")
-    )
+    new_msgs_qs = Message.objects.filter(
+        Q(sender=request.user, recipient=other) |
+        Q(sender=other, recipient=request.user)
+    ).filter(id__gt=last_id).order_by("created_at")
 
     new_msgs = list(new_msgs_qs)
 
-    to_mark_ids = [
-        m.id for m in new_msgs if m.recipient_id == request.user.id and not m.is_read
-    ]
+    to_mark_ids = [m.id for m in new_msgs
+                   if m.recipient_id == request.user.id and not m.is_read]
     if to_mark_ids:
         Message.objects.filter(id__in=to_mark_ids).update(is_read=True)
 
@@ -654,7 +696,18 @@ def communities_view(request):
     q = (request.GET.get("q") or "").strip()
     tokens = [t for t in q.split() if t]
 
-    qs = Community.objects.all().annotate(members_total=Count("memberships"))
+    qs = (
+        Community.objects.all()
+        .annotate(members_total=Count("memberships"))
+        .annotate(last_post_at=Max("posts__created_at"))
+        .annotate(
+            has_posts=Case(
+                When(last_post_at__isnull=False, then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField(),
+            )
+        )
+    )
 
     def apply_smart_contains_search(base_qs):
         f = Q()
@@ -682,16 +735,17 @@ def communities_view(request):
                     output_field=IntegerField(),
                 )
             )
-            .order_by("search_rank", "name")
         )
 
     if tokens:
         filtered = apply_smart_contains_search(qs)
         if filtered.exists():
-            qs = filtered
+            qs = filtered.order_by("search_rank", "has_posts", "-last_post_at", "-created_at")
         else:
             query_lower = q.lower()
-            items = list(Community.objects.values("id", "name", "description").all())
+            items = list(
+                Community.objects.values("id", "name", "description").all()
+            )
 
             scored = []
             for it in items:
@@ -710,24 +764,41 @@ def communities_view(request):
             ids = [x[0] for x in scored[:200]]
 
             if ids:
-                order = Case(
-                    *[When(id=cid, then=Value(i)) for i, cid in enumerate(ids)],
-                    output_field=IntegerField(),
-                )
+                order = Case(*[When(id=cid, then=Value(i)) for i, cid in enumerate(ids)], output_field=IntegerField())
                 qs = (
                     Community.objects.filter(id__in=ids)
                     .annotate(members_total=Count("memberships"))
+                    .annotate(last_post_at=Max("posts__created_at"))
+                    .annotate(
+                        has_posts=Case(
+                            When(last_post_at__isnull=False, then=Value(0)),
+                            default=Value(1),
+                            output_field=IntegerField(),
+                        )
+                    )
                     .annotate(search_rank=order)
-                    .order_by("search_rank")
+                    .order_by("search_rank", "has_posts", "-last_post_at", "-created_at")
                 )
             else:
                 qs = Community.objects.none()
     else:
-        qs = qs.order_by("-created_at")
+        qs = qs.order_by("has_posts", "-last_post_at", "-created_at")
 
+    paginator = Paginator(qs, 7)
+    page_param = request.GET.get("page")
+    try:
+        page_number = int(page_param)
+        if page_number < 1:
+            page_number = 1
+    except (TypeError, ValueError):
+        page_number = 1
+
+    page_obj = paginator.get_page(page_number)
+
+    is_auth = request.user.is_authenticated
     member_ids = set()
     admin_ids = set()
-    if request.user.is_authenticated:
+    if is_auth:
         member_ids = set(
             CommunityMembership.objects.filter(user=request.user).values_list("community_id", flat=True)
         )
@@ -735,16 +806,31 @@ def communities_view(request):
             CommunityMembership.objects.filter(user=request.user, is_admin=True).values_list("community_id", flat=True)
         )
 
-    return render(
-        request,
-        "core/communities.html",
-        {
-            "communities": qs,
-            "q": q,
-            "member_community_ids": member_ids,
-            "admin_community_ids": admin_ids,
-        },
-    )
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        html = "".join(
+            render_to_string(
+                "core/partials/community_card.html",
+                {"c": c, "user": request.user, "member_community_ids": member_ids, "admin_community_ids": admin_ids},
+                request=request,
+            )
+            for c in page_obj.object_list
+        )
+        return JsonResponse({
+            "success": True,
+            "html": html,
+            "has_next": page_obj.has_next(),
+            "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+        })
+
+    return render(request, "core/communities.html", {
+        "communities": page_obj.object_list,
+        "q": q,
+        "member_community_ids": member_ids,
+        "admin_community_ids": admin_ids,
+        "page_obj": page_obj,
+        "has_next": page_obj.has_next(),
+        "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+    })
 
 
 @login_required
@@ -808,21 +894,17 @@ def community_detail(request, slug):
     if request.user.is_authenticated and is_member:
         post_form = CommunityPostForm()
 
-    return render(
-        request,
-        "core/community_detail.html",
-        {
-            "community": community,
-            "is_member": is_member,
-            "is_admin": is_admin,
-            "memberships": memberships,
-            "members_total": members_total,
-            "members_has_more": members_has_more,
-            "posts": posts_qs,
-            "post_form": post_form,
-            **state,
-        },
-    )
+    return render(request, "core/community_detail.html", {
+        "community": community,
+        "is_member": is_member,
+        "is_admin": is_admin,
+        "memberships": memberships,
+        "members_total": members_total,
+        "members_has_more": members_has_more,
+        "posts": posts_qs,
+        "post_form": post_form,
+        **state,
+    })
 
 
 @login_required
@@ -881,7 +963,7 @@ def community_create_post(request, slug):
     if not form.is_valid():
         return redirect("community_detail", slug=community.slug)
 
-    Post.objects.create(
+    post = Post.objects.create(
         author=request.user,
         community=community,
         text=form.cleaned_data["text"],
@@ -913,11 +995,14 @@ def community_members_chunk(request, slug):
     html = render_to_string(
         "core/partials/community_members_chunk.html",
         {"memberships": chunk},
-        request=request,
+        request=request
     )
 
     next_offset = offset + len(chunk)
 
-    return JsonResponse(
-        {"html": html, "next_offset": next_offset, "has_more": next_offset < total, "total": total}
-    )
+    return JsonResponse({
+        "html": html,
+        "next_offset": next_offset,
+        "has_more": next_offset < total,
+        "total": total,
+    })

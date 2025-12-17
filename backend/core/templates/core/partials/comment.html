@@ -39,9 +39,13 @@
         </div>
     </div>
 
-    <!-- TEXT -->
-    <div class="comment-text">
-        {{ c.text }}
+    <!-- TEXT (пошаговое раскрытие как у постов) -->
+    <div class="post-text-block comment-text-block">
+        <div class="post-text-wrapper">
+            <div class="comment-text">{{ c.text }}</div>
+            <div class="post-text-gradient"></div>
+        </div>
+        <button type="button" class="post-text-toggle hidden">Показать ещё</button>
     </div>
 
     <!-- FOOTER -->

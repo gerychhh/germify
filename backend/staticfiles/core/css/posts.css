@@ -77,6 +77,9 @@
     color: #e5e7eb;
     line-height: 1.6;
     text-align: left;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 /* футер поста + лайки */
@@ -256,6 +259,8 @@
     font-size: 13px;
     color: #e5e7eb;
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .comment-footer {
@@ -305,6 +310,27 @@
     font-size: 12px;
     color: #fca5a5;
     padding: 0;
+}
+
+/* ===== Пакетный показ комментариев/ответов ("Показать ещё") ===== */
+.batch-hidden {
+    display: none !important;
+}
+
+.comments-more-btn,
+.replies-more-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #93c5fd;
+    font-size: 12px;
+    padding: 0;
+    margin-top: 8px;
+}
+
+.comments-more-btn:hover,
+.replies-more-btn:hover {
+    color: #bfdbfe;
 }
 
 /* ===== ОТВЕТЫ ===== */
@@ -1209,6 +1235,12 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+}
+
+/* комментарии: сохраняем прежние отступы и компактность */
+.comment-text-block {
+    margin-top: 0;
+    gap: 2px;
 }
 
 .post-text-wrapper {

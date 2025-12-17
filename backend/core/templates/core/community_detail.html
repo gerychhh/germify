@@ -21,7 +21,7 @@
 
   <div class="community-main">
     <div class="card">
-      <div style="display:flex; align-items:center; gap:14px;">
+      <div style="display:flex; align-items:flex-start; gap:14px;">
         {% include "core/partials/avatar.html" with user_obj=community size="lg" %}
 
         <div style="flex:1; min-width:0;">
@@ -30,7 +30,14 @@
             #{{ community.slug }} · {{ community.members_count }} участников
           </div>
           {% if community.description %}
-            <div style="margin-top:10px; color:#cbd5e1;">{{ community.description }}</div>
+            {# Описание: перенос длинных слов + пошаговое раскрытие (как в постах) #}
+            <div class="post-text-block community-desc-block" style="margin-top:10px;">
+              <div class="post-text-wrapper">
+                <div class="post-text" style="margin:0; color:#cbd5e1;">{{ community.description }}</div>
+                <div class="post-text-gradient"></div>
+              </div>
+              <button type="button" class="post-text-toggle hidden">Показать ещё</button>
+            </div>
           {% endif %}
         </div>
       </div>
