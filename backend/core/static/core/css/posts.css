@@ -9,9 +9,9 @@
 /* ===== КАРТОЧКА ПОСТА ===== */
 
 .post-card {
-    background: #020617;
+    background: var(--g-surface);
     border-radius: 16px;
-    border: 1px solid #1e293b;
+    border: 1px solid var(--g-border);
     padding: 10px 14px 10px;
 }
 
@@ -50,7 +50,7 @@
 .post-author-name {
     font-size: 14px;
     font-weight: 600;
-    color: #e5e7eb;
+    color: var(--g-text);
     text-decoration: none;
 }
 
@@ -60,12 +60,12 @@
 
 .post-author-username {
     font-size: 13px;
-    color: #9ca3af;
+    color: var(--g-muted);
 }
 
 .post-date {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--g-muted-2);
     white-space: nowrap;
 }
 
@@ -74,7 +74,7 @@
 .post-text {
     margin: 2px 0 0;
     font-size: 15px;
-    color: #e5e7eb;
+    color: var(--g-text);
     line-height: 1.6;
     text-align: left;
     white-space: pre-wrap;
@@ -139,8 +139,8 @@
 
 .comments-toggle {
     width: 100%;
-    background: #020617;
-    border: 1px solid #111827;
+    background: var(--g-surface);
+    border: 1px solid var(--g-border);
     border-radius: 8px;
     padding: 4px 8px;
     display: flex;
@@ -154,20 +154,20 @@
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    color: #9ca3af;
+    color: var(--g-muted);
 }
 
 .comments-count-badge {
     padding: 2px 8px;
     border-radius: 999px;
-    background: #111827;
-    color: #e5e7eb;
+    background: var(--g-border);
+    color: var(--g-text);
     font-size: 12px;
 }
 
 .comments-toggle-arrow {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--g-muted-2);
 }
 
 .comments-body {
@@ -186,8 +186,8 @@
 /* ===== КОММЕНТАРИЙ ===== */
 
 .comment-item {
-    background: #020617;
-    border: 1px solid #1e293b;
+    background: var(--g-surface);
+    border: 1px solid var(--g-border);
     border-radius: 10px;
     padding: 6px 8px;
     display: flex;
@@ -232,7 +232,7 @@
 
 .comment-display-name {
     font-weight: 600;
-    color: #e5e7eb;
+    color: var(--g-text);
     text-decoration: none;
     cursor: pointer;
 }
@@ -243,21 +243,21 @@
 
 .comment-username {
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--g-muted);
 }
 .comment-reply-meta {
     font-size: 11px;
-    color: #9ca3af;
+    color: var(--g-muted);
 }
 .comment-time {
     font-size: 11px;
-    color: #6b7280;
+    color: var(--g-muted-2);
 }
 
 .comment-text {
     margin-top: 2px;
     font-size: 13px;
-    color: #e5e7eb;
+    color: var(--g-text);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -281,7 +281,7 @@
 }
 
 .comment-like-count {
-    color: #9ca3af;
+    color: var(--g-muted);
 }
 
 .comment-actions-inline {
@@ -369,8 +369,8 @@
 
 /* сами «карточки» ответов чуть компактнее */
 .reply-item {
-    background: #020617;
-    border: 1px solid #1f2937;
+    background: var(--g-surface);
+    border: 1px solid var(--g-border);
     border-radius: 10px;
     padding: 5px 7px;
     display: flex;
@@ -416,21 +416,21 @@
 
 .reply-display-name {
     font-weight: 600;
-    color: #e5e7eb;
+    color: var(--g-text);
 }
 .reply-username {
     font-size: 11px;
-    color: #9ca3af;
+    color: var(--g-muted);
 }
 .reply-time {
     font-size: 11px;
-    color: #6b7280;
+    color: var(--g-muted-2);
 }
 
 .reply-text {
     margin-top: 2px;
     font-size: 12px;
-    color: #e5e7eb;
+    color: var(--g-text);
     white-space: pre-wrap;
 }
 
@@ -452,7 +452,7 @@
 }
 
 .reply-like-count {
-    color: #9ca3af;
+    color: var(--g-muted);
 }
 
 .reply-delete-btn {
@@ -492,12 +492,12 @@
 .comment-input,
 .reply-input {
     width: 100%;
-    background: #020617;
+    background: var(--g-surface);
     border-radius: 8px;
-    border: 1px solid #1f2937;
+    border: 1px solid var(--g-border);
     padding: 6px 8px;
     font-size: 13px;
-    color: #e5e7eb;
+    color: var(--g-text);
     resize: vertical;
 }
 
@@ -547,21 +547,21 @@
     font-size: 20px;
     line-height: 1;
     padding: 2px 6px;
-    color: #9ca3af;
+    color: var(--g-muted);
     border-radius: 999px;
 }
 
 .post-menu-toggle:hover {
-    background: #020617;
-    color: #e5e7eb;
+    background: var(--g-surface);
+    color: var(--g-text);
 }
 
 .post-menu {
     position: absolute;
     right: 0;
     top: 24px;
-    background: #020617;
-    border: 1px solid #1e293b;
+    background: var(--g-surface);
+    border: 1px solid var(--g-border);
     border-radius: 8px;
     padding: 4px 0;
     min-width: 140px;
@@ -573,14 +573,14 @@
     padding: 6px 10px;
     border: none;
     background: transparent;
-    color: #e5e7eb;
+    color: var(--g-text);
     font-size: 13px;
     text-align: left;
     cursor: pointer;
 }
 
 .post-menu-item:hover {
-    background: #111827;
+    background: var(--g-border);
 }
 
 .post-menu-delete-btn {
@@ -682,7 +682,7 @@
 
 .like-count-bump {
     animation: like-count-bump 0.22s ease-out;
-    color: #e5e7eb;
+    color: var(--g-text);
 }
 
 @keyframes like-count-bump {
@@ -751,66 +751,37 @@
 
 /* ===== КАРТИНКИ В ПОСТЕ (оригинальное соотношение сторон) ===== */
 
-/* ===== КАРТИНКИ В ПОСТЕ — «умная» плитка ===== */
+/* ===== КАРТИНКИ В ПОСТЕ — «умные» коллажи (1–10) ===== */
 
 .attachment-gallery {
     display: grid;
     gap: 4px;
-    border-radius: 0;      /* без закруглений */
+    border-radius: 12px;
     overflow: hidden;
+    margin-top: 6px;
 }
 
-/* количество картинок в посте — берём из data-count */
-.attachment-gallery[data-count="1"] {
-    grid-template-columns: 1fr;
+/* JS выставляет корректное количество картинок. Пока count=0 — галерея скрыта. */
+.attachment-gallery[data-count="0"] {
+    display: none;
 }
 
-.attachment-gallery[data-count="2"],
-.attachment-gallery[data-count="3"],
-.attachment-gallery[data-count="4"],
-.attachment-gallery[data-count="5"],
-.attachment-gallery[data-count="6"],
-.attachment-gallery[data-count="7"],
-.attachment-gallery[data-count="8"],
-.attachment-gallery[data-count="9"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)); /* две колонки */
-}
-
-/* как в ВК: 3/5/7 фоток — первая широкая, остальные плиткой */
-.attachment-gallery[data-count="3"] .gallery-item:first-child,
-.attachment-gallery[data-count="5"] .gallery-item:first-child,
-.attachment-gallery[data-count="7"] .gallery-item:first-child {
-    grid-column: span 2;
-}
-
-/* общая ячейка */
+/* базовая плитка */
 .gallery-item {
     position: relative;
     overflow: hidden;
-    border-radius: 0;
-    background: #020617;
+    background: #000;
 }
 
-/* одна картинка — показываем максимально похоже на оригинал */
-.attachment-gallery[data-count="1"] .gallery-item {
-    aspect-ratio: auto;
+.gallery-item.gallery-hidden {
+    display: none;
 }
 
-.attachment-gallery[data-count="1"] .gallery-img {
-    width: 100%;
-    height: auto;
-    object-fit: contain;   /* без обрезки, как обычное фото в посте */
-}
-
-/* 2+ картинок: плитка 4:3, аккуратно обрезаем по центру */
-.attachment-gallery[data-count]:not([data-count="1"]) .gallery-item {
-    aspect-ratio: 4 / 3;   /* одинаковая высота тайлов */
-}
-
-.attachment-gallery[data-count]:not([data-count="1"]) .gallery-img {
+.gallery-img {
+    display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;     /* как в ВК/ТГ/инсте: кадрируем, но не тянем */
+    object-fit: cover;
     cursor: zoom-in;
     transition: transform 0.15s ease;
 }
@@ -819,49 +790,132 @@
     transform: scale(1.02);
 }
 
-/* на мобильных оставляем две колонки, просто чуть меньше зазор */
+/* бейдж "+N" если картинок больше лимита */
+.gallery-more-badge {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* ====== ЛЕЙАУТЫ ====== */
+
+/* 1 картинка: показываем целиком, но не даём стать «на весь экран» */
+.attachment-gallery[data-layout="one"] {
+    grid-template-columns: 1fr;
+}
+
+.attachment-gallery[data-layout="one"] .gallery-img {
+    width: 100%;
+    height: auto;
+    max-height: min(60vh, 520px);
+    object-fit: contain;
+    background: #000;
+}
+
+/* 2 картинки */
+.attachment-gallery[data-layout="two-land"],
+.attachment-gallery[data-layout="two-mixed"],
+.attachment-gallery[data-layout="two-port"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.attachment-gallery[data-layout^="two"] .gallery-item {
+    aspect-ratio: 4 / 3;
+}
+
+.attachment-gallery[data-layout="two-port"] .gallery-item {
+    aspect-ratio: 3 / 4;
+}
+
+/* 3 картинки: либо VK (высокая слева), либо «широкая сверху» */
+.attachment-gallery[data-layout="three-vk"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.attachment-gallery[data-layout="three-vk"] .gallery-item {
+    aspect-ratio: 4 / 3;
+}
+
+.attachment-gallery[data-layout="three-vk"] .gallery-item:nth-child(1) {
+    grid-row: span 2;
+}
+
+.attachment-gallery[data-layout="three-top"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.attachment-gallery[data-layout="three-top"] .gallery-item {
+    aspect-ratio: 4 / 3;
+}
+
+.attachment-gallery[data-layout="three-top"] .gallery-item:nth-child(1) {
+    grid-column: span 2;
+    aspect-ratio: 16 / 9;
+}
+
+/* 4 картинки: 2×2 */
+.attachment-gallery[data-layout="four"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.attachment-gallery[data-layout="four"] .gallery-item {
+    aspect-ratio: 1 / 1;
+}
+
+/* 5 картинок: либо широкая сверху, либо высокая слева */
+.attachment-gallery[data-layout="five-top"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.attachment-gallery[data-layout="five-top"] .gallery-item {
+    aspect-ratio: 1 / 1;
+}
+
+.attachment-gallery[data-layout="five-top"] .gallery-item:nth-child(1) {
+    grid-column: span 2;
+    aspect-ratio: 16 / 9;
+}
+
+.attachment-gallery[data-layout="five-left"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.attachment-gallery[data-layout="five-left"] .gallery-item {
+    aspect-ratio: 1 / 1;
+}
+
+.attachment-gallery[data-layout="five-left"] .gallery-item:nth-child(1) {
+    grid-row: span 2;
+    aspect-ratio: 3 / 4;
+}
+
+/* 6–10: компактная сетка 3×N (на мобилках 2×N) */
+.attachment-gallery[data-layout="grid-3"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.attachment-gallery[data-layout="grid-3"] .gallery-item {
+    aspect-ratio: 1 / 1;
+}
+
 @media (max-width: 640px) {
     .attachment-gallery {
         gap: 3px;
     }
+
+    .attachment-gallery[data-layout="grid-3"] {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
-
-/* ==== 1 изображение — показываем максимально целиком ==== */
-
-.attachment-gallery .gallery-item:only-child {
-    grid-column: 1 / -1;  /* занимает всю ширину */
-    grid-row: auto;
-    height: auto;
-}
-
-.attachment-gallery .gallery-item:only-child .gallery-img {
-    height: auto;
-    max-height: 520px;
-    object-fit: contain;   /* НЕ обрезаем, подгоняем по высоте */
-    background: #000;      /* аккуратные «рамки» по бокам */
-}
-
-/* ==== 3 изображения — классическая раскладка VK:
-       одно большое слева, два поменьше справа ==== */
-
-/* условие: в галерее ровно 3 плитки */
-.attachment-gallery .gallery-item:first-child:nth-last-child(3) {
-    grid-row: 1 / span 2;  /* первая плитка тянется на две строки */
-}
-
-/* вторая и третья — справа, одна под другой */
-.attachment-gallery .gallery-item:first-child:nth-last-child(3) ~ .gallery-item:nth-child(2),
-.attachment-gallery .gallery-item:first-child:nth-last-child(3) ~ .gallery-item:nth-child(3) {
-    grid-row: auto;
-}
-
-/* немного страховки по высоте, чтобы не было артефактов */
-.attachment-gallery .gallery-item:first-child:nth-last-child(3),
-.attachment-gallery .gallery-item:first-child:nth-last-child(3) ~ .gallery-item {
-    min-height: 0;
-}
-
-/* 2, 4, 5+ изображений просто ложатся в плитку 2×N */
 
 
 /* ===== FULLSCREEN VIEWER (листает картинки) ===== */
@@ -925,25 +979,41 @@
 /* ===== ВИДЕО ===== */
 
 .attachment-videos {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 6px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+    margin-top: 8px;
+    align-items: start;
+}
+
+@media (max-width: 640px) {
+    .attachment-videos {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
 }
 
 .video-wrapper {
-    background: #020617;
-    border: 1px solid #1f2937;
+    background: var(--g-surface);
+    border: 1px solid var(--g-border);
     border-radius: 12px;
     overflow: hidden;
-    max-width: 640px;
+    width: 100%;
+    max-width: 100%;
 }
 
-/* область с видео */
+/* portrait videos: keep them compact + centered */
+.video-wrapper[data-shape="port"] {
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* video area */
 .video-inner {
     position: relative;
     width: 100%;
-    max-height: 60vh;
+    max-height: min(60vh, 520px);
     background: #000;
 }
 
@@ -951,8 +1021,8 @@
     display: block;
     width: 100%;
     height: auto;
-    max-height: 60vh;
-    object-fit: contain; /* чтобы вертикальное/горизонтальное не резалось */
+    max-height: min(60vh, 520px);
+    object-fit: contain;
     background: #000;
 }
 
@@ -982,13 +1052,13 @@
     align-items: center;
     gap: 8px;
     padding: 6px 10px 8px;
-    background: #020617;
+    background: var(--g-surface);
 }
 
 .video-btn {
     border: none;
-    background: #111827;
-    color: #e5e7eb;
+    background: var(--g-border);
+    color: var(--g-text);
     border-radius: 999px;
     padding: 4px 8px;
     cursor: pointer;
@@ -999,12 +1069,12 @@
 }
 
 .video-btn:hover {
-    background: #1f2937;
+    background: var(--g-surface-2);
 }
 
 .video-time {
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--g-muted);
     white-space: nowrap;
 }
 
@@ -1014,7 +1084,7 @@
     flex: 1;
     position: relative;
     height: 6px;
-    background: #111827;
+    background: var(--g-border);
     border-radius: 999px;
     overflow: hidden;
     cursor: pointer;
@@ -1049,7 +1119,7 @@
     margin-left: 4px;
     font-size: 18px;
     text-decoration: none;
-    color: #e5e7eb;
+    color: var(--g-text);
     cursor: pointer;
 }
 
@@ -1068,8 +1138,8 @@
 }
 
 .audio-wrapper {
-    background: #0f172a;
-    border: 1px solid #1f2937;
+    background: var(--g-surface-2);
+    border: 1px solid var(--g-border);
     padding: 10px 12px;
     border-radius: 12px;
 }
@@ -1085,14 +1155,15 @@
     height: 32px;
     border-radius: 50%;
     border: none;
-    background: #1e293b;
-    color: #fff;
+    background: var(--g-surface);
+    border: 1px solid var(--g-border);
+    color: var(--g-text);
     font-size: 16px;
     cursor: pointer;
 }
 
 .audio-play:hover {
-    background: #334155;
+    background: var(--g-surface-2);
 }
 
 /* серый фон дорожки */
@@ -1100,7 +1171,7 @@
     flex: 1;
     position: relative;
     height: 6px;
-    background: #1e293b;
+    background: var(--g-border);
     border-radius: 999px;
     overflow: hidden;
     cursor: pointer;
@@ -1169,7 +1240,7 @@
 }
 
 .audio-time {
-    color: #9ca3af;
+    color: var(--g-muted);
     font-size: 13px;
     white-space: nowrap;
 }
@@ -1177,7 +1248,7 @@
 .audio-download {
     font-size: 20px;
     text-decoration: none;
-    color: #e5e7eb;
+    color: var(--g-text);
 }
 
 .audio-download:hover {
@@ -1187,7 +1258,7 @@
 .audio-filename {
     margin-top: 4px;
     font-size: 13px;
-    color: #9ca3af;
+    color: var(--g-muted);
 }
 
 
@@ -1204,18 +1275,18 @@
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    background: #0f172a;
-    border: 1px solid #1f2937;
+    background: var(--g-surface);
+    border: 1px solid var(--g-border);
     border-radius: 10px;
     text-decoration: none;
-    color: #e5e7eb;
+    color: var(--g-text);
     transition:
         background 0.15s ease,
         transform 0.15s ease;
 }
 
 .file-card:hover {
-    background: #1e293b;
+    background: var(--g-surface-2);
     transform: translateY(-1px);
 }
 
@@ -1260,7 +1331,7 @@
     right: 0;
     bottom: 0;
     height: 48px;
-    background: linear-gradient(to bottom, rgba(2, 6, 23, 0), #020617);
+    background: linear-gradient(to bottom, rgba(2, 6, 23, 0), var(--g-surface));
 }
 
 .post-text-wrapper.is-collapsed .post-text-gradient {
@@ -1280,4 +1351,67 @@
 
 .post-text-toggle:hover {
     color: #bfdbfe;
+}
+/* ============================
+   Upload previews (images/files)
+   ============================ */
+.file-preview{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
+  gap:.75rem;
+  margin-top:.75rem;
+}
+
+.preview-item{
+  position:relative;
+  border:1px solid rgba(15,23,42,.12);
+  background:#fff;
+  border-radius:12px;
+  overflow:hidden;
+  min-height:120px;
+}
+
+.preview-item--image{
+  padding:0;
+}
+
+.preview-img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+
+.preview-item--file{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  padding:.75rem .9rem;
+  background:#f8fafc;
+}
+
+.file-preview-item{display:flex;align-items:center;gap:.5rem;min-width:0}
+.file-preview-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.remove-file-btn{
+  position:absolute;
+  top:8px;
+  right:8px;
+  width:28px;
+  height:28px;
+  border-radius:999px;
+  border:1px solid rgba(15,23,42,.12);
+  background:rgba(255,255,255,.92);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+  line-height:1;
+  color:#ef4444;
+  cursor:pointer;
+}
+.remove-file-btn:hover{background:#fff}
+
+@media (max-width: 576px){
+  .file-preview{grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));}
 }

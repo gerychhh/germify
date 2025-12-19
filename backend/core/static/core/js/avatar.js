@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+document.addсысыуEventListener("DOMContentLoaded", function () {
     const input = document.querySelector(".avatar-input");
     if (!input) return;
 

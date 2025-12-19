@@ -1,11 +1,24 @@
 {# Ожидает: user_obj, size = "xl" | "lg" | "md" | "sm" #}
+{% if user_obj %}
 <div class="avatar avatar--{{ size|default:'md' }}">
     {% if user_obj.avatar %}
         <img src="{{ user_obj.avatar.url }}"
              alt="{{ user_obj.display_name|default:user_obj.username }}">
     {% else %}
         <span class="avatar-initial">
-            {{ user_obj.display_name|default:user_obj.username|first|upper }}
+            {# display_name может быть пустым, берём username; если и его нет — "?" #}
+            {% with dn=user_obj.display_name|default:'' %}
+            {% with un=user_obj.username|default:'' %}
+            {% with nm=dn|default:un %}
+                {{ nm|default:"?"|slice:":1"|upper }}
+            {% endwith %}
+            {% endwith %}
+            {% endwith %}
         </span>
     {% endif %}
 </div>
+{% else %}
+<div class="avatar avatar--{{ size|default:'md' }}">
+    <span class="avatar-initial">?</span>
+</div>
+{% endif %}

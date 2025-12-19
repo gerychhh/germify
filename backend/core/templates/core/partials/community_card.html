@@ -1,33 +1,55 @@
-{% load static %}
-<div class="card" style="display:flex; align-items:flex-start; gap:14px;">
-  {% include "core/partials/avatar.html" with user_obj=c size="md" %}
-  <div style="flex:1; min-width:0;">
-    <a href="{% url 'community_detail' c.slug %}" style="color:#e5e7eb; text-decoration:none; font-weight:800; font-size:16px;">
-      {{ c.name }}
-    </a>
-    <div style="margin-top:4px; color:#64748b; font-size:13px;">
-      #{{ c.slug }} · {{ c.members_total }} участников
+{# Карточка сообщества для списка /communities/ #}
+
+<div class="card community-card position-relative" data-href="{% url 'community_detail' c.slug %}">
+  <div class="card-body py-3">
+    <div class="d-flex flex-column flex-md-row align-items-start gap-3">
+      <div class="flex-shrink-0">
+        {# У Community нет avatar по умолчанию, partial avatar умеет показывать инициалы #}
+        {% include "core/partials/avatar.html" with user_obj=c size="md" %}
+      </div>
+
+      <div class="flex-grow-1 min-w-0">
+        <div class="d-flex align-items-start justify-content-between gap-2">
+          <div class="min-w-0">
+            <a href="{% url 'community_detail' c.slug %}" class="community-title text-decoration-none fw-semibold text-truncate d-inline-block">
+              {{ c.name }}
+            </a>
+
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small text-secondary">
+              {# ✅ сначала число участников #}
+              <span class="badge text-bg-light border">👥 {{ c.members_total }}</span>
+
+              {# затем хэштеги/slug #}
+              {% if c.slug %}
+                <span class="badge text-bg-light border">#{{ c.slug }}</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="community-actions d-flex align-items-center gap-2 flex-nowrap">
+            <a href="{% url 'community_detail' c.slug %}" class="btn btn-outline-secondary btn-sm">Открыть</a>
+
+            {% if user.is_authenticated %}
+              {% if c.id in member_community_ids %}
+                <button type="button" class="btn btn-outline-success btn-sm" disabled>Вы подписаны</button>
+              {% else %}
+                <form method="post"
+                      action="{% url 'community_join' c.slug %}"
+                      class="community-membership-form m-0"
+                      data-community-slug="{{ c.slug }}"
+                      data-community-id="{{ c.id }}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-success btn-sm">Вступить</button>
+                </form>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+
+        {% if c.description %}
+          <div class="community-desc mt-2 small text-secondary">{{ c.description }}</div>
+        {% endif %}
+      </div>
     </div>
-    {% if c.description %}
-      <div style="margin-top:8px; color:#cbd5e1; overflow-wrap:anywhere; word-break:break-word;">{{ c.description|truncatechars:140 }}</div>
-    {% endif %}
-  </div>
-
-  <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; align-self:flex-start;">
-    <a href="{% url 'community_detail' c.slug %}" class="primary-button" style="text-decoration:none; background:#1f2937; color:#e5e7eb;">Открыть</a>
-
-    {% if user.is_authenticated %}
-      {% if c.id in member_community_ids %}
-        <form method="post" action="{% url 'community_leave' c.slug %}" style="margin:0;">
-          {% csrf_token %}
-          <button type="submit" class="primary-button" style="background:#1f2937; color:#e5e7eb;">Выйти</button>
-        </form>
-      {% else %}
-        <form method="post" action="{% url 'community_join' c.slug %}" style="margin:0;">
-          {% csrf_token %}
-          <button type="submit" class="primary-button">Вступить</button>
-        </form>
-      {% endif %}
-    {% endif %}
   </div>
 </div>

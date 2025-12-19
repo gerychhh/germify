@@ -4,341 +4,216 @@
 {% block title %}Профиль — Germify{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'core/css/avatar.css' %}">
-<style>
-    .profile-page {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .profile-card {
-        background: #020617;
-        border-radius: 16px;
-        border: 1px solid #1e293b;
-        padding: 20px;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
-    }
-
-    .profile-header {
-        display: flex;
-        gap: 20px;
-        align-items: flex-start;
-    }
-
-    .profile-main {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .profile-name {
-        font-size: 20px;
-        font-weight: 600;
-        color: #e5e7eb;
-    }
-
-    .profile-username {
-        font-size: 14px;
-        color: #9ca3af;
-    }
-
-    .profile-stats {
-        display: flex;
-        gap: 20px;
-        font-size: 14px;
-        color: #9ca3af;
-    }
-
-    .profile-bio {
-        font-size: 15px;
-        white-space: pre-line;
-        color: #e5e7eb;
-        margin-top: 4px;
-    }
-
-    .profile-actions {
-        margin-top: 10px;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .primary-button {
-        border: none;
-        border-radius: 999px;
-        padding: 7px 16px;
-        background: linear-gradient(135deg, #22c55e, #16a34a);
-        color: #022c22;
-        font-weight: 600;
-        cursor: pointer;
-        font-size: 14px;
-        text-decoration: none;
-    }
-
-    .primary-button:hover {
-        filter: brightness(1.1);
-    }
-
-    /* Блок редактирования профиля */
-    .profile-edit-box {
-        margin-top: 10px;
-        padding: 15px;
-        background: #0f172a;
-        border-radius: 12px;
-        border: 1px solid #1e293b;
-        width: 320px;
-    }
-
-    .profile-edit-box form {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .form-label {
-        font-size: 13px;
-        color: #9ca3af;
-    }
-
-    .profile-input,
-    .profile-textarea {
-        width: 100%;
-        border-radius: 10px;
-        border: 1px solid #1f2937;
-        background: #020617;
-        padding: 8px 10px;
-        font-size: 14px;
-        color: #e5e7eb;
-    }
-
-    .profile-textarea {
-        min-height: 80px;
-        resize: vertical;
-    }
-
-    .avatar-edit-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .avatar-upload-button {
-        position: relative;
-        display: inline-block;
-        background: #1e40af;
-        color: #e5e7eb;
-        padding: 6px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 13px;
-        white-space: nowrap;
-    }
-
-    .avatar-upload-button:hover {
-        background: #1d4ed8;
-    }
-
-    /* скрываем сам input[type=file] */
-    .avatar-upload-button input[type="file"] {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-    }
-
-    .avatar-preview-img {
-        width: 64px;
-        height: 64px;
-        border-radius: 12px;
-        object-fit: cover;
-        border: 1px solid #1f2937;
-    }
-
-    .save-profile-btn {
-        margin-top: 5px;
-        align-self: flex-start;
-    }
-
-    .posts-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .post-text,
-    .comment-text,
-    .reply-text {
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        overflow-wrap: anywhere;
-    }
-
-    @media (max-width: 640px) {
-        .profile-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .profile-card {
-            padding: 16px;
-            border-radius: 14px;
-        }
-
-        .profile-username {
-            font-size: 18px;
-        }
-
-        .profile-bio {
-            font-size: 14px;
-            line-height: 1.4;
-        }
-    }
-</style>
+  <link rel="stylesheet" href="{% static 'core/css/avatar.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/profile.css' %}?v=12">
 {% endblock %}
 
 {% block content %}
-<div class="profile-page">
 
-    <!-- === ПРОФИЛЬ === -->
-    <section class="profile-card">
-        <div class="profile-header">
+<div class="container" style="max-width: 980px;">
+  <div class="profile-page">
 
-            {# большой аватар слева #}
+    {# ====== HERO ====== #}
+    <section class="card profile-hero">
+      <div class="card-body profile-hero__body">
+
+        <div class="profile-hero__left">
+          <div class="profile-avatar-wrap">
             {% include "core/partials/avatar.html" with user_obj=profile_user size="xl" %}
 
-            <div class="profile-main">
+            {# Плашка «изменить фото» (появляется только в режиме редактирования) #}
+            {% if user.is_authenticated and user.username == profile_user.username and form %}
+              <label id="profileAvatarOverlay" class="profile-avatar-overlay d-none" for="id_avatar" title="Загрузить новое фото">
+                <span class="profile-avatar-overlay__icon">📷</span>
+                <span class="profile-avatar-overlay__text">Изменить</span>
+              </label>
+            {% endif %}
+          </div>
+        </div>
 
+        <div class="profile-hero__right">
+          <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+            <div>
+              <div class="profile-name-row">
                 <div class="profile-name">
-                    {{ profile_user.display_name|default:profile_user.username }}
+                  {{ profile_user.display_name|default:profile_user.username }}
                 </div>
-
-                <div class="profile-username">
-                    @{{ profile_user.username }}
-                </div>
-
-                <div class="profile-stats">
-                    <span>
-                        <strong class="profile-followers-count">
-                            {{ profile_user.followers_count }}
-                        </strong> подписчиков
-                    </span>
-                    <span>
-                        <strong>{{ profile_user.following_count }}</strong> подписок
-                    </span>
-                </div>
-
-                {% if profile_user.bio %}
-                    <div class="profile-bio">{{ profile_user.bio }}</div>
+                {% if profile_user.is_staff %}
+                  <span class="badge text-bg-dark ms-2">admin</span>
                 {% endif %}
 
-                <div class="profile-actions">
+                {# Карандаш редактирования (только на своём профиле) #}
+                {% if user.is_authenticated and user.username == profile_user.username and form %}
+                  <button type="button" class="btn btn-sm btn-outline-secondary ms-2" id="profileEditToggle" aria-expanded="false" title="Редактировать профиль">
+                    ✏️
+                  </button>
+                {% endif %}
+              </div>
 
-                    {# --- МОЙ ПРОФИЛЬ --- #}
-                    {% if is_owner and form %}
-                        <div class="profile-edit-box">
-                            <form method="post" enctype="multipart/form-data">
-                                {% csrf_token %}
-
-                                <label class="form-label">Отображаемое имя</label>
-                                {{ form.display_name }}
-
-                                <label class="form-label">Био</label>
-                                {{ form.bio }}
-
-                                <label class="form-label">Аватар</label>
-                                <div class="avatar-edit-row">
-                                    <label class="avatar-upload-button">
-                                        Загрузить аватар
-                                        {{ form.avatar }}
-                                    </label>
-
-                                    {# одно img для превью: либо текущий, либо спрятанный #}
-                                    {% if profile_user.avatar %}
-                                        <img src="{{ profile_user.avatar.url }}"
-                                             class="avatar-preview-img"
-                                             id="avatar-preview">
-                                    {% else %}
-                                        <img src=""
-                                             class="avatar-preview-img"
-                                             id="avatar-preview"
-                                             style="display:none;">
-                                    {% endif %}
-                                </div>
-
-                                <button type="submit"
-                                        class="primary-button save-profile-btn">
-                                    Сохранить
-                                </button>
-                            </form>
-                        </div>
-                    {% endif %}
-
-                    {# --- ЧУЖОЙ ПРОФИЛЬ --- #}
-                    {% if user.is_authenticated and not is_owner %}
-                        <button type="button"
-                                class="primary-button follow-btn"
-                                data-username="{{ profile_user.username }}"
-                                data-follow-url="{% url 'follow_user' profile_user.username %}"
-                                data-unfollow-url="{% url 'unfollow_user' profile_user.username %}"
-                                data-following="{% if is_following %}1{% else %}0{% endif %}"
-                                style="{% if is_following %}background:#1f2937;color:#e5e7eb;{% endif %}">
-                            {% if is_following %}Вы подписаны{% else %}Подписаться{% endif %}
-                        </button>
-
-                        <a href="{% url 'messages_thread' profile_user.username %}"
-                           class="primary-button"
-                           style="background:#0f172a;color:#e5e7eb;">
-                            Написать сообщение
-                        </a>
-                    {% endif %}
-
-                </div>
+              <div class="profile-username">@{{ profile_user.username }}</div>
             </div>
+
+            <div class="profile-actions">
+              {# ЧУЖОЙ ПРОФИЛЬ: Подписаться + Сообщение #}
+              {% if user.is_authenticated and user.username != profile_user.username %}
+                <button type="button"
+                        class="btn btn-sm {% if is_following %}btn-outline-secondary{% else %}btn-success{% endif %} follow-btn"
+                        data-username="{{ profile_user.username }}"
+                        data-follow-url="{% url 'follow_user' profile_user.username %}"
+                        data-unfollow-url="{% url 'unfollow_user' profile_user.username %}"
+                        data-following="{% if is_following %}1{% else %}0{% endif %}">
+                  {% if is_following %}Вы подписаны{% else %}Подписаться{% endif %}
+                </button>
+
+                <a href="{% url 'messages_thread' profile_user.username %}" class="btn btn-sm btn-outline-primary">
+                  Написать
+                </a>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="profile-stats">
+            <span class="profile-stat">
+              <strong class="profile-followers-count">{{ profile_user.followers_count }}</strong>
+              <span class="text-body-secondary">подписчиков</span>
+            </span>
+            <span class="profile-stat">
+              <strong>{{ profile_user.following_count }}</strong>
+              <span class="text-body-secondary">подписок</span>
+            </span>
+          </div>
+
+          {# ===== BIO VIEW ===== #}
+          <div id="profileBioView" class="profile-bio-view">
+            {% if profile_user.bio %}
+              <div class="profile-bio">{{ profile_user.bio }}</div>
+            {% else %}
+              <div class="profile-bio profile-bio--empty">Пока нет описания.</div>
+            {% endif %}
+          </div>
+
+          {# ===== EDIT PANEL (скрыт по умолчанию) ===== #}
+          {% if user.is_authenticated and user.username == profile_user.username and form %}
+            <div id="profileEditPanel" class="profile-edit-panel d-none">
+              <form method="post" enctype="multipart/form-data" class="profile-edit-form">
+                {% csrf_token %}
+
+                <div class="row g-2">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">Отображаемое имя</label>
+                    {{ form.display_name }}
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">О себе</label>
+                    {{ form.bio }}
+                  </div>
+                </div>
+
+                {# input type=file (не показываем как кнопку, но оставляем кликабельным через label-overlay) #}
+                <div class="d-none">
+                  {{ form.avatar }}
+                </div>
+
+                <div class="d-flex gap-2 mt-2">
+                  <button type="submit" class="btn btn-success btn-sm">Сохранить</button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="profileEditCancel">Отмена</button>
+                </div>
+              </form>
+            </div>
+          {% endif %}
+
         </div>
+      </div>
     </section>
 
-    <!-- === ПОСТЫ === -->
-    <section class="profile-card">
-        <h2 style="font-size:16px;color:#e5e7eb;margin-bottom:10px;">Посты</h2>
-
+    {# ====== POSTS ====== #}
+    <section class="card">
+      <div class="card-header bg-white">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="fw-semibold">Посты</div>
+          <span class="badge text-bg-light">{{ posts|length }}</span>
+        </div>
+      </div>
+      <div class="card-body">
         <div class="posts-list">
-            {% for post in posts %}
-                {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
-            {% empty %}
-                <p style="color:#6b7280;">У пользователя пока нет постов.</p>
-            {% endfor %}
+          {% for post in posts %}
+            {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
+          {% empty %}
+            <div class="text-body-secondary">У пользователя пока нет постов.</div>
+          {% endfor %}
         </div>
+      </div>
     </section>
 
+  </div>
 </div>
 
+
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const fileInput = document.querySelector(".profile-avatar-input");
-    const previewImg = document.getElementById("avatar-preview");
+document.addEventListener('DOMContentLoaded', function () {
+  const toggleBtn = document.getElementById('profileEditToggle');
+  const cancelBtn = document.getElementById('profileEditCancel');
+  const panel = document.getElementById('profileEditPanel');
+  const bioView = document.getElementById('profileBioView');
+  const overlay = document.getElementById('profileAvatarOverlay');
 
-    if (!fileInput) return;
+  const fileInput = document.querySelector('.profile-avatar-input');
+  const avatarWrap = document.querySelector('.profile-avatar-wrap .avatar');
 
-    fileInput.addEventListener("change", function () {
-        const file = this.files && this.files[0];
-        if (!file) return;
+  function setEditing(isEditing) {
+    if (!panel || !bioView || !toggleBtn) return;
+    panel.classList.toggle('d-none', !isEditing);
+    bioView.classList.toggle('d-none', isEditing);
+    toggleBtn.setAttribute('aria-expanded', isEditing ? 'true' : 'false');
+    if (overlay) overlay.classList.toggle('d-none', !isEditing);
+    document.body.classList.toggle('profile-is-editing', isEditing);
 
-        // только картинки
-        if (!file.type.startsWith("image/")) {
-            return;
-        }
+    // фокус на био
+    if (isEditing) {
+      const bioField = document.getElementById('id_bio');
+      if (bioField) bioField.focus();
+    }
+  }
 
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            if (!previewImg) return;
-            previewImg.src = e.target.result;
-            previewImg.style.display = "block";
-        };
-        reader.readAsDataURL(file);
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', function () {
+      const isOpen = panel && !panel.classList.contains('d-none');
+      setEditing(!isOpen);
     });
+  }
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', function () {
+      setEditing(false);
+      // сброс выбранного файла
+      if (fileInput) fileInput.value = '';
+    });
+  }
+
+  // Превью выбранного аватара прямо в круге аватара
+  if (fileInput && avatarWrap) {
+    fileInput.addEventListener('change', function () {
+      const file = this.files && this.files[0];
+      if (!file) return;
+      if (!file.type || !file.type.startsWith('image/')) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const url = e.target.result;
+        let img = avatarWrap.querySelector('img');
+        const initial = avatarWrap.querySelector('.avatar-initial');
+        if (!img) {
+          img = document.createElement('img');
+          img.alt = 'avatar';
+          avatarWrap.appendChild(img);
+        }
+        img.src = url;
+        if (initial) initial.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 });
 </script>
+
 {% endblock %}

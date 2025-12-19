@@ -5,14 +5,18 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Case, When, Value, IntegerField, Max
+from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.utils.text import slugify
+from django.utils.http import url_has_allowed_host_and_scheme
+
 
 
 from .forms import RegisterForm, PostForm, MessageForm, ProfileForm, CommunityForm, CommunityPostForm
+from .constants import MAX_ATTACHMENTS_PER_POST
 from .models import (
     Post,
     User,
@@ -161,41 +165,54 @@ def create_post(request):
     if request.method != "POST":
         return redirect("feed")
 
-    form = PostForm(request.POST)
+    is_ajax = bool(request.headers.get("x-requested-with"))
 
-    if not form.is_valid():
-        if request.headers.get("x-requested-with"):
-            return JsonResponse({"success": False, "errors": form.errors}, status=400)
-        return redirect("feed")
-
-    post = form.save(commit=False)
-    post.author = request.user
-    post.save()
-
+    # Сначала валидируем вложения, чтобы не создавать пост при ошибке
     files = request.FILES.getlist("attachments")
+
+    if len(files) > MAX_ATTACHMENTS_PER_POST:
+        msg = f"Максимум файлов в одном посте: {MAX_ATTACHMENTS_PER_POST}."
+        if is_ajax:
+            return JsonResponse({"success": False, "error": msg}, status=400)
+        messages.error(request, msg)
+        return redirect("feed")
 
     MAX_SIZE_MB = 500
     MAX_SIZE = MAX_SIZE_MB * 1024 * 1024
 
     for f in files:
         if f.size > MAX_SIZE:
-            return JsonResponse({
-                "success": False,
-                "error": f"Файл '{f.name}' превышает {MAX_SIZE_MB}MB."
-            }, status=400)
+            msg = f"Файл '{f.name}' превышает {MAX_SIZE_MB}MB."
+            if is_ajax:
+                return JsonResponse({"success": False, "error": msg}, status=400)
+            messages.error(request, msg)
+            return redirect("feed")
 
-        PostAttachment.objects.create(
-            post=post,
-            file=f,
-            original_name=f.name
-        )
+    form = PostForm(request.POST)
 
-    if request.headers.get("x-requested-with"):
+    if not form.is_valid():
+        if is_ajax:
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+        # для не-AJAX просто возвращаемся в ленту
+        return redirect("feed")
+
+    with transaction.atomic():
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+
+        for f in files:
+            PostAttachment.objects.create(
+                post=post,
+                file=f,
+                original_name=f.name,
+            )
+
+    if is_ajax:
         html = render_post_html(post, request)
         return JsonResponse({"success": True, "html": html})
 
     return redirect("feed")
-
 
 @login_required
 def delete_post(request, pk):
@@ -907,27 +924,40 @@ def community_detail(request, slug):
     })
 
 
+
+# --- helpers ---
+def _redirect_back(request, fallback_view, **kwargs):
+    """Redirect back to the previous page (communities list, profile, etc.) after POST actions."""
+    next_url = request.POST.get("next") or request.GET.get("next") or request.META.get("HTTP_REFERER")
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_url)
+    return redirect(fallback_view, **kwargs)
+
 @login_required
 def community_join(request, slug):
     community = get_object_or_404(Community, slug=slug)
     if request.method != "POST":
-        return redirect("community_detail", slug=community.slug)
+        return _redirect_back(request, "community_detail", slug=community.slug)
     CommunityMembership.objects.get_or_create(
         community=community,
         user=request.user,
         defaults={"is_admin": False},
     )
-    return redirect("community_detail", slug=community.slug)
+    return _redirect_back(request, "community_detail", slug=community.slug)
 
 
 @login_required
 def community_leave(request, slug):
     community = get_object_or_404(Community, slug=slug)
     if request.method != "POST":
-        return redirect("community_detail", slug=community.slug)
+        return _redirect_back(request, "community_detail", slug=community.slug)
 
     CommunityMembership.objects.filter(community=community, user=request.user).delete()
-    return redirect("community_detail", slug=community.slug)
+    return _redirect_back(request, "community_detail", slug=community.slug)
 
 
 @login_required

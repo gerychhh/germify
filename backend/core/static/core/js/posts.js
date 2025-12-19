@@ -23,6 +23,99 @@ function ajaxPost(url, form) {
     });
 }
 
+// ========================
+// SMART IMAGE GALLERIES (1–10)
+// ========================
+function _imgShape(img) {
+    const w = img.naturalWidth || 0;
+    const h = img.naturalHeight || 0;
+    if (!w || !h) return null;
+    const r = w / h;
+    if (r >= 1.25) return "land";
+    if (r <= 0.85) return "port";
+    return "square";
+}
+
+function _chooseGalleryLayout(count, firstShape, allShapes) {
+    if (count <= 0) return "one";
+    if (count === 1) return "one";
+
+    if (count === 2) {
+        const s1 = allShapes[0] || firstShape;
+        const s2 = allShapes[1] || firstShape;
+        if (s1 === "port" && s2 === "port") return "two-port";
+        if (s1 === "land" && s2 === "land") return "two-land";
+        return "two-mixed";
+    }
+
+    if (count === 3) {
+        // если первая вертикальная — VK-раскладка, иначе «широкая сверху»
+        return firstShape === "port" ? "three-vk" : "three-top";
+    }
+
+    if (count === 4) return "four";
+
+    if (count === 5) {
+        return firstShape === "port" ? "five-left" : "five-top";
+    }
+
+    // 6–10
+    return "grid-3";
+}
+
+function initSmartGalleries(root) {
+    const scope = root || document;
+    const galleries = scope.querySelectorAll?.(".attachment-gallery") || [];
+    galleries.forEach((gallery) => {
+        const imgs = Array.from(gallery.querySelectorAll(".gallery-img"));
+        if (!imgs.length) {
+            gallery.dataset.count = "0";
+            gallery.dataset.layout = "one";
+            return;
+        }
+
+        // Ограничение отображения (на всякий случай, если в старых постах больше 10)
+        const maxVisible = 6;
+        imgs.forEach((img, idx) => {
+            const item = img.closest(".gallery-item");
+            if (!item) return;
+            if (idx >= maxVisible) item.classList.add("gallery-hidden");
+            else item.classList.remove("gallery-hidden");
+        });
+
+        // бейдж +N
+        gallery.querySelectorAll(".gallery-more-badge").forEach((n) => n.remove());
+        if (imgs.length > maxVisible) {
+            const lastVisibleImg = imgs[maxVisible - 1];
+            const lastItem = lastVisibleImg?.closest(".gallery-item");
+            if (lastItem) {
+                const badge = document.createElement("div");
+                badge.className = "gallery-more-badge";
+                badge.textContent = "+" + (imgs.length - maxVisible);
+                lastItem.appendChild(badge);
+            }
+        }
+
+        const visibleCount = Math.min(imgs.length, maxVisible);
+        gallery.dataset.count = String(visibleCount);
+
+        const applyLayout = () => {
+            // по умолчанию считаем первую "не вертикальной", чтобы не раздувать пост до загрузки картинки
+            const shapes = imgs.slice(0, visibleCount).map(_imgShape);
+            const firstShape = shapes[0] || "land";
+            gallery.dataset.layout = _chooseGalleryLayout(visibleCount, firstShape, shapes);
+        };
+
+        // Применяем сразу и ещё раз после загрузки первой картинки (для корректного определения пропорций)
+        applyLayout();
+        imgs.slice(0, visibleCount).forEach((img) => {
+            if (img && !(img.complete && img.naturalWidth)) {
+                img.addEventListener("load", applyLayout, { once: true });
+            }
+        });
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
 
     // ===== Пошаговое раскрытие длинного текста =====
@@ -43,8 +136,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================================
 
     const MAX_FILE_SIZE = 25 * 1024 * 1024;      // 25 MB на файл
-    const MAX_TOTAL_SIZE = 25 * 1024 * 1024;     // 25 MB суммарно
-    const MAX_FILE_COUNT = 25;                   // максимум файлов
+    const MAX_TOTAL_SIZE = 250 * 1024 * 1024;    // 250 MB суммарно
+    const MAX_FILE_COUNT = parseInt(document.body?.dataset?.attachMax || "10", 10); // максимум файлов
 
     const fileInput = document.querySelector("input[name='attachments']");
     const previewBox = document.getElementById("file-preview");
@@ -55,6 +148,28 @@ document.addEventListener("DOMContentLoaded", function () {
     const uploadProgressBar = document.getElementById("upload-progress-bar");
 
     let selectedFiles = [];
+
+    // ==========================================================
+    //          ОГРАНИЧЕНИЕ СИМВОЛОВ В ПОСТЕ (UI)
+    // ==========================================================
+    const MAX_POST_CHARS = parseInt(document.body?.dataset?.postMax || "2000", 10);
+
+    function bindTextCounter(textarea, counterEl, max) {
+        if (!textarea || !counterEl || !max) return;
+
+        const render = () => {
+            const len = (textarea.value || "").length;
+            counterEl.textContent = `${len} / ${max}`;
+        };
+
+        textarea.setAttribute("maxlength", String(max));
+        textarea.addEventListener("input", render);
+        render();
+    }
+
+    const newPostText = document.getElementById("new-post-text");
+    const newPostCounter = document.querySelector(".post-text-counter[data-for='new-post-text']");
+    bindTextCounter(newPostText, newPostCounter, MAX_POST_CHARS);
 
     function formatSize(bytes) {
         const mb = bytes / (1024 * 1024);
@@ -69,43 +184,57 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ----- Отрисовка предпросмотра -----
     function renderPreview() {
-        if (!previewBox) return;
-        previewBox.innerHTML = "";
+    if (!previewBox) return;
+    previewBox.innerHTML = "";
 
-        selectedFiles.forEach((file, index) => {
-            const wrapper = document.createElement("div");
-            wrapper.style.position = "relative";
+    // делаем превью сеткой (чтобы картинки не растягивались на весь экран)
+    previewBox.classList.add("file-preview");
 
-            if (file.type.startsWith("image/")) {
-                const img = document.createElement("img");
-                img.src = URL.createObjectURL(file);
-                img.className = "preview-img";
-                wrapper.appendChild(img);
-            } else {
-                const div = document.createElement("div");
-                div.className = "file-preview-item";
-                div.textContent = file.name;
-                wrapper.appendChild(div);
-            }
+    selectedFiles.forEach((file, index) => {
+        const wrapper = document.createElement("div");
+        const isImage = (file.type || "").startsWith("image/");
+        wrapper.className = "preview-item " + (isImage ? "preview-item--image" : "preview-item--file");
 
-            const del = document.createElement("div");
-            del.textContent = "✖";
-            del.style.position = "absolute";
-            del.style.top = "2px";
-            del.style.right = "6px";
-            del.style.cursor = "pointer";
-            del.style.color = "#f87171";
-            del.style.fontWeight = "bold";
-            del.onclick = () => removeFile(index);
+        if (isImage) {
+            const img = document.createElement("img");
+            img.className = "preview-img";
+            const url = URL.createObjectURL(file);
+            img.src = url;
+            img.alt = file.name || "image";
+            img.onload = () => URL.revokeObjectURL(url);
+            wrapper.appendChild(img);
+        } else {
+            const row = document.createElement("div");
+            row.className = "file-preview-item";
 
-            wrapper.appendChild(del);
-            previewBox.appendChild(wrapper);
-        });
+            const icon = document.createElement("span");
+            icon.className = "file-preview-icon";
+            icon.textContent = "📎";
 
-        updateFileInfo();
-    }
+            const name = document.createElement("span");
+            name.className = "file-preview-name";
+            name.textContent = file.name || "file";
 
-    function removeFile(index) {
+            row.appendChild(icon);
+            row.appendChild(name);
+            wrapper.appendChild(row);
+        }
+
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "remove-file-btn";
+        del.setAttribute("aria-label", "Удалить файл");
+        del.innerHTML = "&times;";
+        del.onclick = () => removeFile(index);
+
+        wrapper.appendChild(del);
+        previewBox.appendChild(wrapper);
+    });
+
+    updateFileInfo();
+}
+
+function removeFile(index) {
         selectedFiles.splice(index, 1);
         renderPreview();
 
@@ -119,17 +248,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
         for (const file of files) {
             if (selectedFiles.length >= MAX_FILE_COUNT) {
-                alert("Максимум файлов: " + MAX_FILE_COUNT);
+                alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
                 break;
             }
 
             if (file.size > MAX_FILE_SIZE) {
-                alert(`Файл "${file.name}" превышает 10MB`);
+                alert(`Файл "${file.name}" превышает 25MB`);
                 continue;
             }
 
             if (totalSize + file.size > MAX_TOTAL_SIZE) {
-                alert("Превышен общий лимит размера файлов (50MB)");
+                alert("Превышен общий лимит размера файлов (250MB)");
                 break;
             }
 
@@ -304,6 +433,15 @@ document.addEventListener("DOMContentLoaded", function () {
             video.addEventListener("loadedmetadata", () => {
                 durationEl.textContent = vFormat(video.duration);
                 updateBuffer();
+
+                // mark video orientation for styling (doesn't affect player behavior)
+                if (video.videoWidth && video.videoHeight) {
+                    const r = video.videoWidth / video.videoHeight;
+                    let shape = "square";
+                    if (r >= 1.25) shape = "land";
+                    else if (r <= 0.85) shape = "port";
+                    wrapper.dataset.shape = shape;
+                }
             });
 
             video.addEventListener("loadeddata", updateBuffer);
@@ -749,6 +887,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const fd = new FormData(form);
 
+            // Учитываем будущие вложения (файлы + голосовое) и проверяем лимит
+            const voiceWillBeAdded = Boolean(form._voiceBlob && !form._voiceBlobUsed);
+            const totalFilesToSend = selectedFiles.length + (voiceWillBeAdded ? 1 : 0);
+            if (totalFilesToSend > MAX_FILE_COUNT) {
+                alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
+                return;
+            }
+
             // обычные файлы из предпросмотра
             selectedFiles.forEach(f => fd.append("attachments", f));
 
@@ -808,6 +954,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         initPostTextCollapsing(newPostEl);
                         initVideoPlayers(newPostEl);
                         initAudioPlayers(newPostEl);
+                        initSmartGalleries(newPostEl);
 
                         form.reset();
                         clearFilePreview();
@@ -818,6 +965,19 @@ document.addEventListener("DOMContentLoaded", function () {
                         window.location.reload();
                     }
                 } else {
+                    // постараемся показать серверную ошибку (например, лимит файлов/символов)
+                    const ctErr = xhr.getResponseHeader("content-type") || "";
+                    if (ctErr.indexOf("application/json") !== -1) {
+                        try {
+                            const d = JSON.parse(xhr.responseText);
+                            if (d && (d.error || d.errors)) {
+                                const errText = d.error || JSON.stringify(d.errors);
+                                alert(errText);
+                                return;
+                            }
+                        } catch (e) {}
+                    }
+
                     let msg = "Ошибка при отправке поста";
                     if (xhr.status === 413) {
                         msg = "Файл слишком большой (ошибка 413 от сервера). Увеличь client_max_body_size в nginx.";
@@ -1369,6 +1529,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 initPostTextCollapsing(container);
                 initVideoPlayers(container);
                 initAudioPlayers(container);
+                initSmartGalleries(container);
 
                 hasNext = !!data.has_next;
                 if (hasNext && data.next_page) {
@@ -1409,6 +1570,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initPostTextCollapsing(document);
     initVideoPlayers(document);
     initAudioPlayers(document);
+    initSmartGalleries(document);
 
 }); // конец DOMContentLoaded
 

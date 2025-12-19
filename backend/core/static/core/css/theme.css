@@ -1,0 +1,63 @@
+/* core/static/core/css/theme.css
+   Светлая тема + токены.
+   Меняй значения в :root (g-*) — весь сайт перекрасится.
+*/
+
+:root {
+  /* ===== Brand tokens (easy to change) ===== */
+  --g-primary: #2563eb;
+  --g-primary-rgb: 37, 99, 235;
+  --g-accent:  #0ea5e9;
+  --g-success: #16a34a;
+  --g-warning: #f59e0b;
+  --g-danger:  #ef4444;
+
+  /* ===== Surfaces ===== */
+  --g-bg:        #f8fafc;
+  --g-surface:   #ffffff;
+  --g-surface-2: #f1f5f9;
+  --g-border:    #e2e8f0;
+
+  /* ===== Typography ===== */
+  --g-text:    #0f172a;
+  --g-muted:   #475569;
+  --g-muted-2: #64748b;
+
+  /* ===== Shape & shadow ===== */
+  --g-radius:    1rem;
+  --g-radius-sm: .75rem;
+  --g-shadow:    0 1.25rem 2.5rem rgba(2, 6, 23, 0.08);
+  --g-shadow-sm: 0 .5rem 1.25rem rgba(2, 6, 23, 0.08);
+
+  /* ===== Layout ===== */
+  --g-navbar-h:    64px;
+  --g-bottomnav-h: 56px;
+}
+
+/* Map tokens to Bootstrap CSS variables */
+:root,
+[data-bs-theme="light"] {
+  --bs-body-bg: var(--g-bg);
+  --bs-body-color: var(--g-text);
+  --bs-emphasis-color: var(--g-text);
+
+  --bs-primary: var(--g-primary);
+  --bs-primary-rgb: var(--g-primary-rgb);
+  --bs-success: var(--g-success);
+  --bs-warning: var(--g-warning);
+  --bs-danger: var(--g-danger);
+
+  --bs-border-color: var(--g-border);
+  --bs-border-radius: var(--g-radius);
+  --bs-border-radius-sm: var(--g-radius-sm);
+
+  --bs-link-color: var(--g-primary);
+  --bs-link-hover-color: #1d4ed8;
+
+  /* Better contrast than default muted on white */
+  --bs-secondary-color: var(--g-muted);
+  --bs-tertiary-color: var(--g-muted-2);
+
+  --bs-secondary-bg: var(--g-surface-2);
+  --bs-tertiary-bg: var(--g-surface-2);
+}

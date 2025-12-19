@@ -1,11 +1,11 @@
 {# core/partials/post.html #}
 {% load tz %}
 
-<article class="post-card" id="post-{{ post.id }}">
-    <div class="post-layout">
+<article class="post-card card shadow-sm" id="post-{{ post.id }}">
+    <div class="post-layout card-body p-3">
         <div class="post-main">
-            <header class="post-header">
-                <div class="post-author">
+            <header class="post-header d-flex justify-content-between align-items-start gap-2">
+                <div class="post-author d-flex align-items-center gap-2 flex-wrap">
 
 
                     {% if post.is_community_post %}
@@ -13,16 +13,16 @@
 
                         <div class="post-author-meta">
                             <a href="{% url 'community_detail' post.community.slug %}"
-                               class="post-author-name">
+                               class="post-author-name text-decoration-none">
                                 {{ post.community.name }}
                             </a>
                             <div class="post-author-username">
                                 #{{ post.community.slug }}
                             </div>
-                            <div class="post-author-username" style="margin-top:2px; color:#64748b;">
+                            <div class="post-author-username small text-muted" style="margin-top:2px;">
                                 Опубликовал:
                                 <a href="{% url 'user_profile' post.author.username %}"
-                                   style="color:#9ca3af; text-decoration:none;">
+                                   class="text-muted text-decoration-none">
                                     @{{ post.author.username }}
                                 </a>
                             </div>
@@ -32,7 +32,7 @@
 
                         <div class="post-author-meta">
                             <a href="{% url 'user_profile' post.author.username %}"
-                               class="post-author-name">
+                               class="post-author-name text-decoration-none">
                                 {{ post.author.display_name|default:post.author.username }}
                             </a>
                             <div class="post-author-username">
@@ -40,10 +40,10 @@
                             </div>
 
                             {% if post.community %}
-                                <div class="post-author-username" style="margin-top:2px; color:#64748b;">
+                                <div class="post-author-username small text-muted" style="margin-top:2px;">
                                     в сообществе
                                     <a href="{% url 'community_detail' post.community.slug %}"
-                                       style="color:#93c5fd; text-decoration:none;">
+                                       class="text-decoration-none">
                                         {{ post.community.name }}
                                     </a>
                                 </div>
@@ -53,25 +53,23 @@
 
                     {# ===== КНОПКА ПОДПИСКИ В КАРТОЧКЕ ПОСТА ===== #}
                     {% if user.is_authenticated and user != post.author and not post.is_community_post %}
-                        <div style="margin-left:8px;">
+                        <div class="ms-2">
                             {% if post.author.id in following_ids %}
                                 <button type="button"
-                                        class="primary-button follow-btn"
+                                        class="btn btn-sm btn-outline-secondary follow-btn py-0 px-2"
                                         data-username="{{ post.author.username }}"
                                         data-following="1"
                                         data-follow-url="{% url 'follow_user' post.author.username %}"
-                                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}"
-                                        style="padding:2px 10px; font-size:12px; background:#1f2937; color:#e5e7eb;">
+                                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}">
                                     Вы подписаны
                                 </button>
                             {% else %}
                                 <button type="button"
-                                        class="primary-button follow-btn"
+                                        class="btn btn-sm btn-primary follow-btn py-0 px-2"
                                         data-username="{{ post.author.username }}"
                                         data-following="0"
                                         data-follow-url="{% url 'follow_user' post.author.username %}"
-                                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}"
-                                        style="padding:2px 10px; font-size:12px;">
+                                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}">
                                     Подписаться
                                 </button>
                             {% endif %}
@@ -79,15 +77,15 @@
                     {% endif %}
                 </div>
 
-                <div class="post-header-right">
+                <div class="post-header-right d-flex align-items-center gap-2">
                     <a href="{% url 'post_detail' post.id %}"
-                       class="post-date">
+                       class="post-date small">
                         {{ post.created_at|date:"d.m.Y H:i" }}
                     </a>
 
-                    <div class="post-menu-wrapper">
+                    <div class="post-menu-wrapper position-relative">
                         <button type="button"
-                                class="post-menu-toggle"
+                                class="btn btn-sm btn-outline-secondary post-menu-toggle"
                                 data-post-id="{{ post.id }}">
                             ⋯
                         </button>
@@ -96,7 +94,7 @@
                              data-post-id="{{ post.id }}">
 
                             <button type="button"
-                                    class="post-menu-item post-share-btn"
+                                    class="post-menu-item dropdown-item post-share-btn"
                                     data-post-id="{{ post.id }}"
                                     data-post-url="{% url 'post_detail' post.id %}">
                                 Поделиться
@@ -112,7 +110,7 @@
                                           data-post-id="{{ post.id }}">
                                         {% csrf_token %}
                                         <button type="submit"
-                                                class="post-menu-item post-menu-delete-btn">
+                                                class="post-menu-item dropdown-item text-danger post-menu-delete-btn">
                                             Удалить
                                         </button>
                                     </form>
@@ -265,7 +263,7 @@
                 </div>
 
                 <button type="button"
-                        class="post-text-toggle hidden">
+                        class="btn btn-link btn-sm p-0 post-text-toggle hidden">
                     Показать полностью
                 </button>
             </div>
@@ -300,7 +298,7 @@
             {# ------ КОММЕНТАРИИ К ПОСТУ ------ #}
             <div class="comments-wrap">
                 <button type="button"
-                        class="comments-toggle"
+                        class="comments-toggle btn btn-outline-secondary btn-sm w-100"
                         data-post-id="{{ post.id }}">
                     <span class="comments-toggle-label">
                         💬 Комментарии
@@ -310,22 +308,23 @@
                 </button>
                 {% if user.is_authenticated %}
                         <button type="button"
-                                class="comment-add-toggle"
+                                class="comment-add-toggle btn btn-outline-primary btn-sm mt-2"
                                 data-post-id="{{ post.id }}">
                             Написать комментарий
                         </button>
 
                         <form method="post"
                               action="{% url 'add_comment' post.id %}"
-                              class="comment-form hidden"
+                              class="comment-form hidden mt-2"
                               data-post-id="{{ post.id }}">
                             {% csrf_token %}
                             <textarea name="text"
-                                      class="comment-input"
+                                      class="form-control comment-input mb-2"
                                       placeholder="Оставьте комментарий."
+                                      rows="2"
                                       required></textarea>
                             <button type="submit"
-                                    class="comment-btn">
+                                    class="btn btn-primary btn-sm comment-btn">
                                 Отправить
                             </button>
                         </form>
