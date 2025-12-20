@@ -1,0 +1,4 @@
+/* Универсальный hidden (используется JS) */
+.hidden {
+  display: none !important;
+}

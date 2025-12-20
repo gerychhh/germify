@@ -1415,3 +1415,78 @@
 @media (max-width: 576px){
   .file-preview{grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));}
 }
+
+
+/* ==========================
+   POST EDITING (inline)
+   ========================== */
+
+
+.post-edit-block {
+    margin-top: 8px;
+    padding: 10px;
+    border: 1px solid var(--g-border);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.02);
+}
+
+.post-edit-textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+.post-edit-attachments-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.post-edit-attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid var(--g-border);
+    border-radius: 12px;
+    background: var(--g-surface);
+    max-width: 100%;
+}
+
+.post-edit-attachment-item.is-removed {
+    opacity: 0.55;
+    filter: grayscale(0.4);
+}
+
+.post-edit-att-thumb {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex: 0 0 auto;
+    border: 1px solid var(--g-border);
+    background: var(--g-surface);
+}
+
+.post-edit-att-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--g-border);
+    background: var(--g-surface);
+    flex: 0 0 auto;
+}
+
+.post-edit-att-name {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+@media (max-width: 576px) {
+    .post-edit-att-name { max-width: 160px; }
+    .post-edit-block { padding: 8px; }
+}

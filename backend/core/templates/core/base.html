@@ -15,16 +15,7 @@
     <link rel="stylesheet" href="{% static 'core/css/theme.css' %}">
     <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
 
-    {# App styles #}
-    <link rel="stylesheet" href="{% static 'core/css/messages_bs.css' %}">
-    <link rel="stylesheet" href="{% static 'core/css/avatar.css' %}">
-    <link rel="stylesheet" href="{% static 'core/css/posts.css' %}?v=12">
-
-
-    {# Swiper (используется в постах) #}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-
+    {% block extra_css %}{% endblock %}
     <script src="{% static 'core/js/avatar.js' %}" defer></script>
     <script src="{% static 'core/js/voice_recorder.js' %}?v=3" defer></script>
 
@@ -145,7 +136,7 @@
 
 <script src="{% static 'core/js/messages.js' %}?v=6" defer></script>
 <script src="{% static 'core/js/messages_thread.js' %}?v=6" defer></script>
-<script src="{% static 'core/js/posts.js' %}?v=6" defer></script>
+<script src="{% static 'core/js/posts.js' %}?v=7" defer></script>
 
 {% block extra_js %}{% endblock %}
 

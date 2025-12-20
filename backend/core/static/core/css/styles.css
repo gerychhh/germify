@@ -642,7 +642,7 @@ body {
     .profile-card,
     .comment-item {
         padding: 10px;
-        border-radius: 12px;
+        border-radius: 0px;
     }
 
     .feed-new-post-textarea,

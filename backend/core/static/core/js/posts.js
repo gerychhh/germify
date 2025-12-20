@@ -119,9 +119,10 @@ function initSmartGalleries(root) {
 document.addEventListener("DOMContentLoaded", function () {
 
     // ===== Пошаговое раскрытие длинного текста =====
-    // посты: 220px за клик
-    const MAX_POST_TEXT_HEIGHT = 220;
-    const POST_TEXT_STEP = 220;
+    // посты: свёртка крупнее (моб/десктоп)
+    const IS_MOBILE = window.matchMedia && window.matchMedia("(max-width: 576px)").matches;
+    const MAX_POST_TEXT_HEIGHT = IS_MOBILE ? 320 : 420;
+    const POST_TEXT_STEP = IS_MOBILE ? 240 : 320;
 
     // описание сообщества + комментарии/ответы: 120px, затем +140px за клик
     const SOFT_TEXT_INITIAL = 120;
@@ -139,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const MAX_TOTAL_SIZE = 250 * 1024 * 1024;    // 250 MB суммарно
     const MAX_FILE_COUNT = parseInt(document.body?.dataset?.attachMax || "10", 10); // максимум файлов
 
-    const fileInput = document.querySelector("input[name='attachments']");
+    const fileInput = document.querySelector(".new-post-form input[name='attachments']");
     const previewBox = document.getElementById("file-preview");
     const dropZone = document.getElementById("drop-zone");
     const fileCountEl = document.getElementById("file-count");
@@ -170,6 +171,39 @@ document.addEventListener("DOMContentLoaded", function () {
     const newPostText = document.getElementById("new-post-text");
     const newPostCounter = document.querySelector(".post-text-counter[data-for='new-post-text']");
     bindTextCounter(newPostText, newPostCounter, MAX_POST_CHARS);
+
+// ===== РЕДАКТИРОВАНИЕ ПОСТА: выбранные новые файлы + лимит =====
+document.addEventListener("change", function (e) {
+    const input = e.target;
+    if (!input || !input.classList || !input.classList.contains("post-edit-file-input")) return;
+
+    const form = input.closest(".post-edit-form");
+    if (!form) return;
+
+    const out = form.querySelector(".post-edit-new-files");
+    const files = Array.from(input.files || []);
+    if (!out) return;
+
+    // Проверяем лимит: существующие (за вычетом помеченных) + новые
+    const existingCount = form.querySelectorAll(".post-edit-attachment-item").length;
+    const toDelete = form.querySelectorAll(".post-edit-att-check:checked").length;
+    const willRemain = Math.max(0, existingCount - toDelete) + files.length;
+
+    if (willRemain > MAX_FILE_COUNT) {
+        alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
+        input.value = "";
+        out.textContent = "";
+        return;
+    }
+
+    if (!files.length) {
+        out.textContent = "";
+        return;
+    }
+
+    out.textContent = "Добавится: " + files.map(f => f.name).join(", ");
+});
+
 
     function formatSize(bytes) {
         const mb = bytes / (1024 * 1024);
@@ -1208,7 +1242,62 @@ function removeFile(index) {
 
             return;
         }
-        // ---------- УДАЛЕНИЕ ПОСТА ----------
+        
+
+// ---------- РЕДАКТИРОВАНИЕ ПОСТА (AJAX) ----------
+if (form.classList.contains("post-edit-form")) {
+    e.preventDefault();
+
+    const postCard = form.closest(".post-card");
+    if (!postCard) return;
+
+    // Лимит файлов: существующие (за вычетом помеченных на удаление) + новые <= MAX_FILE_COUNT
+    const existingItems = form.querySelectorAll(".post-edit-attachment-item");
+    let existingCount = existingItems.length;
+
+    const toDelete = form.querySelectorAll(".post-edit-att-check:checked").length;
+    const newCount = (form.querySelector(".post-edit-file-input")?.files?.length) || 0;
+
+    const willRemain = Math.max(0, existingCount - toDelete) + newCount;
+    if (willRemain > MAX_FILE_COUNT) {
+        alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
+        return;
+    }
+
+    ajaxPost(form.action, form)
+        .then(async (resp) => {
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok || !data.success) {
+                const msg = data.error || "Не удалось сохранить изменения.";
+                alert(msg);
+                return;
+            }
+
+            if (!data.html) return;
+
+            // Заменяем карточку поста целиком на обновлённую
+            const tmp = document.createElement("div");
+            tmp.innerHTML = data.html.trim();
+            const newEl = tmp.firstElementChild;
+            if (!newEl) return;
+
+            postCard.replaceWith(newEl);
+
+            // Переинициализация поведения для нового DOM-узла
+            initPostTextCollapsing(newEl);
+            initSmartGalleries(newEl);
+            initVideoPlayers(newEl);
+            initAudioPlayers(newEl);
+        })
+        .catch((err) => {
+            console.error("edit post error:", err);
+            alert("Не удалось сохранить изменения.");
+        });
+
+    return;
+}
+
+// ---------- УДАЛЕНИЕ ПОСТА ----------
         if (form.classList.contains("post-delete-form")) {
             e.preventDefault();
 
@@ -1243,6 +1332,84 @@ function removeFile(index) {
     // ОБРАБОТЧИК ВСЕХ КЛИКОВ
     // ==========================
     document.addEventListener("click", function (e) {
+
+// ----- ОТКРЫТЬ/ЗАКРЫТЬ РЕДАКТИРОВАНИЕ ПОСТА -----
+const editToggle = e.target.closest(".post-edit-toggle");
+if (editToggle) {
+    const postId = editToggle.dataset.postId;
+    const postCard = document.getElementById("post-" + postId);
+    if (!postCard) return;
+
+    const viewBlock = postCard.querySelector(".post-view-block");
+    const editBlock = postCard.querySelector(".post-edit-block");
+    if (!editBlock) return;
+
+    // закрываем меню, если открыто
+    const menu = postCard.querySelector(".post-menu");
+    if (menu) menu.classList.add("hidden");
+
+    if (viewBlock) viewBlock.classList.toggle("hidden");
+    editBlock.classList.toggle("hidden");
+
+    // инициализируем счётчик символов для textarea редактирования
+    const ta = editBlock.querySelector(".post-edit-textarea");
+    const counter = editBlock.querySelector(".post-edit-counter");
+    if (ta && counter) {
+        bindTextCounter(ta, counter, MAX_POST_CHARS);
+        // фикс: при первом открытии показываем актуальную длину
+        const len = (ta.value || "").length;
+        counter.textContent = `${len} / ${MAX_POST_CHARS}`;
+    }
+
+    return;
+}
+
+// ----- ОТМЕНА РЕДАКТИРОВАНИЯ -----
+const editCancel = e.target.closest(".post-edit-cancel");
+if (editCancel) {
+    const postCard = editCancel.closest(".post-card");
+    if (!postCard) return;
+
+    const viewBlock = postCard.querySelector(".post-view-block");
+    const editBlock = postCard.querySelector(".post-edit-block");
+    if (viewBlock) viewBlock.classList.remove("hidden");
+    if (editBlock) editBlock.classList.add("hidden");
+
+    // откат текста
+    const ta = postCard.querySelector(".post-edit-textarea");
+    if (ta) {
+        const orig = ta.getAttribute("data-original") || "";
+        ta.value = orig;
+    }
+
+    // снять отметки удаления
+    postCard.querySelectorAll(".post-edit-att-check").forEach(ch => { ch.checked = false; });
+    postCard.querySelectorAll(".post-edit-attachment-item").forEach(it => { it.classList.remove("is-removed"); });
+
+    // очистить новые файлы
+    const inp = postCard.querySelector(".post-edit-file-input");
+    if (inp) inp.value = "";
+    const box = postCard.querySelector(".post-edit-new-files");
+    if (box) box.textContent = "";
+
+    return;
+}
+
+// ----- УБРАТЬ/ВЕРНУТЬ СУЩЕСТВУЮЩЕЕ ВЛОЖЕНИЕ -----
+const attToggle = e.target.closest(".post-edit-att-toggle");
+if (attToggle) {
+    const item = attToggle.closest(".post-edit-attachment-item");
+    if (!item) return;
+
+    const check = item.querySelector(".post-edit-att-check");
+    if (!check) return;
+
+    check.checked = !check.checked;
+    item.classList.toggle("is-removed", check.checked);
+    attToggle.textContent = check.checked ? "↩" : "✕";
+    return;
+}
+
 
         // ----- РАЗВОРОТ/СВОРАЧИВАНИЕ ДЛИННОГО ПОСТА (ТЕКСТ + МЕДИА) -----
         const textToggle = e.target.closest(".post-text-toggle");

@@ -7,7 +7,7 @@
 .posts-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0px;
 }
 
 /* ===== Карточка поста ===== */
@@ -15,7 +15,7 @@
   background: var(--g-surface);
   border: 1px solid var(--g-border);
   border-radius: var(--g-radius);
-  padding: 12px 14px;
+  padding: 0px 0px;
   box-shadow: var(--g-shadow-sm);
 }
 

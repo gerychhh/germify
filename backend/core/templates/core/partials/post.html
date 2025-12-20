@@ -83,6 +83,19 @@
                         {{ post.created_at|date:"d.m.Y H:i" }}
                     </a>
 
+
+{% if user.is_authenticated %}
+    {% if user == post.author or user.is_superuser or post.is_community_post and post.community_id in admin_community_ids %}
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary post-edit-toggle"
+                data-post-id="{{ post.id }}"
+                title="Редактировать">
+            ✎
+        </button>
+    {% endif %}
+{% endif %}
+
+
                     <div class="post-menu-wrapper position-relative">
                         <button type="button"
                                 class="btn btn-sm btn-outline-secondary post-menu-toggle"
@@ -104,6 +117,13 @@
                                 {# ✅ ВАЖНО: никаких скобок! Django template их не понимает #}
                                 {% if user == post.author or user.is_superuser or post.is_community_post and admin_community_ids and post.community_id in admin_community_ids %}
 
+                                    
+<button type="button"
+        class="post-menu-item dropdown-item post-edit-toggle"
+        data-post-id="{{ post.id }}">
+    Редактировать
+</button>
+
                                     <form method="post"
                                           action="{% url 'delete_post' post.id %}"
                                           class="post-delete-form"
@@ -122,7 +142,9 @@
                 </div>
             </header>
 
-            {# ==== ТЕКСТ + МЕДИА С СВЁРТКОЙ ==== #}
+            <div class="post-view-block">
+
+{# ==== ТЕКСТ + МЕДИА С СВЁРТКОЙ ==== #}
             <div class="post-text-block">
                 <div class="post-text-wrapper">
                     <p class="post-text">{{ post.text }}</p>
@@ -268,7 +290,85 @@
                 </button>
             </div>
 
-            <div class="post-footer-row">
+            
+</div>
+
+
+{# ==== РЕЖИМ РЕДАКТИРОВАНИЯ ПОСТА ==== #}
+<div class="post-edit-block hidden" data-post-id="{{ post.id }}">
+    <form method="post"
+          action="{% url 'edit_post' post.id %}"
+          class="post-edit-form"
+          data-post-id="{{ post.id }}"
+          enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <textarea name="text"
+                  class="form-control post-edit-textarea"
+                  rows="4"
+                  maxlength="{{ POST_TEXT_MAX_LENGTH }}"
+                  data-original="{{ post.text|default_if_none:'' }}">{{ post.text|default_if_none:'' }}</textarea>
+        <div class="d-flex justify-content-between align-items-center mt-1">
+            <div class="small text-muted">
+                Макс. {{ POST_TEXT_MAX_LENGTH }} символов
+            </div>
+            <div class="post-text-counter small text-muted post-edit-counter"></div>
+        </div>
+
+        {% if post.attachments.all %}
+            <div class="post-edit-existing mt-2">
+                <div class="small text-muted mb-1">Текущие вложения</div>
+                <div class="post-edit-attachments-list">
+                    {% for att in post.attachments.all %}
+                        <div class="post-edit-attachment-item" data-att-id="{{ att.id }}">
+                            {% if att.is_image %}
+                                <img src="{{ att.file.url }}" alt="" class="post-edit-att-thumb">
+                            {% else %}
+                                <div class="post-edit-att-icon">📎</div>
+                            {% endif %}
+
+                            <div class="post-edit-att-name" title="{{ att.original_name }}">
+                                {{ att.original_name }}
+                            </div>
+
+                            <input type="checkbox"
+                                   name="delete_attachment_ids"
+                                   value="{{ att.id }}"
+                                   class="d-none post-edit-att-check">
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary post-edit-att-toggle"
+                                    title="Убрать/вернуть">
+                                ✕
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="small text-muted mt-1">
+                    Можно убрать вложения (✕) и добавить новые. Макс. {{ MAX_ATTACHMENTS_PER_POST }} файлов.
+                </div>
+            </div>
+        {% else %}
+            <div class="small text-muted mt-2">
+                Можно добавить файлы. Макс. {{ MAX_ATTACHMENTS_PER_POST }} файлов.
+            </div>
+        {% endif %}
+
+        <div class="post-edit-new mt-2">
+            <input type="file"
+                   name="attachments"
+                   class="form-control form-control-sm post-edit-file-input"
+                   multiple>
+            <div class="post-edit-new-files small text-muted mt-1"></div>
+        </div>
+
+        <div class="d-flex gap-2 mt-2">
+            <button type="submit" class="btn btn-success btn-sm">Сохранить</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm post-edit-cancel">Отмена</button>
+        </div>
+    </form>
+</div>
+<div class="post-footer-row">
                 <div class="post-likes">
                     {% if user.is_authenticated %}
                         <form method="post"

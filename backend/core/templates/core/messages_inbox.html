@@ -1,4 +1,10 @@
 {% extends "core/base.html" %}
+{% load static %}
+
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'core/css/pages/messages/messages.css' %}?v=1">
+{% endblock %}
 
 {% block title %}Сообщения — Germify{% endblock %}
 

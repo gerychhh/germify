@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 # core/forms.py
+from typing import Any
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
@@ -31,7 +35,7 @@ class RegisterForm(BootstrapFormMixin, UserCreationForm):
         model = User
         fields = ("username", "email", "display_name", "password1", "password2")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
 
@@ -50,17 +54,47 @@ class PostForm(BootstrapFormMixin, forms.ModelForm):
             )
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
 
-    def clean_text(self):
+    def clean_text(self) -> str:
         text = (self.cleaned_data.get("text") or "").strip()
         if len(text) > POST_TEXT_MAX_LENGTH:
             raise forms.ValidationError(
                 f"Текст поста слишком длинный (максимум {POST_TEXT_MAX_LENGTH} символов)."
             )
         return text
+
+
+class PostEditForm(BootstrapFormMixin, forms.ModelForm):
+    """Форма редактирования поста (текст). Вложения обрабатываются во view."""
+
+    class Meta:
+        model = Post
+        fields = ("text",)
+        widgets = {
+            "text": forms.Textarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Отредактируйте текст поста...",
+                    "maxlength": POST_TEXT_MAX_LENGTH,
+                }
+            )
+        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.apply_bootstrap()
+
+    def clean_text(self) -> str:
+        text = (self.cleaned_data.get("text") or "").strip()
+        if len(text) > POST_TEXT_MAX_LENGTH:
+            raise forms.ValidationError(
+                f"Текст поста слишком длинный (максимум {POST_TEXT_MAX_LENGTH} символов)."
+            )
+        return text
+
 
 
 class MessageForm(BootstrapFormMixin, forms.ModelForm):
@@ -76,7 +110,7 @@ class MessageForm(BootstrapFormMixin, forms.ModelForm):
             )
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
 
@@ -107,7 +141,7 @@ class ProfileForm(BootstrapFormMixin, forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
 
@@ -125,7 +159,7 @@ class CommentForm(BootstrapFormMixin, forms.ModelForm):
             )
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
 
@@ -153,7 +187,7 @@ class CommunityForm(BootstrapFormMixin, forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
 
@@ -179,11 +213,11 @@ class CommunityPostForm(BootstrapFormMixin, forms.ModelForm):
             )
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
 
-    def clean_text(self):
+    def clean_text(self) -> str:
         text = (self.cleaned_data.get("text") or "").strip()
         if len(text) > POST_TEXT_MAX_LENGTH:
             raise forms.ValidationError(

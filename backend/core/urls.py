@@ -6,6 +6,7 @@ from .views import (
     # лента
     feed,
     create_post,
+    edit_post,
     delete_post,
     toggle_like,
 
@@ -53,6 +54,7 @@ urlpatterns = [
 
     # посты
     path("post/create/", create_post, name="create_post"),
+    path("post/<int:pk>/edit/", edit_post, name="edit_post"),
     path("post/<int:pk>/delete/", delete_post, name="delete_post"),
     path("post/<int:pk>/like-toggle/", toggle_like, name="toggle_like"),
 

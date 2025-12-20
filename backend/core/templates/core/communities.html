@@ -3,9 +3,12 @@
 
 {% block title %}Сообщества — Germify{% endblock %}
 
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'core/css/pages/communities/communities.css' %}?v=1">
+{% endblock %}
+
 {% block extra_head %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'core/css/communities_bs.css' %}?v=1">
   <script src="{% static 'core/js/communities_cards.js' %}?v=1" defer></script>
 {% endblock %}
 

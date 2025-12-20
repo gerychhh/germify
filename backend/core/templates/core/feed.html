@@ -3,7 +3,11 @@
 
 {% block title %}Лента — Germify{% endblock %}
 
-{% block extra_head %}{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=13">
+{% endblock %}
+
+
 
 {% block content %}
 <div class="feed-page">

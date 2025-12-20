@@ -3,10 +3,12 @@
 
 {% block title %}{{ community.name }} — Germify{% endblock %}
 
-{% block extra_head %}
-  <link rel="stylesheet" href="{% static 'core/css/posts.css' %}?v=12">
-  <link rel="stylesheet" href="{% static 'core/css/community_detail.css' %}?v=3">
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=13">
+  <link rel="stylesheet" href="{% static 'core/css/pages/community_detail/community_detail.css' %}?v=3">
+{% endblock %}
 
+{% block extra_head %}
   <style>
     /* Fallback: если community_detail.css не подхватился (nginx/static/caching),
        всё равно держим аватар сообщества в аккуратном круге */

@@ -1,4 +1,10 @@
+from __future__ import annotations
+
 from difflib import SequenceMatcher
+
+from typing import Any, List, TypedDict
+
+from django.http import HttpRequest
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -15,7 +21,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 
 
 
-from .forms import RegisterForm, PostForm, MessageForm, ProfileForm, CommunityForm, CommunityPostForm
+from .forms import RegisterForm, PostForm, PostEditForm, MessageForm, ProfileForm, CommunityForm, CommunityPostForm
 from .constants import MAX_ATTACHMENTS_PER_POST
 from .models import (
     Post,
@@ -31,7 +37,16 @@ from .models import (
 )
 
 
-def get_user_state(user):
+class UserState(TypedDict):
+    liked_posts_ids: List[int]
+    liked_comment_ids: List[int]
+    following_ids: List[int]
+    admin_community_ids: List[int]
+    member_community_ids: List[int]
+
+
+
+def get_user_state(user: Any) -> UserState:
     if not user.is_authenticated:
         return {
             "liked_posts_ids": [],
@@ -60,7 +75,7 @@ def get_user_state(user):
     }
 
 
-def render_post_html(post, request):
+def render_post_html(post: Post, request: HttpRequest) -> str:
     state = get_user_state(request.user)
 
     return render_to_string(
@@ -74,7 +89,7 @@ def render_post_html(post, request):
     )
 
 
-def render_comment_html(comment, request, level):
+def render_comment_html(comment: Comment, request: HttpRequest, level: int) -> str:
     state = get_user_state(request.user)
     return render_to_string(
         "core/partials/comment.html",
@@ -88,7 +103,7 @@ def render_comment_html(comment, request, level):
     )
 
 
-def feed(request):
+def feed(request: HttpRequest) -> HttpResponse:
     base_qs = (
         Post.objects
         .select_related("author", "community")
@@ -241,6 +256,102 @@ def delete_post(request, pk):
 
     return redirect(request.META.get("HTTP_REFERER", "feed"))
 
+
+
+@login_required
+def edit_post(request, pk):
+    """Редактирование поста (текст + управление вложениями).
+
+    Вложения:
+    - существующие можно пометить на удаление (delete_attachment_ids)
+    - новые можно добавить через attachments (multiple)
+    """
+    post = get_object_or_404(Post, pk=pk)
+
+    # Права: автор, суперюзер, либо админ сообщества (только для постов "от лица сообщества")
+    is_community_admin = False
+    if post.community_id and post.as_community and request.user.is_authenticated:
+        is_community_admin = CommunityMembership.objects.filter(
+            community_id=post.community_id,
+            user=request.user,
+            is_admin=True,
+        ).exists()
+
+    if request.user != post.author and not request.user.is_superuser and not is_community_admin:
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return HttpResponseForbidden("Нельзя редактировать чужой пост")
+        return HttpResponseForbidden("Нельзя редактировать чужой пост")
+
+    if request.method != "POST":
+        return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+    is_ajax = bool(request.headers.get("x-requested-with"))
+
+    # --- управление вложениями ---
+    delete_ids_raw = request.POST.getlist("delete_attachment_ids")
+    delete_ids = []
+    for v in delete_ids_raw:
+        try:
+            delete_ids.append(int(v))
+        except (TypeError, ValueError):
+            continue
+
+    new_files = request.FILES.getlist("attachments")
+
+    # Сначала проверяем лимит по количеству
+    remaining_count = post.attachments.exclude(id__in=delete_ids).count()
+    if remaining_count + len(new_files) > MAX_ATTACHMENTS_PER_POST:
+        msg = f"Максимум файлов в одном посте: {MAX_ATTACHMENTS_PER_POST}."
+        if is_ajax:
+            return JsonResponse({"success": False, "error": msg}, status=400)
+        messages.error(request, msg)
+        return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+    # Проверяем размер новых файлов (как при создании)
+    MAX_SIZE_MB = 500
+    MAX_SIZE = MAX_SIZE_MB * 1024 * 1024
+    for f in new_files:
+        if f.size > MAX_SIZE:
+            msg = f"Файл '{f.name}' превышает {MAX_SIZE_MB}MB."
+            if is_ajax:
+                return JsonResponse({"success": False, "error": msg}, status=400)
+            messages.error(request, msg)
+            return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+    # --- валидируем текст ---
+    form = PostEditForm(request.POST, instance=post)
+    if not form.is_valid():
+        if is_ajax:
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+        messages.error(request, "Не удалось сохранить изменения поста.")
+        return redirect(request.META.get("HTTP_REFERER", "feed"))
+
+    with transaction.atomic():
+        form.save()
+
+        if delete_ids:
+            PostAttachment.objects.filter(post=post, id__in=delete_ids).delete()
+
+        for f in new_files:
+            PostAttachment.objects.create(
+                post=post,
+                file=f,
+                original_name=f.name,
+            )
+
+    # Перечитываем пост, чтобы шаблон получил актуальные вложения
+    post = (
+        Post.objects
+        .select_related("author", "community")
+        .prefetch_related("attachments")
+        .get(pk=post.pk)
+    )
+
+    if is_ajax:
+        html = render_post_html(post, request)
+        return JsonResponse({"success": True, "html": html})
+
+    return redirect(request.META.get("HTTP_REFERER", "feed"))
 
 @login_required
 def toggle_like(request, pk):
