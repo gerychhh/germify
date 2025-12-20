@@ -1,45 +1,75 @@
 {# core/partials/post.html #}
 {% load tz %}
 
-<article class="post-card" id="post-{{ post.id }}">
-    <div class="post-layout">
+<article class="post-card card shadow-sm" id="post-{{ post.id }}">
+    <div class="post-layout card-body p-3">
         <div class="post-main">
-            <header class="post-header">
-                <div class="post-author">
+            <header class="post-header d-flex justify-content-between align-items-start gap-2">
+                <div class="post-author d-flex align-items-center gap-2 flex-wrap">
 
-                    {% include "core/partials/avatar.html" with user_obj=post.author size="md" %}
 
-                    <div class="post-author-meta">
-                        <a href="{% url 'user_profile' post.author.username %}"
-                           class="post-author-name">
-                            {{ post.author.display_name|default:post.author.username }}
-                        </a>
-                        <div class="post-author-username">
-                            @{{ post.author.username }}
+                    {% if post.is_community_post %}
+                        {% include "core/partials/avatar.html" with user_obj=post.community size="md" %}
+
+                        <div class="post-author-meta">
+                            <a href="{% url 'community_detail' post.community.slug %}"
+                               class="post-author-name text-decoration-none">
+                                {{ post.community.name }}
+                            </a>
+                            <div class="post-author-username">
+                                #{{ post.community.slug }}
+                            </div>
+                            <div class="post-author-username small text-muted" style="margin-top:2px;">
+                                Опубликовал:
+                                <a href="{% url 'user_profile' post.author.username %}"
+                                   class="text-muted text-decoration-none">
+                                    @{{ post.author.username }}
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    {% else %}
+                        {% include "core/partials/avatar.html" with user_obj=post.author size="md" %}
+
+                        <div class="post-author-meta">
+                            <a href="{% url 'user_profile' post.author.username %}"
+                               class="post-author-name text-decoration-none">
+                                {{ post.author.display_name|default:post.author.username }}
+                            </a>
+                            <div class="post-author-username">
+                                @{{ post.author.username }}
+                            </div>
+
+                            {% if post.community %}
+                                <div class="post-author-username small text-muted" style="margin-top:2px;">
+                                    в сообществе
+                                    <a href="{% url 'community_detail' post.community.slug %}"
+                                       class="text-decoration-none">
+                                        {{ post.community.name }}
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
 
                     {# ===== КНОПКА ПОДПИСКИ В КАРТОЧКЕ ПОСТА ===== #}
-                    {% if user.is_authenticated and user != post.author %}
-                        <div style="margin-left:8px;">
+                    {% if user.is_authenticated and user != post.author and not post.is_community_post %}
+                        <div class="ms-2">
                             {% if post.author.id in following_ids %}
                                 <button type="button"
-                                        class="primary-button follow-btn"
+                                        class="btn btn-sm btn-outline-secondary follow-btn py-0 px-2"
                                         data-username="{{ post.author.username }}"
                                         data-following="1"
                                         data-follow-url="{% url 'follow_user' post.author.username %}"
-                                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}"
-                                        style="padding:2px 10px; font-size:12px; background:#1f2937; color:#e5e7eb;">
+                                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}">
                                     Вы подписаны
                                 </button>
                             {% else %}
                                 <button type="button"
-                                        class="primary-button follow-btn"
+                                        class="btn btn-sm btn-primary follow-btn py-0 px-2"
                                         data-username="{{ post.author.username }}"
                                         data-following="0"
                                         data-follow-url="{% url 'follow_user' post.author.username %}"
-                                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}"
-                                        style="padding:2px 10px; font-size:12px;">
+                                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}">
                                     Подписаться
                                 </button>
                             {% endif %}
@@ -47,46 +77,47 @@
                     {% endif %}
                 </div>
 
-                <div class="post-header-right">
+                <div class="post-header-right d-flex align-items-center gap-2">
                     <a href="{% url 'post_detail' post.id %}"
-                       class="post-date">
+                       class="post-date small">
                         {{ post.created_at|date:"d.m.Y H:i" }}
                     </a>
 
-                    <div class="post-menu-wrapper">
+                    <div class="post-menu-wrapper position-relative">
                         <button type="button"
-                                class="post-menu-toggle"
+                                class="btn btn-sm btn-outline-secondary post-menu-toggle"
                                 data-post-id="{{ post.id }}">
                             ⋯
                         </button>
 
-                       <div class="post-menu hidden"
-                         data-post-id="{{ post.id }}">
-                        <button type="button"
-                                class="post-menu-item post-share-btn"
-                                data-post-id="{{ post.id }}"
-                                data-post-url="{% url 'post_detail' post.id %}">
-                            Поделиться
-                        </button>
+                        <div class="post-menu hidden"
+                             data-post-id="{{ post.id }}">
 
-                        {% if user.is_authenticated %}
-                            {% if user == post.author or user.is_superuser %}
-                                {# тут можно добавить "Редактировать" #}
+                            <button type="button"
+                                    class="post-menu-item dropdown-item post-share-btn"
+                                    data-post-id="{{ post.id }}"
+                                    data-post-url="{% url 'post_detail' post.id %}">
+                                Поделиться
+                            </button>
 
-                                <form method="post"
-                                      action="{% url 'delete_post' post.id %}"
-                                      class="post-delete-form"
-                                      data-post-id="{{ post.id }}">
-                                    {% csrf_token %}
-                                    <button type="submit"
-                                            class="post-menu-item post-menu-delete-btn">
-                                        Удалить
-                                    </button>
-                                </form>
+                            {% if user.is_authenticated %}
+                                {# ✅ ВАЖНО: никаких скобок! Django template их не понимает #}
+                                {% if user == post.author or user.is_superuser or post.is_community_post and admin_community_ids and post.community_id in admin_community_ids %}
+
+                                    <form method="post"
+                                          action="{% url 'delete_post' post.id %}"
+                                          class="post-delete-form"
+                                          data-post-id="{{ post.id }}">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="post-menu-item dropdown-item text-danger post-menu-delete-btn">
+                                            Удалить
+                                        </button>
+                                    </form>
+
+                                {% endif %}
                             {% endif %}
-                        {% endif %}
-                    </div>
-
+                        </div>
                     </div>
                 </div>
             </header>
@@ -114,7 +145,6 @@
                                 {% endif %}
                             {% endfor %}
                         </div>
-
 
                         {# ВИДЕО — только настоящие видео (mp4/mov) #}
                         <div class="attachment-videos">
@@ -146,7 +176,6 @@
                                                 <button type="button"
                                                         class="video-btn video-fullscreen">⛶</button>
 
-                                                {# кнопка скачивания видео #}
                                                 <a href="{{ att.file.url }}"
                                                    download
                                                    class="video-btn video-download"
@@ -234,7 +263,7 @@
                 </div>
 
                 <button type="button"
-                        class="post-text-toggle hidden">
+                        class="btn btn-link btn-sm p-0 post-text-toggle hidden">
                     Показать полностью
                 </button>
             </div>
@@ -269,7 +298,7 @@
             {# ------ КОММЕНТАРИИ К ПОСТУ ------ #}
             <div class="comments-wrap">
                 <button type="button"
-                        class="comments-toggle"
+                        class="comments-toggle btn btn-outline-secondary btn-sm w-100"
                         data-post-id="{{ post.id }}">
                     <span class="comments-toggle-label">
                         💬 Комментарии
@@ -277,7 +306,29 @@
                     </span>
                     <span class="comments-toggle-arrow">▾</span>
                 </button>
+                {% if user.is_authenticated %}
+                        <button type="button"
+                                class="comment-add-toggle btn btn-outline-primary btn-sm mt-2"
+                                data-post-id="{{ post.id }}">
+                            Написать комментарий
+                        </button>
 
+                        <form method="post"
+                              action="{% url 'add_comment' post.id %}"
+                              class="comment-form hidden mt-2"
+                              data-post-id="{{ post.id }}">
+                            {% csrf_token %}
+                            <textarea name="text"
+                                      class="form-control comment-input mb-2"
+                                      placeholder="Оставьте комментарий."
+                                      rows="2"
+                                      required></textarea>
+                            <button type="submit"
+                                    class="btn btn-primary btn-sm comment-btn">
+                                Отправить
+                            </button>
+                        </form>
+                    {% endif %}
                 <div class="comments-body hidden"
                      data-post-id="{{ post.id }}">
 
@@ -287,28 +338,7 @@
                         {% endif %}
                     {% endfor %}
 
-                    {% if user.is_authenticated %}
-                        <button type="button"
-                                class="comment-add-toggle"
-                                data-post-id="{{ post.id }}">
-                            Написать комментарий
-                        </button>
 
-                        <form method="post"
-                              action="{% url 'add_comment' post.id %}"
-                              class="comment-form hidden"
-                              data-post-id="{{ post.id }}">
-                            {% csrf_token %}
-                            <textarea name="text"
-                                      class="comment-input"
-                                      placeholder="Оставьте комментарий."
-                                      required></textarea>
-                            <button type="submit"
-                                    class="comment-btn">
-                                Отправить
-                            </button>
-                        </form>
-                    {% endif %}
                 </div>
             </div>
 

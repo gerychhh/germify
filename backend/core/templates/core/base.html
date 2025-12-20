@@ -7,408 +7,147 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="icon" type="image/x-icon" href="{% static 'core/favicon.ico' %}">
-    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'core/css/posts.css' %}">
+
+    {# Bootstrap #}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    {# Theme tokens + project tweaks #}
+    <link rel="stylesheet" href="{% static 'core/css/theme.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+
+    {# App styles #}
+    <link rel="stylesheet" href="{% static 'core/css/messages_bs.css' %}">
     <link rel="stylesheet" href="{% static 'core/css/avatar.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/posts.css' %}?v=12">
+
+
+    {# Swiper (используется в постах) #}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
     <script src="{% static 'core/js/avatar.js' %}" defer></script>
     <script src="{% static 'core/js/voice_recorder.js' %}?v=3" defer></script>
 
-
-    <style>
-        body {
-            margin: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #0f172a;
-            color: #e5e7eb;
-        }
-
-        .topbar {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 24px;
-            background: rgba(15, 23, 42, 0.95);
-            border-bottom: 1px solid #1f2937;
-            backdrop-filter: blur(12px);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            font-size: 18px;
-            color: #f9fafb;
-            text-decoration: none;
-        }
-
-        .logo-mark {
-            width: 28px;
-            height: 28px;
-            border-radius: 999px;
-            background: radial-gradient(circle at 30% 30%, #22c55e, #16a34a);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: #022c22;
-            text-transform: lowercase;
-        }
-
-        .topbar-nav {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .nav-link {
-            color: #9ca3af;
-            text-decoration: none;
-            font-size: 14px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .nav-link:hover {
-            background: #1f2937;
-            color: #e5e7eb;
-            transform: translateY(-1px);
-        }
-
-        .nav-link.active {
-            background: #1f2937;
-            color: #e5e7eb;
-        }
-
-        .messages-unread-badge {
-            min-width: 18px;
-            height: 18px;
-            border-radius: 999px;
-            background: #ef4444;
-            color: #f9fafb;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 4px;
-            margin-left: 6px;
-            box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7);
-        }
-
-        @keyframes pulse-badge {
-            0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
-            70% { box-shadow: 0 0 0 8px rgba(248, 113, 113, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
-        }
-
-        .messages-unread-badge--pulse {
-            animation: pulse-badge 0.8s ease-out;
-        }
-
-        .page-wrapper {
-            max-width: 960px;
-            margin: 24px auto;
-            padding: 0 16px 40px;
-        }
-
-        .card {
-            background: #020617;
-            border-radius: 16px;
-            border: 1px solid #1e293b;
-            padding: 16px 18px;
-            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
-        }
-
-        .primary-button {
-            border: none;
-            border-radius: 999px;
-            padding: 8px 16px;
-            background: linear-gradient(135deg, #22c55e, #16a34a);
-            color: #022c22;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .primary-button:hover {
-            filter: brightness(1.05);
-        }
-
-        .auth-links {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .auth-username {
-            font-size: 14px;
-            color: #e5e7eb;
-        }
-
-        .auth-small-link {
-            font-size: 13px;
-            color: #9ca3af;
-            text-decoration: none;
-        }
-
-        .auth-small-link:hover {
-            color: #e5e7eb;
-        }
-
-        /* ============================
-           МОБИЛЬНОЕ НИЖНЕЕ МЕНЮ
-           ============================ */
-
-        .mobile-bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 50px;
-            background: #020617;
-            border-top: 1px solid #1f2937;
-            display: none;
-            align-items: center;
-            justify-content: space-around;
-            z-index: 9999;
-        }
-
-        .mobile-nav-item,
-        .mobile-nav-item:visited {
-            flex: 1;
-            text-align: center;
-            text-decoration: none;
-            color: #8b96a8;
-            font-size: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding-top: 2px;
-        }
-
-        .mobile-nav-item--active,
-        .mobile-nav-item--active:visited {
-            color: #ffffff;
-            font-weight: 600;
-        }
-
-        .mobile-nav-icon {
-            font-size: 17px;
-            margin-bottom: 1px;
-        }
-
-        .mobile-nav-label {
-            line-height: 1;
-        }
-
-        @media (max-width: 768px) {
-    /* Высоты/отступы для мобильной раскладки */
-    :root {
-        --mobile-nav-h: 50px;
-        --topbar-h: 56px;
-        --composer-h: 0px; /* будет выставляться JS */
-        --composer-gap: 12px;
-    }
-
-
-    .topbar-nav { display: none; }
-    footer { display: none !important; }
-
-    .page-wrapper {
-        max-width: 960px;
-        margin: 16px auto 0;
-        padding: 0 12px calc(var(--mobile-nav-h) + 16px);
-    }
-
-    .content {
-        padding-bottom: calc(var(--mobile-nav-h) + 16px) !important;
-        padding-left: 12px;
-        padding-right: 12px;
-    }
-
-    /* ======= ЧАТ (ПОТОК) ======= */
-
-    /* Весь блок чата: делаем так, чтобы он занимал экран,
-       а прокрутка была только у списка сообщений */
-    .message-thread-wrapper {
-        height: calc(100dvh - var(--topbar-h) - var(--mobile-nav-h));
-        display: flex;
-        flex-direction: column;
-        padding-bottom: 0;
-    }
-
-    /* Контейнер сообщений (если у тебя он называется иначе — скажи, поправлю под твой HTML) */
-    .thread-messages,
-    .messages-list,
-    .thread-messages-list {
-        flex: 1 1 auto;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-
-        /* Самое важное: оставляем место под fixed-форму + нижнее меню + safe-area */
-        padding-bottom: calc(var(--composer-h) + var(--mobile-nav-h) + var(--composer-gap) + env(safe-area-inset-bottom));
-
-        /* Чтобы scrollIntoView и ручной скролл учитывали низ */
-        scroll-padding-bottom: calc(var(--composer-h) + var(--mobile-nav-h) + var(--composer-gap) + env(safe-area-inset-bottom));
-    }
-
-    /* Форма ввода фиксированная над нижним меню */
-    .thread-form {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom));
-        padding: 8px 10px;
-        background: rgba(2, 6, 23, 0.96);
-        border-top: 1px solid #1f2937;
-        z-index: 9998;
-        backdrop-filter: blur(10px);
-    }
-
-    /* Делает форму визуально компактнее и аккуратнее */
-    .thread-form-row textarea,
-    .thread-form textarea {
-        font-size: 14px;
-        min-height: 42px;
-        max-height: 120px;
-        border-radius: 14px;
-    }
-
-    /* Кнопка отправки более приятная на мобилке */
-    .thread-form button,
-    .thread-form .primary-button {
-        border-radius: 14px;
-        padding: 10px 14px;
-        font-size: 14px;
-    }
-
-    /* Фикс iOS: чтобы при фокусе не ломало масштаб */
-    input, textarea, select {
-        font-size: 16px !important;
-    }
-
-    /* Нижнее меню */
-    .mobile-bottom-nav { display: flex; }
-}
-
-    </style>
-
     {% block extra_head %}{% endblock %}
 </head>
 
-<body{% if request.user.is_authenticated %} data-unread-url="{% url 'messages_unread_count' %}"{% endif %}>
-<header class="topbar">
-    <div class="topbar-left">
-        <a href="{% url 'feed' %}" class="logo">
-            <span class="logo-mark">g</span>
-            <span class="logo-text">Germify</span>
-        </a>
-    </div>
-    <nav class="topbar-nav">
-        <a href="{% url 'feed' %}" class="nav-link">Лента</a>
+<body
+    data-post-max="{{ POST_TEXT_MAX_LENGTH }}"
+    data-attach-max="{{ MAX_ATTACHMENTS_PER_POST }}"
+    {% if request.user.is_authenticated %}data-unread-url="{% url 'messages_unread_count' %}"{% endif %}>
 
-        <a href="{% url 'messages_inbox' %}"
-           class="nav-link {% if request.path|slice:':10' == '/messages/' %}active{% endif %}">
-            Сообщения
-            {% if request.user.is_authenticated %}
-                {% if unread_messages_count %}
-                    <span id="global-unread-desktop"
-                          class="messages-unread-badge">
-                        {{ unread_messages_count }}
-                    </span>
+{% with current=request.resolver_match.url_name %}
+<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top shadow-sm" data-bs-theme="light">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'feed' %}" style="letter-spacing: .02em;">
+            Germify
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if current == 'feed' %}active{% endif %}" href="{% url 'feed' %}">Лента</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {% if current == 'messages_inbox' or current == 'messages_thread' %}active{% endif %}" href="{% url 'messages_inbox' %}">
+                        Сообщения
+                        {% if request.user.is_authenticated %}
+                            {% if unread_messages_count %}
+                                <span id="global-unread-desktop" class="messages-unread-badge ms-1">{{ unread_messages_count }}</span>
+                            {% else %}
+                                <span id="global-unread-desktop" class="messages-unread-badge ms-1" style="display:none;">0</span>
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {% if current == 'communities' or current == 'community_detail' or current == 'community_create' or current == 'community_edit' %}active{% endif %}" href="{% url 'communities' %}">
+                        Сообщества
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {% if current == 'profile' or current == 'user_profile' %}active{% endif %}" href="{% url 'profile' %}">Профиль</a>
+                </li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-2">
+                {% if user.is_authenticated %}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ user.display_name|default:user.username }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">Профиль</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}">Выйти</a></li>
+                        </ul>
+                    </div>
                 {% else %}
-                    <span id="global-unread-desktop"
-                          class="messages-unread-badge"
-                          style="display:none;">0</span>
+                    <a class="btn btn-outline-primary btn-sm" href="{% url 'login' %}">Войти</a>
+                    <a class="btn btn-primary btn-sm" href="{% url 'register' %}">Регистрация</a>
                 {% endif %}
-            {% endif %}
-        </a>
-
-        <a href="{% url 'communities' %}" class="nav-link">Сообщества</a>
-        <a href="{% url 'profile' %}" class="nav-link">Профиль</a>
-
-        <div class="auth-links">
-            {% if user.is_authenticated %}
-                <span class="auth-username">
-                    {{ user.display_name|default:user.username }}
-                </span>
-                <a href="{% url 'logout' %}" class="auth-small-link">Выйти</a>
-            {% else %}
-                <a href="{% url 'login' %}" class="auth-small-link">Войти</a>
-                <a href="{% url 'register' %}" class="auth-small-link">Регистрация</a>
-            {% endif %}
+            </div>
         </div>
-    </nav>
-</header>
+    </div>
+</nav>
 
-<main class="page-wrapper">
+<main class="container py-4">
     {% block content %}{% endblock %}
 </main>
 
-{% with current=request.resolver_match.url_name %}
-<nav class="mobile-bottom-nav">
-    <a href="{% url 'feed' %}"
-       class="mobile-nav-item{% if current == 'feed' %} mobile-nav-item--active{% endif %}">
-        <span class="mobile-nav-icon">🏠</span>
-        <span class="mobile-nav-label">Лента</span>
-    </a>
+{# Mobile bottom nav #}
+<nav class="navbar fixed-bottom bg-white border-top d-lg-none">
+    <div class="container-fluid justify-content-around">
+        <a class="nav-link text-center small {% if current == 'feed' %}fw-semibold{% endif %}" href="{% url 'feed' %}">
+            <div style="font-size:18px; line-height: 1;">🏠</div>
+            <div>Лента</div>
+        </a>
 
-    {% if request.user.is_authenticated %}
-        <a href="{% url 'messages_inbox' %}"
-           class="mobile-nav-item{% if current == 'messages_inbox' or current == 'messages_thread' %} mobile-nav-item--active{% endif %}">
-            <span class="mobile-nav-icon">
-                💬
+        {% if request.user.is_authenticated %}
+            <a class="nav-link text-center small {% if current == 'messages_inbox' or current == 'messages_thread' %}fw-semibold{% endif %}" href="{% url 'messages_inbox' %}" style="position: relative;">
+                <div style="font-size:18px; line-height: 1;">💬</div>
+                <div>Сообщения</div>
                 {% if unread_messages_count %}
-                    <span id="global-unread-mobile"
-                          class="messages-unread-badge">
-                        {{ unread_messages_count }}
-                    </span>
+                    <span id="global-unread-mobile" class="messages-unread-badge" style="position:absolute; top:6px; right:18px;">{{ unread_messages_count }}</span>
                 {% else %}
-                    <span id="global-unread-mobile"
-                          class="messages-unread-badge"
-                          style="display:none;">0</span>
+                    <span id="global-unread-mobile" class="messages-unread-badge" style="display:none; position:absolute; top:6px; right:18px;">0</span>
                 {% endif %}
-            </span>
-            <span class="mobile-nav-label">Сообщения</span>
-        </a>
+            </a>
 
-        <a href="{% url 'profile' %}"
-           class="mobile-nav-item{% if current == 'profile' or current == 'user_profile' %} mobile-nav-item--active{% endif %}">
-            <span class="mobile-nav-icon">👤</span>
-            <span class="mobile-nav-label">Профиль</span>
-        </a>
-    {% else %}
-        <a href="{% url 'login' %}"
-           class="mobile-nav-item{% if current == 'login' %} mobile-nav-item--active{% endif %}">
-            <span class="mobile-nav-icon">🔐</span>
-            <span class="mobile-nav-label">Войти</span>
-        </a>
+            <a class="nav-link text-center small {% if current == 'profile' or current == 'user_profile' %}fw-semibold{% endif %}" href="{% url 'profile' %}">
+                <div style="font-size:18px; line-height: 1;">👤</div>
+                <div>Профиль</div>
+            </a>
+        {% else %}
+            <a class="nav-link text-center small {% if current == 'login' %}fw-semibold{% endif %}" href="{% url 'login' %}">
+                <div style="font-size:18px; line-height: 1;">🔐</div>
+                <div>Войти</div>
+            </a>
 
-        <a href="{% url 'register' %}"
-           class="mobile-nav-item{% if current == 'register' %} mobile-nav-item--active{% endif %}">
-            <span class="mobile-nav-icon">➕</span>
-            <span class="mobile-nav-label">Регистрация</span>
-        </a>
-    {% endif %}
+            <a class="nav-link text-center small {% if current == 'register' %}fw-semibold{% endif %}" href="{% url 'register' %}">
+                <div style="font-size:18px; line-height: 1;">➕</div>
+                <div>Регистрация</div>
+            </a>
+        {% endif %}
+    </div>
 </nav>
 {% endwith %}
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script src="{% static 'core/js/messages.js' %}?v=6" defer></script>
 <script src="{% static 'core/js/messages_thread.js' %}?v=6" defer></script>
-<script src="{% static 'core/js/posts.js' %}?v=4" defer></script>
+<script src="{% static 'core/js/posts.js' %}?v=6" defer></script>
+
+{% block extra_js %}{% endblock %}
 
 </body>
 </html>

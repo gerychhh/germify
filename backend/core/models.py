@@ -5,6 +5,93 @@ from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 import mimetypes
+from django.utils.text import slugify
+
+
+class Community(models.Model):
+    """Минимальная модель сообщества."""
+
+    name = models.CharField("Название", max_length=80, unique=True)
+    slug = models.SlugField("Ссылка", max_length=90, unique=True, blank=True, allow_unicode=True)
+    description = models.TextField("Описание", blank=True)
+    icon = models.ImageField("Иконка", upload_to="community_icons/", blank=True, null=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="created_communities",
+        verbose_name="Создатель",
+    )
+    created_at = models.DateTimeField("Создано", auto_now_add=True)
+    updated_at = models.DateTimeField("Обновлено", auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    # --- Адаптер под существующий avatar.html (ожидает user_obj.avatar/display_name/username) ---
+    @property
+    def avatar(self):
+        return self.icon
+
+    @property
+    def display_name(self):
+        return self.name
+
+    @property
+    def username(self):
+        return self.slug
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name, allow_unicode=True) or "community"
+            slug = base
+            i = 2
+            while Community.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base}-{i}"
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    @property
+    def members_count(self):
+        return self.memberships.count()
+
+    def is_member(self, user):
+        if not user or not user.is_authenticated:
+            return False
+        return self.memberships.filter(user=user).exists()
+
+    def is_admin(self, user):
+        if not user or not user.is_authenticated:
+            return False
+        return self.memberships.filter(user=user, is_admin=True).exists()
+
+
+class CommunityMembership(models.Model):
+    community = models.ForeignKey(
+        Community,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+        verbose_name="Сообщество",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="community_memberships",
+        verbose_name="Пользователь",
+    )
+    is_admin = models.BooleanField("Администратор", default=False)
+    joined_at = models.DateTimeField("Вступил", auto_now_add=True)
+
+    class Meta:
+        unique_together = ("community", "user")
+        ordering = ["-joined_at"]
+
+    def __str__(self):
+        role = "admin" if self.is_admin else "member"
+        return f"{self.user} in {self.community} ({role})"
 
 
 class User(AbstractUser):
@@ -55,11 +142,27 @@ class Post(models.Model):
     text = models.TextField("Текст")
     created_at = models.DateTimeField("Создано", auto_now_add=True)
 
+    # Если заполнено — пост относится к сообществу.
+    community = models.ForeignKey(
+        Community,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="posts",
+        verbose_name="Сообщество",
+    )
+    # Если True — отображать как "от лица сообщества".
+    as_community = models.BooleanField("Опубликовать от лица сообщества", default=False)
+
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.author}: {self.text[:30]}"
+
+    @property
+    def is_community_post(self):
+        return bool(self.community_id and self.as_community)
 
 
 class Like(models.Model):

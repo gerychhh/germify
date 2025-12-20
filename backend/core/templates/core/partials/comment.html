@@ -8,20 +8,18 @@
      data-post-id="{{ c.post.id }}">
 
     <!-- HEADER -->
-    <div class="comment-header">
+    <div class="comment-header d-flex align-items-start gap-2">
         {% include "core/partials/avatar.html" with user_obj=c.author size="sm" %}
 
         <div class="comment-author-block">
             <div class="comment-author-line">
                 <a href="{% url 'user_profile' c.author.username %}"
-                   class="comment-display-name"
-                   style="text-decoration:none;">
+                   class="comment-display-name text-decoration-none">
                     {{ c.author.display_name|default:c.author.username }}
                 </a>
 
                 <a href="{% url 'user_profile' c.author.username %}"
-                   class="comment-username"
-                   style="text-decoration:none;">
+                   class="comment-username text-decoration-none">
                     @{{ c.author.username }}
                 </a>
 
@@ -39,13 +37,17 @@
         </div>
     </div>
 
-    <!-- TEXT -->
-    <div class="comment-text">
-        {{ c.text }}
+    <!-- TEXT (пошаговое раскрытие как у постов) -->
+    <div class="post-text-block comment-text-block">
+        <div class="post-text-wrapper">
+            <div class="comment-text">{{ c.text }}</div>
+            <div class="post-text-gradient"></div>
+        </div>
+        <button type="button" class="btn btn-link btn-sm p-0 post-text-toggle hidden">Показать ещё</button>
     </div>
 
     <!-- FOOTER -->
-    <div class="comment-footer">
+    <div class="comment-footer d-flex align-items-center gap-2 flex-wrap">
 
         {# лайк на комментарий #}
         {% if user.is_authenticated %}
@@ -54,7 +56,7 @@
                   class="comment-like-form"
                   data-comment-id="{{ c.id }}">
                 {% csrf_token %}
-                <button class="comment-like-button"
+                <button class="comment-like-button btn btn-sm"
                         type="submit"
                         data-liked="{% if c.id in liked_comment_ids %}true{% else %}false{% endif %}">
                     {% if c.id in liked_comment_ids %}❤️{% else %}🤍{% endif %}
@@ -69,7 +71,7 @@
 
         {% if user.is_authenticated %}
             {# показать/скрыть форму "Ответить" #}
-            <button class="comment-reply-toggle"
+            <button class="comment-reply-toggle btn btn-link btn-sm p-0"
                     type="button"
                     data-comment-id="{{ c.id }}">
                 Ответить
@@ -77,7 +79,7 @@
 
             {# кнопка показать/скрыть блок ответов #}
             {% if c.replies.count %}
-                <button class="replies-toggle"
+                <button class="replies-toggle btn btn-link btn-sm p-0"
                         type="button"
                         data-comment-id="{{ c.id }}">
                     Ответы ({{ c.replies.count }})
@@ -93,7 +95,7 @@
                       data-post-id="{{ c.post.id }}">
                     {% csrf_token %}
                     <button type="submit"
-                            class="comment-delete-btn">
+                            class="comment-delete-btn btn btn-link btn-sm p-0">
                         Удалить
                     </button>
                 </form>
@@ -105,15 +107,16 @@
     {% if user.is_authenticated %}
         <form method="post"
               action="{% url 'add_reply' c.id %}"
-              class="reply-form hidden"
+              class="reply-form hidden mt-2"
               data-parent-id="{{ c.id }}"
               data-post-id="{{ c.post.id }}">
             {% csrf_token %}
             <textarea name="text"
-                      class="reply-input"
+                      class="form-control reply-input mb-2"
                       placeholder="Ответить..."
+                      rows="2"
                       required></textarea>
-            <button type="submit" class="reply-btn">Отправить</button>
+            <button type="submit" class="btn btn-primary btn-sm reply-btn">Отправить</button>
         </form>
     {% endif %}
 

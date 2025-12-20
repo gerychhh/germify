@@ -3,206 +3,14 @@
 
 {% block title %}Лента — Germify{% endblock %}
 
-{% block extra_head %}
-<style>
-    .feed-page {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .feed-new-post-card {
-        background: #020617;
-        border-radius: 16px;
-        border: 1px solid #1e293b;
-        padding: 16px 18px 18px;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
-    }
-
-    .feed-new-post-title {
-        margin: 0 0 10px;
-        font-size: 15px;
-        font-weight: 600;
-        color: #e5e7eb;
-    }
-
-    .feed-new-post-textarea {
-        width: 100%;
-        min-height: 90px;
-        resize: vertical;
-        border-radius: 12px;
-        border: 1px solid #1f2937;
-        background: #020617;
-        padding: 10px 12px;
-        font-size: 14px;
-        color: #e5e7eb;
-        outline: none;
-    }
-
-    .feed-new-post-textarea::placeholder {
-        color: #6b7280;
-    }
-
-    .feed-new-post-footer {
-        margin-top: 10px;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 12px;
-    }
-
-    /* FILE PREVIEW */
-    .file-preview {
-        margin-top: 10px;
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .preview-img {
-        width: 90px;
-        height: auto;
-        border-radius: 8px;
-        border: 1px solid #1f2937;
-        display: block;
-    }
-
-    .file-preview-item {
-        font-size: 12px;
-        color: #9ca3af;
-        padding: 4px 6px;
-        background: #0f172a;
-        border-radius: 6px;
-        border: 1px solid #1e293b;
-    }
-
-    .attach-btn {
-        cursor: pointer;
-        color: #9ca3af;
-        font-size: 18px;
-        padding: 4px;
-        border-radius: 6px;
-        transition: 0.2s;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .attach-btn:hover {
-        color: #fff;
-    }
-
-    .drop-zone {
-        margin-top: 10px;
-        padding: 16px;
-        text-align: center;
-        border: 2px dashed #334155;
-        border-radius: 12px;
-        color: #94a3b8;
-        transition: 0.2s;
-        font-size: 13px;
-    }
-
-    .drop-zone.dragover {
-        border-color: #22c55e;
-        background: rgba(34, 197, 94, 0.1);
-        color: #22c55e;
-    }
-
-    .file-info {
-        margin-top: 6px;
-        font-size: 12px;
-        color: #9ca3af;
-        display: flex;
-        gap: 12px;
-    }
-
-    .file-info span {
-        white-space: nowrap;
-    }
-
-    .upload-progress {
-        margin-top: 8px;
-        width: 100%;
-        height: 6px;
-        border-radius: 999px;
-        background: #020617;
-        border: 1px solid #1f2937;
-        overflow: hidden;
-    }
-
-    .upload-progress.hidden {
-        display: none;
-    }
-
-    .upload-progress-bar {
-        height: 100%;
-        width: 0;
-        border-radius: inherit;
-        background: linear-gradient(90deg, #22c55e, #16a34a);
-        transition: width 0.1s linear;
-    }
-
-    .hidden {
-        display: none !important;
-    }
-
-    /* Лоадер подгрузки постов */
-    .feed-loading {
-        margin-top: 12px;
-        text-align: center;
-        font-size: 13px;
-        color: #6b7280;
-    }
-
-    /* ===== Голосовое сообщение при создании поста ===== */
-
-    .voice-preview {
-        display: block;
-        margin-top: 8px;
-        width: 100%;
-    }
-
-    .voice-recorder {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-right: auto; /* чтобы кнопка ушла влево, а остальные элементы вправо */
-    }
-
-    .voice-record-btn {
-        border: none;
-        background: #1f2937;
-        color: #e5e7eb;
-        border-radius: 999px;
-        padding: 6px 10px;
-        font-size: 13px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .voice-record-btn:hover {
-        background: #111827;
-    }
-
-    .voice-record-btn--active {
-        background: #b91c1c;
-    }
-
-    .voice-record-status {
-        font-size: 12px;
-        color: #9ca3af;
-    }
-</style>
-{% endblock %}
+{% block extra_head %}{% endblock %}
 
 {% block content %}
 <div class="feed-page">
 
     <!-- Форма нового поста -->
-    <section class="feed-new-post-card">
+    <section class="card feed-new-post-card">
+        <div class="card-body p-3">
         <form method="post"
           action="{% url 'create_post' %}"
           class="new-post-form"
@@ -210,58 +18,60 @@
           data-authenticated="{% if user.is_authenticated %}1{% else %}0{% endif %}"
           data-login-url="{% url 'login' %}?next={{ request.path }}">
         {% csrf_token %}
-        <h2 class="feed-new-post-title">Чем поделишься сегодня?</h2>
+        <h2 class="h6 mb-2 feed-new-post-title">Чем поделишься сегодня?</h2>
 
         <textarea
             name="text"
-            class="feed-new-post-textarea"
+            class="form-control feed-new-post-textarea"
+            rows="4"
             placeholder="Напишите что-нибудь интересное.">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
 
         <!-- PREVIEW -->
-        <div class="file-preview" id="file-preview"></div>
+        <div class="file-preview mt-2" id="file-preview"></div>
 
         <!-- PREVIEW голосового -->
         <audio id="voice-preview"
-               class="voice-preview hidden"
+               class="voice-preview hidden mt-2 w-100"
                controls></audio>
 
         <!-- DRAG & DROP ZONE -->
-        <div id="drop-zone" class="drop-zone hidden">
+        <div id="drop-zone" class="drop-zone hidden mt-2 p-3 rounded text-center">
             Перетащи файлы сюда или нажми на скрепку
         </div>
 
         <!-- INFO + PROGRESS -->
-        <div class="file-info">
+        <div class="file-info small text-muted mt-2 d-flex gap-3 flex-wrap">
             <span id="file-count">Файлы: 0</span>
             <span id="file-size">Размер: 0 MB</span>
         </div>
 
-        <div class="upload-progress hidden" id="upload-progress">
+        <div class="upload-progress hidden mt-2" id="upload-progress">
             <div class="upload-progress-bar" id="upload-progress-bar"></div>
         </div>
 
-        <div class="feed-new-post-footer">
+        <div class="feed-new-post-footer mt-3 d-flex align-items-center gap-2 flex-wrap">
             <!-- Голосовой ввод -->
-            <div class="voice-recorder">
+            <div class="voice-recorder d-flex align-items-center gap-2 me-auto">
                 <button type="button"
                         id="voice-record-btn"
-                        class="voice-record-btn">
+                        class="btn btn-outline-primary btn-sm voice-record-btn">
                     🎙 Голос
                 </button>
-                <span id="voice-record-status" class="voice-record-status"></span>
+                <span id="voice-record-status" class="voice-record-status small text-muted"></span>
             </div>
 
-            <label class="attach-btn" title="Прикрепить файлы">
-                📎
+            <label class="btn btn-outline-secondary btn-sm attach-btn mb-0" title="Прикрепить файлы">
+                📎 <span class="d-none d-sm-inline">Файлы</span>
                 <input type="file"
                        name="attachments"
                        multiple
                        style="display:none;">
             </label>
 
-            <button type="submit" class="primary-button">Опубликовать</button>
+            <button type="submit" class="btn btn-primary btn-sm primary-button">Опубликовать</button>
         </div>
     </form>
+        </div>
     </section>
 
     <!-- Лента постов -->

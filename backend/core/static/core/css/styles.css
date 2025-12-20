@@ -5,6 +5,61 @@ body {
     background: #f3f4f6;
 }
 
+/* ============================
+   Bootstrap (dark) — базовая подстройка
+   Используется на страницах сообществ и далее будет расширяться на весь проект.
+   ============================ */
+
+.form-control,
+.form-select {
+    background-color: #0b1220;
+    border: 1px solid #1e293b;
+    color: #e5e7eb;
+}
+
+.form-control::placeholder {
+    color: #64748b;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: #0b1220;
+    color: #e5e7eb;
+    border-color: #22c55e;
+    box-shadow: 0 0 0 0.25rem rgba(34, 197, 94, 0.18);
+}
+
+.form-check-input {
+    background-color: #0b1220;
+    border-color: #334155;
+}
+
+.form-check-input:focus {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 0.25rem rgba(34, 197, 94, 0.18);
+}
+
+.form-check-input:checked {
+    background-color: #22c55e;
+    border-color: #22c55e;
+}
+
+.btn-outline-secondary {
+    border-color: #334155;
+    color: #e5e7eb;
+}
+
+.btn-outline-secondary:hover {
+    border-color: #475569;
+    color: #e5e7eb;
+    background-color: #1f2937;
+}
+
+.badge.text-bg-secondary {
+    background-color: #1f2937 !important;
+    color: #e5e7eb !important;
+}
+
 /* ===== Header ===== */
 .header {
     background: white;

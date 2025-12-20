@@ -1,10 +1,180 @@
 {% extends "core/base.html" %}
+{% load static %}
 
 {% block title %}Сообщества — Germify{% endblock %}
 
+{% block extra_head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'core/css/communities_bs.css' %}?v=1">
+  <script src="{% static 'core/js/communities_cards.js' %}?v=1" defer></script>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-    <h1>Сообщества</h1>
-    <p>Здесь позже будут сообщества.</p>
+
+<div class="d-flex flex-column gap-3">
+
+  <div class="card">
+    <form method="get" action="{% url 'communities' %}" id="communities-search-form" class="row g-2 align-items-center">
+      <div class="col-12 col-md">
+        <input type="text" id="communities-search-input" name="q" value="{{ q|default:'' }}" placeholder="Поиск сообществ…"
+               autocomplete="off" class="form-control">
+      </div>
+
+      <div class="col-12 col-md-auto d-grid d-md-block">
+        <button type="submit" class="btn btn-success" id="communities-search-btn">Найти</button>
+      </div>
+
+      {% if q %}
+        <div class="col-12 col-md-auto d-grid d-md-block">
+          <a href="{% url 'communities' %}" class="btn btn-outline-secondary">Сбросить</a>
+        </div>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if user.is_authenticated %}
+    <div class="d-flex justify-content-end">
+      <a href="{% url 'community_create' %}" class="btn btn-success">Создать сообщество</a>
+    </div>
+  {% endif %}
+
+  <div id="communities-list" class="d-flex flex-column gap-3">
+  {% for c in communities %}
+    {% include "core/partials/community_card.html" with c=c %}
+  {% empty %}
+    <div class="card" style="color:#9ca3af;">Ничего не найдено.</div>
+  {% endfor %}
+  </div>
+
+  <button type="button" id="communities-load-more"
+          class="btn btn-outline-secondary w-100"
+          style="display:{% if has_next %}block{% else %}none{% endif %};">
+    Показать ещё
+  </button>
+
+  <div id="communities-sentinel" style="height:1px;"></div>
+
 </div>
+
+<script>
+(function(){
+  const form = document.getElementById("communities-search-form");
+  const input = document.getElementById("communities-search-input");
+  const list = document.getElementById("communities-list");
+  const btn = document.getElementById("communities-search-btn");
+  const moreBtn = document.getElementById("communities-load-more");
+  const sentinel = document.getElementById("communities-sentinel");
+  if(!form || !input || !list || !sentinel) return;
+
+  let debounceTimer = null;
+  let loading = false;
+  let hasNext = {{ has_next|yesno:"true,false" }};
+  let nextPage = {{ next_page|default:"null" }};
+  let abortCtrl = null;
+
+  function setBtnLoading(on){
+    if(!btn) return;
+    if(!btn.dataset.oldText) btn.dataset.oldText = btn.textContent || "Найти";
+    btn.textContent = on ? "Ищем..." : btn.dataset.oldText;
+  }
+
+  function setMoreVisible(){
+    if(!moreBtn) return;
+    moreBtn.style.display = (hasNext && nextPage) ? "block" : "none";
+  }
+
+  function buildUrl(page){
+    const url = new URL(form.action, window.location.origin);
+    url.searchParams.set("q", input.value || "");
+    if(page) url.searchParams.set("page", String(page));
+    return url;
+  }
+
+  async function fetchPage(page, mode){
+    if(loading) return;
+    loading = true;
+
+    if(abortCtrl) abortCtrl.abort();
+    abortCtrl = new AbortController();
+
+    if(mode === "replace") setBtnLoading(true);
+    if(mode === "append" && moreBtn){
+      moreBtn.disabled = true;
+      moreBtn.textContent = "Загрузка...";
+    }
+
+    try{
+      const url = buildUrl(page);
+      const resp = await fetch(url.toString(), {
+        headers: {"X-Requested-With":"XMLHttpRequest"},
+        cache: "no-store",
+        signal: abortCtrl.signal
+      });
+      if(!resp.ok) return;
+      const data = await resp.json();
+      if(!data || data.success !== true) return;
+
+      if(mode === "append"){
+        if(data.html) list.insertAdjacentHTML("beforeend", data.html);
+      } else {
+        list.innerHTML = data.html || "";
+        window.scrollTo({top: 0, behavior: "instant"});
+      }
+
+      hasNext = !!data.has_next;
+      nextPage = data.next_page;
+
+      const cleanUrl = buildUrl(null);
+      window.history.replaceState({}, "", cleanUrl.pathname + cleanUrl.search);
+    }catch(e){
+    }finally{
+      if(mode === "replace") setBtnLoading(false);
+      loading = false;
+      if(mode === "append" && moreBtn){
+        moreBtn.disabled = false;
+        moreBtn.textContent = "Показать ещё";
+      }
+      setMoreVisible();
+    }
+  }
+
+  function loadNext(){
+    if(loading) return;
+    if(!hasNext || !nextPage) return;
+    fetchPage(nextPage, "append");
+  }
+
+  input.addEventListener("input", ()=>{
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(()=>fetchPage(1, "replace"), 250);
+  });
+
+  form.addEventListener("submit", (e)=>{
+    e.preventDefault();
+    clearTimeout(debounceTimer);
+    fetchPage(1, "replace");
+  });
+
+  if(moreBtn){
+    moreBtn.addEventListener("click", loadNext);
+  }
+
+  const io = new IntersectionObserver((entries)=>{
+    const ent = entries[0];
+    if(!ent || !ent.isIntersecting) return;
+    loadNext();
+  }, {root: null, rootMargin: "1200px 0px 1200px 0px", threshold: 0.01});
+
+  io.observe(sentinel);
+
+  window.addEventListener("scroll", ()=>{
+    if(loading) return;
+    const nearBottom = (window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 900);
+    if(nearBottom) loadNext();
+  }, {passive:true});
+
+  setMoreVisible();
+})();
+</script>
+
 {% endblock %}

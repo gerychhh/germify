@@ -1,15 +1,22 @@
+from difflib import SequenceMatcher
+
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Case, When, Value, IntegerField, Max
+from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
+from django.utils.text import slugify
+from django.utils.http import url_has_allowed_host_and_scheme
 
 
-from .forms import RegisterForm, PostForm, MessageForm, ProfileForm
+
+from .forms import RegisterForm, PostForm, MessageForm, ProfileForm, CommunityForm, CommunityPostForm
+from .constants import MAX_ATTACHMENTS_PER_POST
 from .models import (
     Post,
     User,
@@ -19,20 +26,19 @@ from .models import (
     Comment,
     CommentLike,
     PostAttachment,
+    Community,
+    CommunityMembership,
 )
 
 
-# ======================================================
-# УТИЛИТЫ
-# ======================================================
-
 def get_user_state(user):
-    """Возвращает списки лайков, подписок — в одном месте, чтобы не дублировать."""
     if not user.is_authenticated:
         return {
             "liked_posts_ids": [],
             "liked_comment_ids": [],
             "following_ids": [],
+            "admin_community_ids": [],
+            "member_community_ids": [],
         }
 
     return {
@@ -45,11 +51,16 @@ def get_user_state(user):
         "following_ids": list(
             Follow.objects.filter(follower=user).values_list("following_id", flat=True)
         ),
+        "admin_community_ids": list(
+            CommunityMembership.objects.filter(user=user, is_admin=True).values_list("community_id", flat=True)
+        ),
+        "member_community_ids": list(
+            CommunityMembership.objects.filter(user=user).values_list("community_id", flat=True)
+        ),
     }
 
 
 def render_post_html(post, request):
-    """Рендер одного поста в HTML для AJAX."""
     state = get_user_state(request.user)
 
     return render_to_string(
@@ -64,7 +75,6 @@ def render_post_html(post, request):
 
 
 def render_comment_html(comment, request, level):
-    """Рендер одного комментария в HTML (AJAX)."""
     state = get_user_state(request.user)
     return render_to_string(
         "core/partials/comment.html",
@@ -78,16 +88,10 @@ def render_comment_html(comment, request, level):
     )
 
 
-# ======================================================
-# ЛЕНТА
-# ======================================================
-
 def feed(request):
-    """Лента постов с пагинацией (7 штук) и поддержкой бесконечной прокрутки через AJAX."""
-    # Базовый queryset
     base_qs = (
         Post.objects
-        .select_related("author")
+        .select_related("author", "community")
         .prefetch_related(
             "likes",
             "comments__author",
@@ -103,10 +107,8 @@ def feed(request):
         .order_by("-created_at")
     )
 
-    # Пагинация по 7 постов
     paginator = Paginator(base_qs, 7)
 
-    # Номер страницы из ?page=...
     page_param = request.GET.get("page")
     try:
         page_number = int(page_param)
@@ -117,10 +119,8 @@ def feed(request):
 
     page_obj = paginator.get_page(page_number)
 
-    # лайки/подписки
     state = get_user_state(request.user)
 
-    # ---------- AJAX: подгрузка постов ----------
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         posts_html = "".join(
             render_post_html(post, request) for post in page_obj.object_list
@@ -134,10 +134,8 @@ def feed(request):
             }
         )
 
-    # ---------- Обычный GET + запасной POST ----------
     form = PostForm()
 
-    # запасной вариант создания поста обычным POST (если когда-то понадобится)
     if request.method == "POST" and not request.headers.get("x-requested-with"):
         if not request.user.is_authenticated:
             messages.error(request, "Чтобы написать пост — войдите.")
@@ -151,7 +149,7 @@ def feed(request):
             return redirect("feed")
 
     context = {
-        "posts": page_obj.object_list,          # только текущие 7 постов
+        "posts": page_obj.object_list,
         "form": form,
         "page_obj": page_obj,
         "has_next": page_obj.has_next(),
@@ -162,68 +160,77 @@ def feed(request):
     return render(request, "core/feed.html", context)
 
 
-
 @login_required
 def create_post(request):
-    """Создание поста с поддержкой файлов и AJAX."""
     if request.method != "POST":
         return redirect("feed")
 
-    # Форма без файловой обработки (только текст)
-    form = PostForm(request.POST)
+    is_ajax = bool(request.headers.get("x-requested-with"))
 
-    if not form.is_valid():
-        if request.headers.get("x-requested-with"):
-            return JsonResponse({"success": False, "errors": form.errors}, status=400)
-        return redirect("feed")
-
-    # Создаём пост
-    post = form.save(commit=False)
-    post.author = request.user
-    post.save()
-
-    # === Обработка файлов ===
+    # Сначала валидируем вложения, чтобы не создавать пост при ошибке
     files = request.FILES.getlist("attachments")
+
+    if len(files) > MAX_ATTACHMENTS_PER_POST:
+        msg = f"Максимум файлов в одном посте: {MAX_ATTACHMENTS_PER_POST}."
+        if is_ajax:
+            return JsonResponse({"success": False, "error": msg}, status=400)
+        messages.error(request, msg)
+        return redirect("feed")
 
     MAX_SIZE_MB = 500
     MAX_SIZE = MAX_SIZE_MB * 1024 * 1024
 
     for f in files:
         if f.size > MAX_SIZE:
-            return JsonResponse({
-                "success": False,
-                "error": f"Файл '{f.name}' превышает {MAX_SIZE_MB}MB."
-            }, status=400)
+            msg = f"Файл '{f.name}' превышает {MAX_SIZE_MB}MB."
+            if is_ajax:
+                return JsonResponse({"success": False, "error": msg}, status=400)
+            messages.error(request, msg)
+            return redirect("feed")
 
-        PostAttachment.objects.create(
-            post=post,
-            file=f,
-            original_name=f.name
-        )
+    form = PostForm(request.POST)
 
-    # === AJAX ответ ===
-    if request.headers.get("x-requested-with"):
+    if not form.is_valid():
+        if is_ajax:
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+        # для не-AJAX просто возвращаемся в ленту
+        return redirect("feed")
+
+    with transaction.atomic():
+        post = form.save(commit=False)
+        post.author = request.user
+        post.save()
+
+        for f in files:
+            PostAttachment.objects.create(
+                post=post,
+                file=f,
+                original_name=f.name,
+            )
+
+    if is_ajax:
         html = render_post_html(post, request)
         return JsonResponse({"success": True, "html": html})
 
-    # Обычный POST → редирект
     return redirect("feed")
-
-
 
 @login_required
 def delete_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
 
-    # Разрешаем удалять только автору или суперюзеру
-    if request.user != post.author and not request.user.is_superuser:
-        # AJAX-запрос
+    is_community_admin = False
+    if post.community_id and post.as_community and request.user.is_authenticated:
+        is_community_admin = CommunityMembership.objects.filter(
+            community_id=post.community_id,
+            user=request.user,
+            is_admin=True,
+        ).exists()
+
+    if request.user != post.author and not request.user.is_superuser and not is_community_admin:
         if request.headers.get("x-requested-with") == "XMLHttpRequest":
             return HttpResponseForbidden("Нельзя удалить чужой пост")
-        # обычный запрос
         return HttpResponseForbidden("Нельзя удалить чужой пост")
 
-    # Разрешено, но только через POST
     if request.method == "POST":
         post.delete()
 
@@ -232,13 +239,11 @@ def delete_post(request, pk):
 
         return redirect("feed")
 
-    # Если не POST — просто редиректим назад/в ленту
     return redirect(request.META.get("HTTP_REFERER", "feed"))
 
 
 @login_required
 def toggle_like(request, pk):
-    """Лайк поста (AJAX)."""
     post = get_object_or_404(Post, pk=pk)
 
     like, created = Like.objects.get_or_create(user=request.user, post=post)
@@ -256,13 +261,8 @@ def toggle_like(request, pk):
     return redirect("feed")
 
 
-# ======================================================
-# КОММЕНТАРИИ
-# ======================================================
-
 @login_required
 def add_comment(request, post_id):
-    """Добавление корневого комментария (AJAX + обычный POST)."""
     post = get_object_or_404(Post, pk=post_id)
 
     if request.method != "POST":
@@ -294,7 +294,6 @@ def add_comment(request, post_id):
 
 @login_required
 def add_reply(request, comment_id):
-    """Добавление ответа на комментарий."""
     parent = get_object_or_404(Comment, pk=comment_id)
 
     text = request.POST.get("text", "").strip()
@@ -359,10 +358,6 @@ def toggle_comment_like(request, comment_id):
     return redirect("feed")
 
 
-# ======================================================
-# ПРОФИЛИ
-# ======================================================
-
 @login_required
 def profile_view(request):
     return user_profile(request, username=request.user.username)
@@ -389,7 +384,6 @@ def user_profile(request, username):
 
     is_owner = request.user.is_authenticated and request.user == profile_user
 
-    # большая кнопка "Подписаться / Вы подписаны" в шапке профиля
     is_following = False
     if request.user.is_authenticated and not is_owner:
         is_following = Follow.objects.filter(
@@ -418,7 +412,6 @@ def user_profile(request, username):
     form = None
     if is_owner:
         if request.method == "POST":
-            # ВАЖНО: передаём request.FILES
             form = ProfileForm(
                 request.POST,
                 request.FILES,
@@ -446,9 +439,6 @@ def user_profile(request, username):
         },
     )
 
-# ======================================================
-# ПОДПИСКИ
-# ======================================================
 
 @login_required
 def follow_user(request, username):
@@ -484,13 +474,9 @@ def unfollow_user(request, username):
     return redirect("user_profile", username=username)
 
 
-# ======================================================
-# ПОСТ ДЕТАЙЛ (толко 1 пост на странице)
-# ======================================================
-
 def post_detail(request, pk):
     post = get_object_or_404(
-        Post.objects.select_related("author")
+        Post.objects.select_related("author", "community")
         .prefetch_related("likes", "comments__author", "comments__likes"),
         pk=pk
     )
@@ -499,18 +485,10 @@ def post_detail(request, pk):
 
     return render(request, "core/post_detail.html", {
         "post": post,
-        "posts": [post],     # чтобы partial'ы не ломались
+        "posts": [post],
         **state
     })
 
-
-# ======================================================
-# МЕССЕНДЖЕР
-# ======================================================
-
-# ======================================================
-# МЕССЕНДЖЕР
-# ======================================================
 
 @login_required
 def messages_inbox(request):
@@ -530,7 +508,6 @@ def messages_inbox_poll(request):
         request=request,
     )
     return JsonResponse({"html": html})
-
 
 
 def build_threads_for_user(user):
@@ -564,6 +541,7 @@ def build_threads_for_user(user):
 
     return threads
 
+
 @login_required
 def messages_thread(request, username):
     other = get_object_or_404(User, username=username)
@@ -576,7 +554,6 @@ def messages_thread(request, username):
     msgs = list(msgs_qs)
     last_id = msgs[-1].id if msgs else 0
 
-    # помечаем входящие как прочитанные
     Message.objects.filter(
         sender=other,
         recipient=request.user,
@@ -605,7 +582,6 @@ def messages_thread(request, username):
         "threads": threads,
     }
 
-    # AJAX-запрос из SPA — отдаём только правую часть (.tg-chat)
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         html = render_to_string(
             "core/partials/messages_thread_chat.html",
@@ -614,8 +590,8 @@ def messages_thread(request, username):
         )
         return HttpResponse(html)
 
-    # обычный рендер всей страницы
     return render(request, "core/messages_thread.html", context)
+
 
 @login_required
 def messages_delete_thread(request, username):
@@ -626,7 +602,6 @@ def messages_delete_thread(request, username):
             return JsonResponse({"error": "Only POST allowed"}, status=400)
         return redirect("messages_inbox")
 
-    # удалить все сообщения в обе стороны
     Message.objects.filter(
         Q(sender=request.user, recipient=other) |
         Q(sender=other, recipient=request.user)
@@ -636,6 +611,7 @@ def messages_delete_thread(request, username):
         return JsonResponse({"ok": True})
 
     return redirect("messages_inbox")
+
 
 @login_required
 def messages_send(request, username):
@@ -660,14 +636,15 @@ def messages_send(request, username):
     )
     return JsonResponse({"html": html, "id": msg.id})
 
+
 @login_required
 def messages_unread_count(request):
-    """Возвращает общее количество непрочитанных входящих сообщений."""
     total = Message.objects.filter(
         recipient=request.user,
         is_read=False,
     ).count()
     return JsonResponse({"count": total})
+
 
 @login_required
 def messages_poll(request, username):
@@ -685,7 +662,6 @@ def messages_poll(request, username):
 
     new_msgs = list(new_msgs_qs)
 
-    # помечаем новые входящие как прочитанные
     to_mark_ids = [m.id for m in new_msgs
                    if m.recipient_id == request.user.id and not m.is_read]
     if to_mark_ids:
@@ -702,9 +678,6 @@ def messages_poll(request, username):
 
     return JsonResponse({"html": html, "count": len(new_msgs)})
 
-# ======================================================
-# РЕГИСТРАЦИЯ / ЛОГИН / ЛОГАУТ
-# ======================================================
 
 def register_view(request):
     if request.method == "POST":
@@ -736,9 +709,330 @@ def logout_view(request):
     return redirect("feed")
 
 
-# ======================================================
-# КОМЬЮНИТИ-БОЛЬШАЯ КНОПКА
-# ======================================================
-
 def communities_view(request):
-    return render(request, "core/communities.html")
+    q = (request.GET.get("q") or "").strip()
+    tokens = [t for t in q.split() if t]
+
+    qs = (
+        Community.objects.all()
+        .annotate(members_total=Count("memberships"))
+        .annotate(last_post_at=Max("posts__created_at"))
+        .annotate(
+            has_posts=Case(
+                When(last_post_at__isnull=False, then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField(),
+            )
+        )
+    )
+
+    def apply_smart_contains_search(base_qs):
+        f = Q()
+        name_all = Q()
+        desc_all = Q()
+        name_any = Q()
+        desc_any = Q()
+
+        for t in tokens:
+            f &= (Q(name__icontains=t) | Q(description__icontains=t))
+            name_all &= Q(name__icontains=t)
+            desc_all &= Q(description__icontains=t)
+            name_any |= Q(name__icontains=t)
+            desc_any |= Q(description__icontains=t)
+
+        return (
+            base_qs.filter(f)
+            .annotate(
+                search_rank=Case(
+                    When(name_all, then=Value(0)),
+                    When(name_any, then=Value(1)),
+                    When(desc_all, then=Value(2)),
+                    When(desc_any, then=Value(3)),
+                    default=Value(4),
+                    output_field=IntegerField(),
+                )
+            )
+        )
+
+    if tokens:
+        filtered = apply_smart_contains_search(qs)
+        if filtered.exists():
+            qs = filtered.order_by("search_rank", "has_posts", "-last_post_at", "-created_at")
+        else:
+            query_lower = q.lower()
+            items = list(
+                Community.objects.values("id", "name", "description").all()
+            )
+
+            scored = []
+            for it in items:
+                name = (it["name"] or "").lower()
+                desc = (it["description"] or "").lower()
+
+                name_score = SequenceMatcher(None, query_lower, name).ratio()
+                desc_score = SequenceMatcher(None, query_lower, desc).ratio()
+
+                score = max(name_score * 1.25, desc_score)
+
+                if score >= 0.60:
+                    scored.append((it["id"], score, name_score, desc_score))
+
+            scored.sort(key=lambda x: (x[1], x[2], x[3]), reverse=True)
+            ids = [x[0] for x in scored[:200]]
+
+            if ids:
+                order = Case(*[When(id=cid, then=Value(i)) for i, cid in enumerate(ids)], output_field=IntegerField())
+                qs = (
+                    Community.objects.filter(id__in=ids)
+                    .annotate(members_total=Count("memberships"))
+                    .annotate(last_post_at=Max("posts__created_at"))
+                    .annotate(
+                        has_posts=Case(
+                            When(last_post_at__isnull=False, then=Value(0)),
+                            default=Value(1),
+                            output_field=IntegerField(),
+                        )
+                    )
+                    .annotate(search_rank=order)
+                    .order_by("search_rank", "has_posts", "-last_post_at", "-created_at")
+                )
+            else:
+                qs = Community.objects.none()
+    else:
+        qs = qs.order_by("has_posts", "-last_post_at", "-created_at")
+
+    paginator = Paginator(qs, 7)
+    page_param = request.GET.get("page")
+    try:
+        page_number = int(page_param)
+        if page_number < 1:
+            page_number = 1
+    except (TypeError, ValueError):
+        page_number = 1
+
+    page_obj = paginator.get_page(page_number)
+
+    is_auth = request.user.is_authenticated
+    member_ids = set()
+    admin_ids = set()
+    if is_auth:
+        member_ids = set(
+            CommunityMembership.objects.filter(user=request.user).values_list("community_id", flat=True)
+        )
+        admin_ids = set(
+            CommunityMembership.objects.filter(user=request.user, is_admin=True).values_list("community_id", flat=True)
+        )
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        html = "".join(
+            render_to_string(
+                "core/partials/community_card.html",
+                {"c": c, "user": request.user, "member_community_ids": member_ids, "admin_community_ids": admin_ids},
+                request=request,
+            )
+            for c in page_obj.object_list
+        )
+        return JsonResponse({
+            "success": True,
+            "html": html,
+            "has_next": page_obj.has_next(),
+            "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+        })
+
+    return render(request, "core/communities.html", {
+        "communities": page_obj.object_list,
+        "q": q,
+        "member_community_ids": member_ids,
+        "admin_community_ids": admin_ids,
+        "page_obj": page_obj,
+        "has_next": page_obj.has_next(),
+        "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+    })
+
+
+@login_required
+def community_create(request):
+    if request.method == "POST":
+        form = CommunityForm(request.POST, request.FILES)
+        if form.is_valid():
+            community = form.save(commit=False)
+            community.created_by = request.user
+            if not community.slug:
+                community.slug = slugify(community.name)
+            base = community.slug or "community"
+            slug = base
+            i = 1
+            while Community.objects.filter(slug=slug).exists():
+                i += 1
+                slug = f"{base}-{i}"
+            community.slug = slug
+            community.save()
+            CommunityMembership.objects.get_or_create(
+                community=community,
+                user=request.user,
+                defaults={"is_admin": True},
+            )
+            return redirect("community_detail", slug=community.slug)
+    else:
+        form = CommunityForm()
+    return render(request, "core/community_create.html", {"form": form})
+
+
+def community_detail(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+
+    is_member = False
+    is_admin = False
+    if request.user.is_authenticated:
+        m = CommunityMembership.objects.filter(community=community, user=request.user).first()
+        is_member = bool(m)
+        is_admin = bool(m and m.is_admin)
+
+    members_qs = (
+        CommunityMembership.objects
+        .filter(community=community)
+        .select_related("user")
+        .order_by("-is_admin", "-joined_at", "user__username")
+    )
+    memberships = list(members_qs[:7])
+    members_total = members_qs.count()
+    members_has_more = members_total > 7
+
+    posts_qs = (
+        Post.objects.filter(community=community)
+        .select_related("author", "community")
+        .prefetch_related("likes", "comments", "attachments")
+        .order_by("-created_at")
+    )
+
+    state = get_user_state(request.user)
+
+    post_form = None
+    if request.user.is_authenticated and is_member:
+        post_form = CommunityPostForm()
+
+    return render(request, "core/community_detail.html", {
+        "community": community,
+        "is_member": is_member,
+        "is_admin": is_admin,
+        "memberships": memberships,
+        "members_total": members_total,
+        "members_has_more": members_has_more,
+        "posts": posts_qs,
+        "post_form": post_form,
+        **state,
+    })
+
+
+
+# --- helpers ---
+def _redirect_back(request, fallback_view, **kwargs):
+    """Redirect back to the previous page (communities list, profile, etc.) after POST actions."""
+    next_url = request.POST.get("next") or request.GET.get("next") or request.META.get("HTTP_REFERER")
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_url)
+    return redirect(fallback_view, **kwargs)
+
+@login_required
+def community_join(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    if request.method != "POST":
+        return _redirect_back(request, "community_detail", slug=community.slug)
+    CommunityMembership.objects.get_or_create(
+        community=community,
+        user=request.user,
+        defaults={"is_admin": False},
+    )
+    return _redirect_back(request, "community_detail", slug=community.slug)
+
+
+@login_required
+def community_leave(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    if request.method != "POST":
+        return _redirect_back(request, "community_detail", slug=community.slug)
+
+    CommunityMembership.objects.filter(community=community, user=request.user).delete()
+    return _redirect_back(request, "community_detail", slug=community.slug)
+
+
+@login_required
+def community_edit(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    m = CommunityMembership.objects.filter(community=community, user=request.user, is_admin=True).first()
+    if not m:
+        return HttpResponseForbidden("Forbidden")
+
+    if request.method == "POST":
+        form = CommunityForm(request.POST, request.FILES, instance=community)
+        if form.is_valid():
+            form.save()
+            return redirect("community_detail", slug=community.slug)
+    else:
+        form = CommunityForm(instance=community)
+
+    return render(request, "core/community_edit.html", {"community": community, "form": form})
+
+
+@login_required
+def community_create_post(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+
+    member = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not member:
+        return HttpResponseForbidden("Forbidden")
+
+    if request.method != "POST":
+        return redirect("community_detail", slug=community.slug)
+
+    form = CommunityPostForm(request.POST)
+    if not form.is_valid():
+        return redirect("community_detail", slug=community.slug)
+
+    post = Post.objects.create(
+        author=request.user,
+        community=community,
+        text=form.cleaned_data["text"],
+        as_community=bool(form.cleaned_data.get("post_as_community")) if member.is_admin else False,
+    )
+    return redirect("community_detail", slug=community.slug)
+
+
+def community_members_chunk(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+
+    try:
+        offset = int(request.GET.get("offset", "0"))
+    except ValueError:
+        offset = 0
+
+    limit = 7
+
+    qs = (
+        CommunityMembership.objects
+        .filter(community=community)
+        .select_related("user")
+        .order_by("-is_admin", "-joined_at", "user__username")
+    )
+
+    total = qs.count()
+    chunk = list(qs[offset:offset + limit])
+
+    html = render_to_string(
+        "core/partials/community_members_chunk.html",
+        {"memberships": chunk},
+        request=request
+    )
+
+    next_offset = offset + len(chunk)
+
+    return JsonResponse({
+        "html": html,
+        "next_offset": next_offset,
+        "has_more": next_offset < total,
+        "total": total,
+    })

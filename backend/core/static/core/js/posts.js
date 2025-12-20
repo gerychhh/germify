@@ -23,18 +23,121 @@ function ajaxPost(url, form) {
     });
 }
 
+// ========================
+// SMART IMAGE GALLERIES (1–10)
+// ========================
+function _imgShape(img) {
+    const w = img.naturalWidth || 0;
+    const h = img.naturalHeight || 0;
+    if (!w || !h) return null;
+    const r = w / h;
+    if (r >= 1.25) return "land";
+    if (r <= 0.85) return "port";
+    return "square";
+}
+
+function _chooseGalleryLayout(count, firstShape, allShapes) {
+    if (count <= 0) return "one";
+    if (count === 1) return "one";
+
+    if (count === 2) {
+        const s1 = allShapes[0] || firstShape;
+        const s2 = allShapes[1] || firstShape;
+        if (s1 === "port" && s2 === "port") return "two-port";
+        if (s1 === "land" && s2 === "land") return "two-land";
+        return "two-mixed";
+    }
+
+    if (count === 3) {
+        // если первая вертикальная — VK-раскладка, иначе «широкая сверху»
+        return firstShape === "port" ? "three-vk" : "three-top";
+    }
+
+    if (count === 4) return "four";
+
+    if (count === 5) {
+        return firstShape === "port" ? "five-left" : "five-top";
+    }
+
+    // 6–10
+    return "grid-3";
+}
+
+function initSmartGalleries(root) {
+    const scope = root || document;
+    const galleries = scope.querySelectorAll?.(".attachment-gallery") || [];
+    galleries.forEach((gallery) => {
+        const imgs = Array.from(gallery.querySelectorAll(".gallery-img"));
+        if (!imgs.length) {
+            gallery.dataset.count = "0";
+            gallery.dataset.layout = "one";
+            return;
+        }
+
+        // Ограничение отображения (на всякий случай, если в старых постах больше 10)
+        const maxVisible = 6;
+        imgs.forEach((img, idx) => {
+            const item = img.closest(".gallery-item");
+            if (!item) return;
+            if (idx >= maxVisible) item.classList.add("gallery-hidden");
+            else item.classList.remove("gallery-hidden");
+        });
+
+        // бейдж +N
+        gallery.querySelectorAll(".gallery-more-badge").forEach((n) => n.remove());
+        if (imgs.length > maxVisible) {
+            const lastVisibleImg = imgs[maxVisible - 1];
+            const lastItem = lastVisibleImg?.closest(".gallery-item");
+            if (lastItem) {
+                const badge = document.createElement("div");
+                badge.className = "gallery-more-badge";
+                badge.textContent = "+" + (imgs.length - maxVisible);
+                lastItem.appendChild(badge);
+            }
+        }
+
+        const visibleCount = Math.min(imgs.length, maxVisible);
+        gallery.dataset.count = String(visibleCount);
+
+        const applyLayout = () => {
+            // по умолчанию считаем первую "не вертикальной", чтобы не раздувать пост до загрузки картинки
+            const shapes = imgs.slice(0, visibleCount).map(_imgShape);
+            const firstShape = shapes[0] || "land";
+            gallery.dataset.layout = _chooseGalleryLayout(visibleCount, firstShape, shapes);
+        };
+
+        // Применяем сразу и ещё раз после загрузки первой картинки (для корректного определения пропорций)
+        applyLayout();
+        imgs.slice(0, visibleCount).forEach((img) => {
+            if (img && !(img.complete && img.naturalWidth)) {
+                img.addEventListener("load", applyLayout, { once: true });
+            }
+        });
+    });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
 
-    // максимальная высота видимого текста поста до "Показать полностью"
-    const MAX_POST_TEXT_HEIGHT = 220; // px, можно подправить
+    // ===== Пошаговое раскрытие длинного текста =====
+    // посты: 220px за клик
+    const MAX_POST_TEXT_HEIGHT = 220;
+    const POST_TEXT_STEP = 220;
+
+    // описание сообщества + комментарии/ответы: 120px, затем +140px за клик
+    const SOFT_TEXT_INITIAL = 120;
+    const SOFT_TEXT_STEP = 140;
+
+    // ===== Пакетный показ комментариев/ответов =====
+    const COMMENTS_BATCH_SIZE = 3;
+    const REPLIES_BATCH_SIZE = 3;
 
     // ==========================================================
     //           ПОДДЕРЖКА ВЛОЖЕНИЙ ДЛЯ НОВОГО ПОСТА
     // ==========================================================
 
     const MAX_FILE_SIZE = 25 * 1024 * 1024;      // 25 MB на файл
-    const MAX_TOTAL_SIZE = 25 * 1024 * 1024;     // 25 MB суммарно
-    const MAX_FILE_COUNT = 25;                   // максимум файлов
+    const MAX_TOTAL_SIZE = 250 * 1024 * 1024;    // 250 MB суммарно
+    const MAX_FILE_COUNT = parseInt(document.body?.dataset?.attachMax || "10", 10); // максимум файлов
 
     const fileInput = document.querySelector("input[name='attachments']");
     const previewBox = document.getElementById("file-preview");
@@ -45,6 +148,28 @@ document.addEventListener("DOMContentLoaded", function () {
     const uploadProgressBar = document.getElementById("upload-progress-bar");
 
     let selectedFiles = [];
+
+    // ==========================================================
+    //          ОГРАНИЧЕНИЕ СИМВОЛОВ В ПОСТЕ (UI)
+    // ==========================================================
+    const MAX_POST_CHARS = parseInt(document.body?.dataset?.postMax || "2000", 10);
+
+    function bindTextCounter(textarea, counterEl, max) {
+        if (!textarea || !counterEl || !max) return;
+
+        const render = () => {
+            const len = (textarea.value || "").length;
+            counterEl.textContent = `${len} / ${max}`;
+        };
+
+        textarea.setAttribute("maxlength", String(max));
+        textarea.addEventListener("input", render);
+        render();
+    }
+
+    const newPostText = document.getElementById("new-post-text");
+    const newPostCounter = document.querySelector(".post-text-counter[data-for='new-post-text']");
+    bindTextCounter(newPostText, newPostCounter, MAX_POST_CHARS);
 
     function formatSize(bytes) {
         const mb = bytes / (1024 * 1024);
@@ -59,43 +184,57 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ----- Отрисовка предпросмотра -----
     function renderPreview() {
-        if (!previewBox) return;
-        previewBox.innerHTML = "";
+    if (!previewBox) return;
+    previewBox.innerHTML = "";
 
-        selectedFiles.forEach((file, index) => {
-            const wrapper = document.createElement("div");
-            wrapper.style.position = "relative";
+    // делаем превью сеткой (чтобы картинки не растягивались на весь экран)
+    previewBox.classList.add("file-preview");
 
-            if (file.type.startsWith("image/")) {
-                const img = document.createElement("img");
-                img.src = URL.createObjectURL(file);
-                img.className = "preview-img";
-                wrapper.appendChild(img);
-            } else {
-                const div = document.createElement("div");
-                div.className = "file-preview-item";
-                div.textContent = file.name;
-                wrapper.appendChild(div);
-            }
+    selectedFiles.forEach((file, index) => {
+        const wrapper = document.createElement("div");
+        const isImage = (file.type || "").startsWith("image/");
+        wrapper.className = "preview-item " + (isImage ? "preview-item--image" : "preview-item--file");
 
-            const del = document.createElement("div");
-            del.textContent = "✖";
-            del.style.position = "absolute";
-            del.style.top = "2px";
-            del.style.right = "6px";
-            del.style.cursor = "pointer";
-            del.style.color = "#f87171";
-            del.style.fontWeight = "bold";
-            del.onclick = () => removeFile(index);
+        if (isImage) {
+            const img = document.createElement("img");
+            img.className = "preview-img";
+            const url = URL.createObjectURL(file);
+            img.src = url;
+            img.alt = file.name || "image";
+            img.onload = () => URL.revokeObjectURL(url);
+            wrapper.appendChild(img);
+        } else {
+            const row = document.createElement("div");
+            row.className = "file-preview-item";
 
-            wrapper.appendChild(del);
-            previewBox.appendChild(wrapper);
-        });
+            const icon = document.createElement("span");
+            icon.className = "file-preview-icon";
+            icon.textContent = "📎";
 
-        updateFileInfo();
-    }
+            const name = document.createElement("span");
+            name.className = "file-preview-name";
+            name.textContent = file.name || "file";
 
-    function removeFile(index) {
+            row.appendChild(icon);
+            row.appendChild(name);
+            wrapper.appendChild(row);
+        }
+
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "remove-file-btn";
+        del.setAttribute("aria-label", "Удалить файл");
+        del.innerHTML = "&times;";
+        del.onclick = () => removeFile(index);
+
+        wrapper.appendChild(del);
+        previewBox.appendChild(wrapper);
+    });
+
+    updateFileInfo();
+}
+
+function removeFile(index) {
         selectedFiles.splice(index, 1);
         renderPreview();
 
@@ -109,17 +248,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
         for (const file of files) {
             if (selectedFiles.length >= MAX_FILE_COUNT) {
-                alert("Максимум файлов: " + MAX_FILE_COUNT);
+                alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
                 break;
             }
 
             if (file.size > MAX_FILE_SIZE) {
-                alert(`Файл "${file.name}" превышает 10MB`);
+                alert(`Файл "${file.name}" превышает 25MB`);
                 continue;
             }
 
             if (totalSize + file.size > MAX_TOTAL_SIZE) {
-                alert("Превышен общий лимит размера файлов (50MB)");
+                alert("Превышен общий лимит размера файлов (250MB)");
                 break;
             }
 
@@ -200,7 +339,14 @@ document.addEventListener("DOMContentLoaded", function () {
     //  ФУНКЦИИ ИНИЦИАЛИЗАЦИИ (ТЕКСТ, ВИДЕО, АУДИО)
     // ----------------------------------------------------------
 
-    // ---------- СВЁРНУТЫЙ ТЕКСТ + МЕДИА ПОСТА ----------
+    // ---------- СВЁРНУТЫЙ ТЕКСТ + МЕДИА (посты/описание сообщества/комментарии) ----------
+    function getTextCollapseConfig(block) {
+        if (block && (block.classList.contains("comment-text-block") || block.classList.contains("community-desc-block"))) {
+            return { initial: SOFT_TEXT_INITIAL, step: SOFT_TEXT_STEP };
+        }
+        return { initial: MAX_POST_TEXT_HEIGHT, step: POST_TEXT_STEP };
+    }
+
     function initPostTextCollapsing(root = document) {
         if (!root.querySelectorAll) return;
 
@@ -208,33 +354,33 @@ document.addEventListener("DOMContentLoaded", function () {
 
         blocks.forEach(block => {
             const wrapper = block.querySelector(".post-text-wrapper");
-            const toggle  = block.querySelector(".post-text-toggle");
+            const toggle = block.querySelector(".post-text-toggle");
             if (!wrapper || !toggle) return;
 
-            const expanded = toggle.dataset.expanded === "1";
+            const cfg = getTextCollapseConfig(block);
             const fullHeight = wrapper.scrollHeight;
 
-            // Контент низкий — не сворачиваем вообще
-            if (fullHeight <= MAX_POST_TEXT_HEIGHT + 10) {
+            // Контент низкий — не сворачиваем
+            if (fullHeight <= cfg.initial + 10) {
                 wrapper.style.maxHeight = "";
                 wrapper.classList.remove("is-collapsed");
                 toggle.classList.add("hidden");
+                toggle.dataset.state = "";
                 return;
             }
 
-            // Кнопка нужна
             toggle.classList.remove("hidden");
 
-            if (expanded) {
-                // уже развернутый пост
+            // Если ранее уже был полностью развернут — удерживаем состояние
+            if (toggle.dataset.state === "expanded") {
                 wrapper.style.maxHeight = fullHeight + "px";
                 wrapper.classList.remove("is-collapsed");
-                toggle.dataset.expanded = "1";
+                toggle.textContent = "Свернуть";
             } else {
-                // свернутый пост
-                wrapper.style.maxHeight = MAX_POST_TEXT_HEIGHT + "px";
+                wrapper.style.maxHeight = cfg.initial + "px";
                 wrapper.classList.add("is-collapsed");
-                toggle.dataset.expanded = "0";
+                toggle.textContent = "Показать ещё";
+                toggle.dataset.state = "collapsed";
             }
         });
     }
@@ -287,6 +433,15 @@ document.addEventListener("DOMContentLoaded", function () {
             video.addEventListener("loadedmetadata", () => {
                 durationEl.textContent = vFormat(video.duration);
                 updateBuffer();
+
+                // mark video orientation for styling (doesn't affect player behavior)
+                if (video.videoWidth && video.videoHeight) {
+                    const r = video.videoWidth / video.videoHeight;
+                    let shape = "square";
+                    if (r >= 1.25) shape = "land";
+                    else if (r <= 0.85) shape = "port";
+                    wrapper.dataset.shape = shape;
+                }
             });
 
             video.addEventListener("loadeddata", updateBuffer);
@@ -553,6 +708,173 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // ==========================================================
+    //         ПАКЕТНЫЙ ПОКАЗ КОММЕНТАРИЕВ / ОТВЕТОВ
+    //         (кнопка "Показать ещё" внизу, порядок: новые сверху)
+    // ==========================================================
+    function directChildren(container, selector) {
+        if (!container) return [];
+        // :scope поддерживается в современных браузерах; fallback — через children
+        try {
+            return Array.from(container.querySelectorAll(":scope > " + selector));
+        } catch (e) {
+            return Array.from(container.children).filter(el => el.matches && el.matches(selector));
+        }
+    }
+
+    function placeCommentsMoreButton(body, btn) {
+        if (!body || !btn) return;
+        const addToggle = body.querySelector(":scope > .comment-add-toggle") || body.querySelector(".comment-add-toggle");
+        const form = body.querySelector(":scope > .comment-form") || body.querySelector(".comment-form");
+        if (addToggle) body.insertBefore(btn, addToggle);
+        else if (form) body.insertBefore(btn, form);
+        else body.appendChild(btn);
+    }
+
+    function placeRepliesMoreButton(block, btn) {
+        if (!block || !btn) return;
+        // строго внизу ответов
+        block.appendChild(btn);
+    }
+
+    function ensureNewestFirstComments(body) {
+        if (!body) return;
+        if (body.dataset.orderInited === "1") return;
+
+        // убираем кнопку, если она уже существует (на всякий случай)
+        const oldBtn = body.querySelector(":scope > .comments-more-btn") || body.querySelector(".comments-more-btn");
+        if (oldBtn) oldBtn.remove();
+
+        // временно убираем элементы управления, чтобы они остались внизу
+        const addToggle = body.querySelector(":scope > .comment-add-toggle") || body.querySelector(".comment-add-toggle");
+        const form = body.querySelector(":scope > .comment-form") || body.querySelector(".comment-form");
+        const keep = [];
+        if (addToggle && addToggle.parentElement === body) keep.push(addToggle);
+        if (form && form.parentElement === body) keep.push(form);
+        keep.forEach(el => body.removeChild(el));
+
+        // разворачиваем порядок: новые сверху
+        const items = directChildren(body, ".comment-item");
+        const frag = document.createDocumentFragment();
+        for (let i = items.length - 1; i >= 0; i--) {
+            frag.appendChild(items[i]);
+        }
+        body.appendChild(frag);
+
+        // возвращаем управление
+        keep.forEach(el => body.appendChild(el));
+
+        body.dataset.orderInited = "1";
+    }
+
+    function ensureNewestFirstReplies(block) {
+        if (!block) return;
+        if (block.dataset.orderInited === "1") return;
+
+        const oldBtn = block.querySelector(":scope > .replies-more-btn") || block.querySelector(".replies-more-btn");
+        if (oldBtn) oldBtn.remove();
+
+        const items = directChildren(block, ".comment-item");
+        const frag = document.createDocumentFragment();
+        for (let i = items.length - 1; i >= 0; i--) {
+            frag.appendChild(items[i]);
+        }
+        block.appendChild(frag);
+
+        block.dataset.orderInited = "1";
+    }
+
+    function updateCommentsMoreButton(body) {
+        if (!body) return;
+        const items = directChildren(body, ".comment-item");
+        const btn = body.querySelector(":scope > .comments-more-btn") || body.querySelector(".comments-more-btn");
+        if (!btn) return;
+
+        const hiddenCount = items.filter(el => el.classList.contains("batch-hidden")).length;
+        if (hiddenCount <= 0) {
+            btn.remove();
+        } else {
+            btn.textContent = "Показать ещё (" + hiddenCount + ")";
+            placeCommentsMoreButton(body, btn);
+        }
+    }
+
+    function updateRepliesMoreButton(block) {
+        if (!block) return;
+        const items = directChildren(block, ".comment-item");
+        const btn = block.querySelector(":scope > .replies-more-btn") || block.querySelector(".replies-more-btn");
+        if (!btn) return;
+
+        const hiddenCount = items.filter(el => el.classList.contains("batch-hidden")).length;
+        if (hiddenCount <= 0) {
+            btn.remove();
+        } else {
+            btn.textContent = "Показать ещё (" + hiddenCount + ")";
+            placeRepliesMoreButton(block, btn);
+        }
+    }
+
+    function initCommentsBatchingForBody(body) {
+        if (!body) return;
+
+        // порядок: новые сверху
+        ensureNewestFirstComments(body);
+
+        if (body.dataset.batchInited === "1") {
+            updateCommentsMoreButton(body);
+            return;
+        }
+
+        const items = directChildren(body, ".comment-item");
+        if (items.length <= COMMENTS_BATCH_SIZE) {
+            body.dataset.batchInited = "1";
+            return;
+        }
+
+        // показываем первые N (самые новые), остальные прячем
+        for (let i = 0; i < items.length; i++) {
+            if (i >= COMMENTS_BATCH_SIZE) items[i].classList.add("batch-hidden");
+        }
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "comments-more-btn";
+        btn.textContent = "Показать ещё (" + (items.length - COMMENTS_BATCH_SIZE) + ")";
+
+        placeCommentsMoreButton(body, btn);
+        body.dataset.batchInited = "1";
+    }
+
+    function initRepliesBatchingForBlock(block) {
+        if (!block) return;
+
+        // порядок: новые сверху
+        ensureNewestFirstReplies(block);
+
+        if (block.dataset.batchInited === "1") {
+            updateRepliesMoreButton(block);
+            return;
+        }
+
+        const items = directChildren(block, ".comment-item");
+        if (items.length <= REPLIES_BATCH_SIZE) {
+            block.dataset.batchInited = "1";
+            return;
+        }
+
+        for (let i = 0; i < items.length; i++) {
+            if (i >= REPLIES_BATCH_SIZE) items[i].classList.add("batch-hidden");
+        }
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "replies-more-btn";
+        btn.textContent = "Показать ещё (" + (items.length - REPLIES_BATCH_SIZE) + ")";
+
+        placeRepliesMoreButton(block, btn);
+        block.dataset.batchInited = "1";
+    }
+
     // ==========================
     // ОБРАБОТЧИК ВСЕХ SUBMIT'ов
     // ==========================
@@ -564,6 +886,14 @@ document.addEventListener("DOMContentLoaded", function () {
             e.preventDefault();
 
             const fd = new FormData(form);
+
+            // Учитываем будущие вложения (файлы + голосовое) и проверяем лимит
+            const voiceWillBeAdded = Boolean(form._voiceBlob && !form._voiceBlobUsed);
+            const totalFilesToSend = selectedFiles.length + (voiceWillBeAdded ? 1 : 0);
+            if (totalFilesToSend > MAX_FILE_COUNT) {
+                alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
+                return;
+            }
 
             // обычные файлы из предпросмотра
             selectedFiles.forEach(f => fd.append("attachments", f));
@@ -624,6 +954,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         initPostTextCollapsing(newPostEl);
                         initVideoPlayers(newPostEl);
                         initAudioPlayers(newPostEl);
+                        initSmartGalleries(newPostEl);
 
                         form.reset();
                         clearFilePreview();
@@ -634,6 +965,19 @@ document.addEventListener("DOMContentLoaded", function () {
                         window.location.reload();
                     }
                 } else {
+                    // постараемся показать серверную ошибку (например, лимит файлов/символов)
+                    const ctErr = xhr.getResponseHeader("content-type") || "";
+                    if (ctErr.indexOf("application/json") !== -1) {
+                        try {
+                            const d = JSON.parse(xhr.responseText);
+                            if (d && (d.error || d.errors)) {
+                                const errText = d.error || JSON.stringify(d.errors);
+                                alert(errText);
+                                return;
+                            }
+                        } catch (e) {}
+                    }
+
                     let msg = "Ошибка при отправке поста";
                     if (xhr.status === 413) {
                         msg = "Файл слишком большой (ошибка 413 от сервера). Увеличь client_max_body_size в nginx.";
@@ -730,9 +1074,26 @@ document.addEventListener("DOMContentLoaded", function () {
                     const body = document.querySelector('.comments-body[data-post-id="' + pid + '"]');
                     if (!body) return;
 
-                    const addBtn = body.querySelector(".comment-add-toggle");
-                    if (addBtn) addBtn.insertAdjacentHTML("beforebegin", data.html);
-                    else body.insertAdjacentHTML("beforeend", data.html);
+                    // Новый комментарий — самый новый: добавляем В НАЧАЛО списка.
+                    // Кнопка "Показать ещё" при этом остаётся внизу.
+                    ensureNewestFirstComments(body);
+                    const firstItem = body.querySelector(":scope > .comment-item") || body.querySelector(".comment-item");
+                    const addBtn = body.querySelector(":scope > .comment-add-toggle") || body.querySelector(".comment-add-toggle");
+                    if (firstItem) {
+                        firstItem.insertAdjacentHTML("beforebegin", data.html);
+                    } else if (addBtn) {
+                        addBtn.insertAdjacentHTML("beforebegin", data.html);
+                    } else {
+                        body.insertAdjacentHTML("afterbegin", data.html);
+                    }
+
+                    // Инициализируем пошаговую свёртку для нового комментария
+                    initPostTextCollapsing(body);
+
+                    // Если батчинг уже включен — пересчитаем кнопку
+                    if (body.dataset.batchInited === "1") {
+                        updateCommentsMoreButton(body);
+                    }
 
                     const badge = document.querySelector(
                         '.comments-toggle[data-post-id="' + pid + '"] .comments-count-badge'
@@ -773,8 +1134,30 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (!parentEl) return;
 
                     const repliesBlock = parentEl.querySelector(".replies-block");
-                    if (repliesBlock) repliesBlock.insertAdjacentHTML("beforeend", data.html);
-                    else parentEl.insertAdjacentHTML("beforeend", data.html);
+                    if (repliesBlock) {
+                        // Новый ответ — самый новый: добавляем В НАЧАЛО ответов.
+                        // Кнопка "Показать ещё" остаётся внизу.
+                        ensureNewestFirstReplies(repliesBlock);
+                        const firstReply = repliesBlock.querySelector(":scope > .comment-item") || repliesBlock.querySelector(".comment-item");
+                        if (firstReply) {
+                            firstReply.insertAdjacentHTML("beforebegin", data.html);
+                        } else {
+                            const moreBtn = repliesBlock.querySelector(":scope > .replies-more-btn") || repliesBlock.querySelector(".replies-more-btn");
+                            if (moreBtn) moreBtn.insertAdjacentHTML("beforebegin", data.html);
+                            else repliesBlock.insertAdjacentHTML("afterbegin", data.html);
+                        }
+
+                        // Инициализируем свёртку текста в новых ответах
+                        initPostTextCollapsing(repliesBlock);
+
+                        // Если батчинг уже включен — пересчитаем кнопку
+                        if (repliesBlock.dataset.batchInited === "1") {
+                            updateRepliesMoreButton(repliesBlock);
+                        }
+                    } else {
+                        parentEl.insertAdjacentHTML("beforeend", data.html);
+                        initPostTextCollapsing(parentEl);
+                    }
 
                     const badge = document.querySelector(
                         '.comments-toggle[data-post-id="' + pid + '"] .comments-count-badge'
@@ -804,7 +1187,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     const el = document.querySelector(
                         '.comment-item[data-comment-id="' + commentId + '"]'
                     );
+                    const repliesContainer = el ? el.closest('.replies-block') : null;
                     if (el) el.remove();
+
+                    // Пересчёт "Показать ещё" после удаления
+                    const body = document.querySelector('.comments-body[data-post-id="' + postId + '"]');
+                    if (body && body.dataset.batchInited === "1") updateCommentsMoreButton(body);
+                    if (repliesContainer && repliesContainer.dataset.batchInited === "1") updateRepliesMoreButton(repliesContainer);
 
                     const badge = document.querySelector(
                         '.comments-toggle[data-post-id="' + postId + '"] .comments-count-badge'
@@ -864,19 +1253,63 @@ document.addEventListener("DOMContentLoaded", function () {
             const wrapper = block.querySelector(".post-text-wrapper");
             if (!wrapper) return;
 
-            const expanded = textToggle.dataset.expanded === "1";
+            const cfg = getTextCollapseConfig(block);
+            const fullHeight = wrapper.scrollHeight;
+            const isExpanded = (!wrapper.classList.contains("is-collapsed")) || (textToggle.dataset.state === "expanded");
 
-            if (expanded) {
-                wrapper.style.maxHeight = MAX_POST_TEXT_HEIGHT + "px";
+            if (isExpanded) {
+                // Свернуть обратно в стартовое состояние
+                wrapper.style.maxHeight = cfg.initial + "px";
                 wrapper.classList.add("is-collapsed");
-                textToggle.textContent = "Показать полностью";
-                textToggle.dataset.expanded = "0";
-            } else {
-                wrapper.style.maxHeight = wrapper.scrollHeight + "px";
+                textToggle.textContent = "Показать ещё";
+                textToggle.dataset.state = "collapsed";
+                return;
+            }
+
+            // Пошаговое раскрытие
+            let current = parseInt(wrapper.style.maxHeight || "0", 10);
+            if (!current || current < cfg.initial) current = cfg.initial;
+
+            const next = current + cfg.step;
+            if (next >= fullHeight - 5) {
+                wrapper.style.maxHeight = fullHeight + "px";
                 wrapper.classList.remove("is-collapsed");
                 textToggle.textContent = "Свернуть";
-                textToggle.dataset.expanded = "1";
+                textToggle.dataset.state = "expanded";
+            } else {
+                wrapper.style.maxHeight = next + "px";
+                wrapper.classList.add("is-collapsed");
+                textToggle.textContent = "Показать ещё";
+                textToggle.dataset.state = "partial";
             }
+            return;
+        }
+
+        // ----- "ПОКАЗАТЬ ЕЩЁ" ДЛЯ КОММЕНТАРИЕВ (кнопка внизу) -----
+        const commentsMoreBtn = e.target.closest(".comments-more-btn");
+        if (commentsMoreBtn) {
+            const body = commentsMoreBtn.closest(".comments-body");
+            if (!body) return;
+
+            const items = directChildren(body, ".comment-item");
+            const hidden = items.filter(el => el.classList.contains("batch-hidden"));
+            const toShow = hidden.slice(0, COMMENTS_BATCH_SIZE);
+            toShow.forEach(el => el.classList.remove("batch-hidden"));
+            updateCommentsMoreButton(body);
+            return;
+        }
+
+        // ----- "ПОКАЗАТЬ ЕЩЁ" ДЛЯ ОТВЕТОВ (кнопка внизу) -----
+        const repliesMoreBtn = e.target.closest(".replies-more-btn");
+        if (repliesMoreBtn) {
+            const block = repliesMoreBtn.closest(".replies-block");
+            if (!block) return;
+
+            const items = directChildren(block, ".comment-item");
+            const hidden = items.filter(el => el.classList.contains("batch-hidden"));
+            const toShow = hidden.slice(0, REPLIES_BATCH_SIZE);
+            toShow.forEach(el => el.classList.remove("batch-hidden"));
+            updateRepliesMoreButton(block);
             return;
         }
 
@@ -944,6 +1377,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         .forEach(function (f) { f.classList.add("hidden"); });
                     body.querySelectorAll(".replies-block")
                         .forEach(function (b) { b.classList.add("hidden"); });
+
+                    // Инициализируем свёртку текста и батчинг ТОЛЬКО после открытия комментариев
+                    initPostTextCollapsing(body);
+                    initCommentsBatchingForBody(body);
                 }
 
                 if (arrow) {
@@ -962,6 +1399,12 @@ document.addEventListener("DOMContentLoaded", function () {
             );
             if (block) {
                 block.classList.toggle("hidden");
+                const isHidden = block.classList.contains("hidden");
+                if (!isHidden) {
+                    // Инициализируем свёртку текста + батчинг только после открытия ответов
+                    initPostTextCollapsing(block);
+                    initRepliesBatchingForBlock(block);
+                }
             }
             return;
         }
@@ -1086,6 +1529,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 initPostTextCollapsing(container);
                 initVideoPlayers(container);
                 initAudioPlayers(container);
+                initSmartGalleries(container);
 
                 hasNext = !!data.has_next;
                 if (hasNext && data.next_page) {
@@ -1126,6 +1570,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initPostTextCollapsing(document);
     initVideoPlayers(document);
     initAudioPlayers(document);
+    initSmartGalleries(document);
 
 }); // конец DOMContentLoaded
 

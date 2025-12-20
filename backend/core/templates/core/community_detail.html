@@ -1,0 +1,227 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}{{ community.name }} — Germify{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'core/css/posts.css' %}?v=12">
+  <link rel="stylesheet" href="{% static 'core/css/community_detail.css' %}?v=3">
+
+  <style>
+    /* Fallback: если community_detail.css не подхватился (nginx/static/caching),
+       всё равно держим аватар сообщества в аккуратном круге */
+    .community-avatar{width:92px;height:92px;border-radius:50%;overflow:hidden;background:#fff;border:4px solid #fff;box-shadow:0 12px 26px rgba(0,0,0,.10);position:relative}
+    .community-avatar img{width:100% !important;height:100% !important;object-fit:cover !important;display:block;max-width:100%}
+    .community-avatar-fallback{width:100%;height:100%;display:grid;place-items:center;font-weight:700;font-size:34px;color:#0f172a;background:linear-gradient(135deg,rgba(226,232,240,1),rgba(248,250,252,1))}
+  </style>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+
+  <!-- LEFT: header + composer + posts -->
+  <div class="col-12 col-lg-8">
+
+    <!-- COMMUNITY HEADER -->
+    <div class="card community-header overflow-hidden">
+      <div class="community-cover"></div>
+
+      <div class="card-body pt-0">
+        <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+
+          <div class="d-flex align-items-start gap-3">
+            <div class="community-avatar-wrap">
+              <div class="community-avatar">
+                {% if community.icon %}
+                  <img src="{{ community.icon.url }}" alt="{{ community.name }}">
+                {% else %}
+                  <div class="community-avatar-fallback">{{ community.name|default:community.slug|slice:":1"|upper }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="min-w-0">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h1 class="h4 mb-0 text-truncate">{{ community.name }}</h1>
+
+                {% if community.slug %}
+                  <span class="badge text-bg-light border">#{{ community.slug }}</span>
+                {% endif %}
+
+                <span class="badge text-bg-light border">👥 {{ members_total|default:community.members_count }}</span>
+
+                {% if is_admin %}
+                  <span class="badge text-bg-success">Админ</span>
+                {% endif %}
+              </div>
+
+              <div class="text-body-secondary small mt-1">
+                {% if user.is_authenticated %}
+                  {% if is_member %}Вы участник{% else %}Вы не участник{% endif %}
+                  {% if is_admin %} · можете редактировать{% endif %}
+                {% else %}
+                  Войдите, чтобы вступить
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-2 community-actions">
+            {% if user.is_authenticated %}
+              {% if is_member %}
+                <form method="post" action="{% url 'community_leave' community.slug %}" class="m-0">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-secondary btn-sm">Выйти</button>
+                </form>
+              {% else %}
+                <form method="post" action="{% url 'community_join' community.slug %}" class="m-0">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-success btn-sm">Подписаться</button>
+                </form>
+              {% endif %}
+            {% else %}
+              <a href="{% url 'login' %}" class="btn btn-success btn-sm">Подписаться</a>
+            {% endif %}
+
+            {% if is_admin %}
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="community-edit-toggle" aria-expanded="false" title="Редактировать">
+                ✎
+              </button>
+            {% endif %}
+          </div>
+
+        </div>
+
+        <!-- VIEW MODE -->
+        <div class="mt-3" id="community-view">
+          {% if community.description %}
+            <div class="post-text-block community-desc-block">
+              <div class="post-text-wrapper">
+                <div class="post-text m-0">{{ community.description }}</div>
+                <div class="post-text-gradient"></div>
+              </div>
+              <button type="button" class="post-text-toggle hidden">Показать ещё</button>
+            </div>
+          {% else %}
+            <div class="text-body-secondary" style="font-size:14px;">Описание пока не добавлено.</div>
+          {% endif %}
+        </div>
+
+        <!-- EDIT MODE (admin) -->
+        {% if is_admin %}
+          <div class="mt-3 d-none" id="community-edit">
+            <form method="post" action="{% url 'community_edit' community.slug %}" enctype="multipart/form-data" class="community-edit-form">
+              {% csrf_token %}
+
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label">Название</label>
+                  <input type="text" name="name" value="{{ community.name }}" class="form-control" maxlength="80" required>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Описание</label>
+                  <textarea name="description" class="form-control" rows="4">{{ community.description }}</textarea>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Иконка</label>
+                  <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <input type="file" name="icon" id="id_icon" accept="image/*" class="form-control form-control-sm community-icon-input">
+                    <div class="text-body-secondary small">PNG/JPG до 5MB</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-success">Сохранить</button>
+                <button type="button" class="btn btn-outline-secondary" id="community-edit-cancel">Отмена</button>
+                <a href="{% url 'community_edit' community.slug %}" class="btn btn-outline-secondary ms-auto">Полные настройки</a>
+              </div>
+            </form>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- NEW POST -->
+    {% if post_form %}
+      <div class="card mt-3">
+        <div class="card-header bg-white">
+          <h3 class="h6 m-0">Новый пост</h3>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{% url 'community_create_post' community.slug %}" class="d-flex flex-column gap-2">
+            {% csrf_token %}
+            {{ post_form.text }}
+
+            {% if is_admin %}
+              <div class="form-check">
+                {{ post_form.post_as_community }}
+                <label class="form-check-label" for="{{ post_form.post_as_community.id_for_label }}">
+                  Опубликовать от лица сообщества
+                </label>
+              </div>
+            {% endif %}
+
+            <div class="d-flex gap-2 align-items-center">
+              <button type="submit" class="btn btn-success">Опубликовать</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- POSTS -->
+    <div class="d-flex flex-column gap-3 mt-3">
+      {% for post in posts %}
+        {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids admin_community_ids=admin_community_ids member_community_ids=member_community_ids %}
+      {% empty %}
+        <div class="card">
+          <div class="card-body text-center text-body-secondary py-5">
+            <div style="font-size:36px;">📝</div>
+            <div class="mt-2">Пока нет постов. Будьте первым 🙂</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <!-- RIGHT: members -->
+  <div class="col-12 col-lg-4">
+    <div class="community-aside-sticky d-flex flex-column gap-3">
+
+      <div class="card">
+        <div class="card-header bg-white d-flex align-items-center justify-content-between gap-2">
+          <h3 class="h6 m-0">Участники</h3>
+          <span class="badge text-bg-light border">{{ members_total }}</span>
+        </div>
+
+        <div class="card-body">
+          <input type="search" class="form-control form-control-sm mb-3" id="community-members-search" placeholder="Поиск участников...">
+
+          <div id="community-members-list" class="community-members-list" data-offset="{{ memberships|length }}">
+            {% include "core/partials/community_members_chunk.html" with memberships=memberships %}
+          </div>
+
+          {% if members_has_more %}
+            <button type="button" id="community-members-more" class="btn btn-outline-secondary w-100 mt-3" data-url="{% url 'community_members_chunk' community.slug %}">
+              Показать ещё
+            </button>
+          {% endif %}
+
+          <div class="small text-body-secondary mt-3" id="community-members-empty" style="display:none;">Ничего не найдено</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="{% static 'core/js/community_detail.js' %}?v=3"></script>
+
+{% endblock %}

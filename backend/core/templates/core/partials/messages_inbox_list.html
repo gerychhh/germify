@@ -33,21 +33,26 @@
                 </div>
             </a>
 
-            <div class="dialog-menu-wrapper">
+            <div class="dropdown dialog-menu-wrapper">
                 <button type="button"
-                        class="dialog-menu-toggle"
-                        aria-label="Действия с диалогом">
+                        class="btn btn-sm btn-light border dropdown-toggle dialog-menu-toggle"
+                        data-bs-toggle="dropdown"
+                        data-bs-display="static"
+                        aria-expanded="false"
+                        aria-label="Действия с диалогом"
+                        style="padding: 2px 10px; border-radius: 999px; line-height: 1;">
                     ⋯
                 </button>
-
-                <div class="dialog-menu">
-                    <button type="button"
-                            class="dialog-menu-item dialog-menu-item--delete"
-                            data-delete-url="{% url 'messages_delete_thread' other_user.username %}"
-                            data-username="{{ other_user.username }}">
-                        Удалить чат
-                    </button>
-                </div>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <button type="button"
+                                class="dropdown-item text-danger dialog-menu-item dialog-menu-item--delete"
+                                data-delete-url="{% url 'messages_delete_thread' other_user.username %}"
+                                data-username="{{ other_user.username }}">
+                            Удалить чат
+                        </button>
+                    </li>
+                </ul>
             </div>
         </div>
         {% endwith %}
@@ -84,21 +89,26 @@
                 </div>
             </a>
 
-            <div class="dialog-menu-wrapper">
+            <div class="dropdown dialog-menu-wrapper">
                 <button type="button"
-                        class="dialog-menu-toggle"
-                        aria-label="Действия с диалогом">
+                        class="btn btn-sm btn-light border dropdown-toggle dialog-menu-toggle"
+                        data-bs-toggle="dropdown"
+                        data-bs-display="static"
+                        aria-expanded="false"
+                        aria-label="Действия с диалогом"
+                        style="padding: 2px 10px; border-radius: 999px; line-height: 1;">
                     ⋯
                 </button>
-
-                <div class="dialog-menu">
-                    <button type="button"
-                            class="dialog-menu-item dialog-menu-item--delete"
-                            data-delete-url="{% url 'messages_delete_thread' other_user.username %}"
-                            data-username="{{ other_user.username }}">
-                        Удалить чат
-                    </button>
-                </div>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <button type="button"
+                                class="dropdown-item text-danger dialog-menu-item dialog-menu-item--delete"
+                                data-delete-url="{% url 'messages_delete_thread' other_user.username %}"
+                                data-username="{{ other_user.username }}">
+                            Удалить чат
+                        </button>
+                    </li>
+                </ul>
             </div>
         </div>
     {% endfor %}

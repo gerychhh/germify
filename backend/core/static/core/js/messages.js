@@ -189,6 +189,16 @@
 
             if (!window.confirm("Удалить чат полностью?")) {
                 closeAllDialogMenus();
+                // Если меню — bootstrap dropdown, аккуратно закрываем
+                try {
+                    const dd = deleteBtn.closest(".dropdown");
+                    if (dd) {
+                        const t = dd.querySelector('[data-bs-toggle="dropdown"]');
+                        if (t && window.bootstrap && bootstrap.Dropdown) {
+                            bootstrap.Dropdown.getOrCreateInstance(t).hide();
+                        }
+                    }
+                } catch (e) {}
                 return;
             }
 
@@ -233,6 +243,11 @@
             // клик по трём точкам
             const toggle = targetEl.closest(".dialog-menu-toggle");
             if (toggle) {
+                // Если это Bootstrap dropdown toggle — не мешаем Bootstrap управлять меню
+                if (toggle.matches('[data-bs-toggle="dropdown"]')) {
+                    return;
+                }
+
                 event.preventDefault();
                 event.stopPropagation();
 

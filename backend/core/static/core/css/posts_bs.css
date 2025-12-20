@@ -1,0 +1,377 @@
+/* core/static/core/css/posts_bs.css
+   Светлые оверрайды для старой posts.css.
+   Важно: подключается ПОСЛЕ posts.css.
+*/
+
+/* ===== Лента ===== */
+.posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===== Карточка поста ===== */
+.post-card {
+  background: var(--g-surface);
+  border: 1px solid var(--g-border);
+  border-radius: var(--g-radius);
+  padding: 12px 14px;
+  box-shadow: var(--g-shadow-sm);
+}
+
+.post-author-name {
+  color: var(--g-text);
+}
+
+.post-author-username,
+.post-date {
+  color: var(--g-muted);
+}
+
+.post-text {
+  color: var(--g-text);
+}
+
+/* Градиент свёртки текста — под белый фон */
+.post-text-gradient {
+  background: linear-gradient(to bottom, rgba(248,250,252,0), rgba(248,250,252,0.85), rgba(248,250,252,1));
+}
+
+/* Кнопка раскрытия */
+.post-text-toggle {
+  border: none;
+  background: transparent;
+  color: var(--g-primary);
+  padding: 0;
+  font-size: 13px;
+}
+.post-text-toggle:hover { text-decoration: underline; }
+
+/* Меню поста (⋯) */
+.post-menu-toggle {
+  color: var(--g-muted);
+}
+.post-menu-toggle:hover {
+  background: var(--g-surface-2);
+  color: var(--g-text);
+}
+.post-menu {
+  background: var(--g-surface);
+  border: 1px solid var(--g-border);
+  box-shadow: var(--g-shadow-sm);
+}
+.post-menu-item {
+  color: var(--g-text);
+}
+.post-menu-item:hover {
+  background: var(--g-surface-2);
+}
+.post-menu-delete-btn {
+  color: #dc2626;
+}
+
+/* ===== Комментарии ===== */
+.comments-wrap {
+  margin-top: 8px;
+}
+
+.comments-toggle {
+  width: 100%;
+  background: var(--g-surface);
+  border: 1px solid var(--g-border);
+  border-radius: calc(var(--g-radius) / 2);
+  padding: 8px 10px;
+  color: var(--g-text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.comments-toggle:hover {
+  background: var(--g-surface-2);
+}
+
+.comments-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--g-surface-2);
+  border: 1px solid var(--g-border);
+  color: var(--g-muted);
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+.comment-add-toggle {
+  margin-top: 8px;
+  border: 1px solid var(--g-border);
+  background: var(--g-surface);
+  border-radius: calc(var(--g-radius) / 2);
+  padding: 6px 10px;
+  color: var(--g-primary);
+  font-size: 13px;
+}
+.comment-add-toggle:hover {
+  background: var(--g-surface-2);
+}
+
+.comment-form {
+  margin-top: 8px;
+  border: 1px solid var(--g-border);
+  background: var(--g-surface);
+  border-radius: calc(var(--g-radius) / 2);
+  padding: 10px;
+}
+
+.comment-input,
+.reply-input {
+  width: 100%;
+  border: 1px solid var(--g-border);
+  background: var(--g-surface);
+  border-radius: calc(var(--g-radius) / 2);
+  padding: 8px 10px;
+  color: var(--g-text);
+  outline: none;
+}
+
+.comment-input::placeholder,
+.reply-input::placeholder {
+  color: var(--g-muted-2);
+}
+
+.comment-btn,
+.reply-btn {
+  margin-top: 8px;
+  border: none;
+  border-radius: calc(var(--g-radius) / 2);
+  padding: 6px 12px;
+  background: var(--g-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.comment-btn:hover,
+.reply-btn:hover { filter: brightness(0.96); }
+
+.comment-item {
+  background: var(--g-surface);
+  border: 1px solid var(--g-border);
+  border-radius: calc(var(--g-radius) / 2);
+  padding: 10px;
+  box-shadow: none;
+}
+
+.comment-display-name {
+  color: var(--g-text);
+}
+
+.comment-username,
+.comment-reply-meta,
+.comment-time {
+  color: var(--g-muted);
+}
+
+.comment-text {
+  color: var(--g-text);
+}
+
+.comment-footer {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.comment-like-count {
+  color: var(--g-muted);
+  font-size: 12px;
+}
+
+.comment-like-button,
+.comment-reply-toggle,
+.replies-toggle,
+.comment-delete-btn {
+  border: 1px solid var(--g-border);
+  background: var(--g-surface);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--g-text);
+  cursor: pointer;
+}
+
+.comment-like-button:hover,
+.comment-reply-toggle:hover,
+.replies-toggle:hover,
+.comment-delete-btn:hover {
+  background: var(--g-surface-2);
+}
+
+.comment-delete-btn {
+  color: #dc2626;
+  border-color: rgba(220,38,38,0.25);
+}
+
+.replies-block {
+  margin-top: 8px;
+  padding-left: 12px;
+  border-left: 2px solid var(--g-border);
+}
+
+/* Кнопки "Показать ещё" (батчи) */
+.comments-more-btn,
+.replies-more-btn {
+  margin-top: 10px;
+  width: 100%;
+  border: 1px solid var(--g-border);
+  background: var(--g-surface-2);
+  border-radius: calc(var(--g-radius) / 2);
+  padding: 8px 10px;
+  color: var(--g-text);
+  cursor: pointer;
+}
+
+.comments-more-btn:hover,
+.replies-more-btn:hover {
+  filter: brightness(0.98);
+}
+
+/* Чуть спокойнее серый текст под белым */
+.post-author-username a,
+.comment-username a {
+  color: var(--g-primary);
+}
+
+/* ===== FIX v8: force-light overrides for dark legacy posts.css ===== */
+.post-card,
+.post-card *{
+  color: inherit;
+}
+
+.post-card,
+.post-header,
+.post-body,
+.post-footer,
+.post-text-wrap,
+.post-attachments,
+.comments-wrap,
+.comment-item,
+.reply-item,
+.comment-form,
+.reply-form,
+.comments-toggle,
+.comment-add-toggle,
+.comments-body,
+.comments-footer{
+  background: var(--g-surface) !important;
+  border-color: var(--g-border) !important;
+}
+
+.post-card{ color: var(--g-text) !important; }
+.post-author-name,
+.post-text,
+.comment-text,
+.reply-text{ color: var(--g-text) !important; }
+.post-author-username,
+.post-date,
+.comment-date,
+.reply-date,
+.text-muted,
+.text-body-secondary{ color: var(--g-muted) !important; }
+
+/* ссылки */
+.post-card a{ color: var(--g-primary) !important; }
+.post-card a:hover{ color: var(--g-primary) !important; text-decoration: underline; }
+
+/* меню ⋯ */
+.post-menu,
+.post-menu-item{ background: var(--g-surface) !important; color: var(--g-text) !important; }
+
+/* аудио-плеер (на случай, если старые стили перекрывают) */
+.audio-wrapper{
+  background: var(--g-surface) !important;
+  border: 1px solid var(--g-border) !important;
+  box-shadow: var(--g-shadow-sm) !important;
+}
+.audio-progress-bar{ background: var(--g-surface-2) !important; border: 1px solid var(--g-border) !important; }
+.audio-progress{ background: var(--g-primary) !important; }
+.audio-time,.audio-filename,.audio-download{ color: var(--g-muted) !important; }
+.audio-download:hover{ color: var(--g-primary) !important; }
+
+/* ===== FIX v8: force-light overrides for dark legacy posts.css ===== */
+.post-card,
+.post-header,
+.post-body,
+.post-footer,
+.post-text-wrap,
+.post-attachments,
+.comments-wrap,
+.comments-body,
+.comments-footer,
+.comment-item,
+.reply-item{
+  background: var(--g-surface) !important;
+  border-color: var(--g-border) !important;
+  color: var(--g-text) !important;
+}
+
+.post-author-username,
+.post-date,
+.post-meta,
+.comment-meta,
+.reply-meta,
+.message-time{
+  color: var(--g-muted) !important;
+}
+
+/* Кнопки/ссылки внутри поста */
+.post-card a{
+  color: var(--g-primary) !important;
+}
+.post-card a:hover{
+  color: var(--g-primary) !important;
+  text-decoration: underline;
+}
+
+/* Инпуты комментариев */
+.comment-form textarea,
+.reply-form textarea,
+.comment-form input,
+.reply-form input{
+  background: var(--g-surface) !important;
+  color: var(--g-text) !important;
+  border-color: var(--g-border) !important;
+}
+
+/* Аудио-плеер (светлый) */
+.audio-wrapper{
+  background: var(--g-surface) !important;
+  border: 1px solid var(--g-border) !important;
+  box-shadow: var(--g-shadow-sm) !important;
+}
+.audio-play{
+  background: var(--g-surface-2) !important;
+  color: var(--g-text) !important;
+  border: 1px solid var(--g-border) !important;
+}
+.audio-progress-bar{
+  background: var(--g-surface-2) !important;
+  border: 1px solid var(--g-border) !important;
+}
+.audio-progress{ background: var(--g-primary) !important; }
+.audio-time,
+.audio-filename,
+.audio-download{ color: var(--g-muted) !important; }
+.audio-download:hover{ color: var(--g-primary) !important; }
+
+/* Градиент свёртки текста (под белый фон) */
+.post-text-gradient{
+  background: linear-gradient(to bottom, rgba(248,250,252,0), rgba(248,250,252,0.85), rgba(248,250,252,1)) !important;
+}

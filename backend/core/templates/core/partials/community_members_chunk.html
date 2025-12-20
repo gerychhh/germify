@@ -1,0 +1,28 @@
+{# Ожидает: memberships (QuerySet), community #}
+
+{% for m in memberships %}
+  {% with u=m.user %}
+  <div class="community-member" data-member-item
+       data-search="{{ u.username }} {{ u.display_name|default:u.username }}">
+
+    <div class="d-flex align-items-center gap-2">
+      <div>
+        {% include "core/partials/avatar.html" with user_obj=u size="sm" %}
+      </div>
+
+      <div class="flex-grow-1 min-w-0">
+        <div class="d-flex align-items-center gap-2">
+          <div class="fw-semibold text-truncate">{{ u.display_name|default:u.username }}</div>
+          {% if m.is_admin %}
+            <span class="badge text-bg-light border">Админ</span>
+          {% endif %}
+        </div>
+        <div class="small text-secondary text-truncate">
+          @{{ u.username }} · вступил {{ m.joined_at|date:"d.m.Y" }}
+        </div>
+      </div>
+    </div>
+
+  </div>
+  {% endwith %}
+{% endfor %}
