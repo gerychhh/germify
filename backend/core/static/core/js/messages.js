@@ -1,16 +1,36 @@
 // static/core/js/messages.js
+//
+// Realtime notifications via WebSocket (/ws/notifications/).
+// Fallback to rare polling if WS is unavailable.
 
 (function () {
-    // Инициализация (всё в одной функции)
+    const WS_PATH = "/ws/notifications/";
+
+    function safeJsonParse(s) {
+        try {
+            return JSON.parse(s);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function buildWsUrl() {
+        const proto = window.location.protocol === "https:" ? "wss" : "ws";
+        return `${proto}://${window.location.host}${WS_PATH}`;
+    }
+
     function initMessages() {
-        // =========================================================
-        // 1. Глобовый счётчик непрочитанных в шапке
-        // =========================================================
         const body = document.body;
+
+        // If user is not authenticated, base.html won't include unreadUrl.
         const unreadUrl = body.dataset.unreadUrl || null;
 
         const badgeDesktop = document.getElementById("global-unread-desktop");
         const badgeMobile = document.getElementById("global-unread-mobile");
+
+        const dialogsWrapper = document.querySelector("#dialogs-wrapper[data-poll-url]");
+        const dialogsSearchInput = document.getElementById("dialogs-search");
+        let lastDialogsHtml = null;
 
         let lastGlobalCount = null;
 
@@ -31,7 +51,26 @@
             }
         }
 
-        async function pollGlobalUnread() {
+        function applyDialogSearchFilter() {
+            if (!dialogsWrapper || !dialogsSearchInput) return;
+            const q = dialogsSearchInput.value.trim().toLowerCase();
+
+            dialogsWrapper.querySelectorAll(".dialog-item").forEach((item) => {
+                const haystack = (item.dataset.search || "").toLowerCase();
+                item.style.display = !q || haystack.includes(q) ? "" : "none";
+            });
+        }
+
+        // -------------------------
+        // Fallback polling (rare)
+        // -------------------------
+        let fallbackTimers = [];
+        function stopFallbackPolling() {
+            fallbackTimers.forEach((t) => clearInterval(t));
+            fallbackTimers = [];
+        }
+
+        async function pollGlobalUnreadOnce() {
             if (!unreadUrl || (!badgeDesktop && !badgeMobile)) return;
 
             try {
@@ -45,62 +84,23 @@
                 const data = await resp.json();
                 const count = Number(data.count) || 0;
 
-                const increased =
-                    lastGlobalCount !== null && count > lastGlobalCount;
+                const increased = lastGlobalCount !== null && count > lastGlobalCount;
                 lastGlobalCount = count;
 
                 setBadge(badgeDesktop, count);
                 setBadge(badgeMobile, count);
 
                 if (!increased) {
-                    if (badgeDesktop)
-                        badgeDesktop.classList.remove(
-                            "messages-unread-badge--pulse"
-                        );
-                    if (badgeMobile)
-                        badgeMobile.classList.remove(
-                            "messages-unread-badge--pulse"
-                        );
+                    badgeDesktop && badgeDesktop.classList.remove("messages-unread-badge--pulse");
+                    badgeMobile && badgeMobile.classList.remove("messages-unread-badge--pulse");
                 }
             } catch (e) {
-                console.error(
-                    "Ошибка при запросе непрочитанных сообщений:",
-                    e
-                );
+                // silent
             }
         }
 
-        if (unreadUrl && (badgeDesktop || badgeMobile)) {
-            setTimeout(pollGlobalUnread, 500);
-            setInterval(pollGlobalUnread, 2000);
-        }
-
-        // =========================================================
-        // 2. Пуллинг списка диалогов + поиск
-        // =========================================================
-        const dialogsWrapper = document.querySelector(
-            "#dialogs-wrapper[data-poll-url]"
-        );
-        const dialogsSearchInput = document.getElementById("dialogs-search");
-        let lastDialogsHtml = null;
-
-        function applyDialogSearchFilter() {
-            if (!dialogsWrapper || !dialogsSearchInput) return;
-            const q = dialogsSearchInput.value.trim().toLowerCase();
-
-            dialogsWrapper.querySelectorAll(".dialog-item").forEach((item) => {
-                const haystack = (item.dataset.search || "").toLowerCase();
-                if (!q || haystack.includes(q)) {
-                    item.style.display = "";
-                } else {
-                    item.style.display = "none";
-                }
-            });
-        }
-
-        async function pollInbox() {
+        async function pollInboxOnce() {
             if (!dialogsWrapper) return;
-
             const pollUrl = dialogsWrapper.dataset.pollUrl;
             if (!pollUrl) return;
 
@@ -116,48 +116,148 @@
                 if (data.html && data.html !== lastDialogsHtml) {
                     dialogsWrapper.innerHTML = data.html;
                     lastDialogsHtml = data.html;
-
-                    // после перерисовки — применяем фильтр
                     applyDialogSearchFilter();
                 }
             } catch (e) {
-                console.error(
-                    "Ошибка при обновлении списка диалогов:",
-                    e
-                );
+                // silent
             }
         }
 
-        if (dialogsWrapper) {
-            setTimeout(pollInbox, 500);
-            setInterval(pollInbox, 1000);
+        function startFallbackPolling() {
+            if (fallbackTimers.length) return;
+
+            // Slow fallback intervals (WS is the primary channel).
+            if (unreadUrl && (badgeDesktop || badgeMobile)) {
+                pollGlobalUnreadOnce();
+                fallbackTimers.push(setInterval(pollGlobalUnreadOnce, 15000));
+            }
+            if (dialogsWrapper) {
+                pollInboxOnce();
+                fallbackTimers.push(setInterval(pollInboxOnce, 15000));
+            }
         }
 
         if (dialogsSearchInput) {
             dialogsSearchInput.addEventListener("input", applyDialogSearchFilter);
         }
 
-        // =========================================================
-        // 3. Меню по трём точкам + удаление чата (делегирование)
-        // =========================================================
+        // -------------------------
+        // WebSocket primary channel
+        // -------------------------
+        let ws = null;
+        let reconnectTimer = null;
+        let openedOnce = false;
 
-        // В некоторых браузерах (чаще Safari) event.target может быть
-        // TextNode. Тогда у него нет .closest(), и делегирование кликов
-        // ломается полностью. Нормализуем target до Element.
+        function wsSend(payload) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+            ws.send(JSON.stringify(payload));
+            return true;
+        }
+
+        function handlePush(data) {
+            if (!data || typeof data !== "object") return;
+
+            // Unread updates
+            if (data.type === "unread_total") {
+                const count = Number(data.count) || 0;
+                lastGlobalCount = count;
+                setBadge(badgeDesktop, count);
+                setBadge(badgeMobile, count);
+                return;
+            }
+            if (typeof data.unread_total === "number") {
+                const count = Number(data.unread_total) || 0;
+                lastGlobalCount = count;
+                setBadge(badgeDesktop, count);
+                setBadge(badgeMobile, count);
+            }
+
+            // Inbox re-render
+            if (data.inbox_html && dialogsWrapper) {
+                dialogsWrapper.innerHTML = data.inbox_html;
+                lastDialogsHtml = data.inbox_html;
+                applyDialogSearchFilter();
+            }
+
+            // Let other scripts (thread page) know about new messages.
+            if (data.type === "message_new") {
+                window.dispatchEvent(new CustomEvent("germify:message_new", { detail: data }));
+            }
+        }
+
+        function scheduleReconnect() {
+            if (reconnectTimer) return;
+            reconnectTimer = setTimeout(() => {
+                reconnectTimer = null;
+                connectWs();
+            }, 4000);
+        }
+
+        function connectWs() {
+            // If not authenticated (no unread url), skip WS completely.
+            if (!unreadUrl) return;
+
+            try {
+                ws = new WebSocket(buildWsUrl());
+            } catch (e) {
+                startFallbackPolling();
+                return;
+            }
+
+            ws.addEventListener("open", () => {
+                openedOnce = true;
+                stopFallbackPolling();
+            });
+
+            ws.addEventListener("message", (ev) => {
+                const data = typeof ev.data === "string" ? safeJsonParse(ev.data) : null;
+                handlePush(data);
+            });
+
+            ws.addEventListener("close", () => {
+                // If WS was never opened, or connection dropped — keep UI alive with fallback.
+                startFallbackPolling();
+                scheduleReconnect();
+            });
+
+            ws.addEventListener("error", () => {
+                // Close will follow.
+            });
+        }
+
+        // Expose minimal API for other scripts
+        window.GermifyWS = window.GermifyWS || {};
+        window.GermifyWS.send = wsSend;
+        window.GermifyWS.isOpen = () => !!ws && ws.readyState === WebSocket.OPEN;
+
+        // Allow thread script to "refresh unread" without HTTP requests.
+        window.germifyUpdateUnread = function () {
+            if (!wsSend({ type: "get_unread" })) {
+                // fallback single request if WS is down
+                pollGlobalUnreadOnce();
+            }
+        };
+
+        // Start WS; if it doesn't open quickly, start fallback.
+        connectWs();
+        setTimeout(() => {
+            if (!openedOnce) startFallbackPolling();
+        }, 2500);
+
+        // -------------------------
+        // Menus (unchanged)
+        // -------------------------
         function getEventTargetElement(event) {
             const t = event.target;
             if (!t) return null;
             if (t instanceof Element) return t;
-            // TextNode / CommentNode и т.п.
             return t.parentElement || null;
         }
 
         function closeAllDialogMenus() {
             document
                 .querySelectorAll(".dialog-menu.dialog-menu--open")
-                .forEach((menu) =>
-                    menu.classList.remove("dialog-menu--open")
-                );
+                .forEach((menu) => menu.classList.remove("dialog-menu--open"));
         }
 
         function getCookie(name) {
@@ -166,13 +266,8 @@
                 const cookies = document.cookie.split(";");
                 for (let i = 0; i < cookies.length; i++) {
                     const cookie = cookies[i].trim();
-                    if (
-                        cookie.substring(0, name.length + 1) ===
-                        name + "="
-                    ) {
-                        cookieValue = decodeURIComponent(
-                            cookie.substring(name.length + 1)
-                        );
+                    if (cookie.substring(0, name.length + 1) === name + "=") {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                         break;
                     }
                 }
@@ -189,7 +284,6 @@
 
             if (!window.confirm("Удалить чат полностью?")) {
                 closeAllDialogMenus();
-                // Если меню — bootstrap dropdown, аккуратно закрываем
                 try {
                     const dd = deleteBtn.closest(".dropdown");
                     if (dd) {
@@ -213,10 +307,7 @@
                 });
 
                 if (!resp.ok) {
-                    console.warn(
-                        "messages_delete_thread bad status:",
-                        resp.status
-                    );
+                    console.warn("messages_delete_thread bad status:", resp.status);
                 } else {
                     dialogItem.remove();
 
@@ -235,15 +326,12 @@
             }
         }
 
-        // Делегирование кликов — один обработчик на весь документ
         document.addEventListener("click", (event) => {
             const targetEl = getEventTargetElement(event);
             if (!targetEl) return;
 
-            // клик по трём точкам
             const toggle = targetEl.closest(".dialog-menu-toggle");
             if (toggle) {
-                // Если это Bootstrap dropdown toggle — не мешаем Bootstrap управлять меню
                 if (toggle.matches('[data-bs-toggle="dropdown"]')) {
                     return;
                 }
@@ -259,15 +347,11 @@
 
                 const isOpen = menu.classList.contains("dialog-menu--open");
                 closeAllDialogMenus();
-                if (!isOpen) {
-                    menu.classList.add("dialog-menu--open");
-                }
+                if (!isOpen) menu.classList.add("dialog-menu--open");
                 return;
             }
 
-            // клик по "Удалить чат"
-            const deleteBtn =
-                targetEl.closest(".dialog-menu-item--delete");
+            const deleteBtn = targetEl.closest(".dialog-menu-item--delete");
             if (deleteBtn) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -275,17 +359,12 @@
                 return;
             }
 
-            // клик мимо меню — закрываем все
-            if (
-                !targetEl.closest(".dialog-menu") &&
-                !targetEl.closest(".dialog-menu-toggle")
-            ) {
+            if (!targetEl.closest(".dialog-menu") && !targetEl.closest(".dialog-menu-toggle")) {
                 closeAllDialogMenus();
             }
         });
     }
 
-    // Запуск: если DOM уже готов — сразу, иначе ждём
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", initMessages);
     } else {

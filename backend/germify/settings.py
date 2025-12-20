@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -48,7 +48,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'core'
+    'core.apps.CoreConfig',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -82,6 +83,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'germify.wsgi.application'
 
 
+
+ASGI_APPLICATION = 'germify.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
@@ -138,8 +141,23 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_ROOT = BASE_DIR / "staticfiles_admin"
-STATIC_URL = "/static_admin/"
+# STATIC_ROOT intentionally not used (we serve static directly from core/static)
+
+
+# Channels (WebSocket)
+# DEV: InMemory (one process). PROD multi-process: install channels_redis + set REDIS_URL.
+REDIS_URL = os.environ.get("REDIS_URL", "").strip()
+
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        }
+    }
+else:
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

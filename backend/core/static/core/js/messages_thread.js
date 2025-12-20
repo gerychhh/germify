@@ -1,17 +1,18 @@
 // static/core/js/messages_thread.js
+//
+// Thread page logic:
+// - Send message via POST (existing endpoint)
+// - Receive new messages via WebSocket push (global GermifyWS events)
+// - No frequent polling (fallback is handled in messages.js)
 
 (function () {
-    let pollTimer = null;
-
     function initThread() {
-        // останавливаем старый пуллер, если был
-        if (pollTimer) {
-            clearInterval(pollTimer);
-            pollTimer = null;
-        }
-
         const list = document.querySelector("#messages-list");
         if (!list) return;
+
+        const chatCard = list.closest(".messages-chat-card");
+        const otherUsername =
+            (chatCard && chatCard.dataset && chatCard.dataset.username) || null;
 
         const container = list.closest(".thread-messages") || list;
 
@@ -25,16 +26,13 @@
 
         const input = form.querySelector("textarea[name='text']");
         const sendUrl = form.dataset.sendUrl;
-        const pollUrl = list.dataset.pollUrl;
 
-        let lastId = parseInt(list.dataset.lastId || "0");
         let unreadInView = 0;
         let isAtBottom = true;
 
         function recalcIsAtBottom() {
             const threshold = 4;
-            const distance =
-                container.scrollHeight - (container.scrollTop + container.clientHeight);
+            const distance = container.scrollHeight - (container.scrollTop + container.clientHeight);
             return distance <= threshold;
         }
 
@@ -48,20 +46,16 @@
 
             if (isAtBottom) {
                 scrollBtn.style.display = "none";
-                unreadInView = 0;
-                if (scrollUnreadBadge) scrollUnreadBadge.style.display = "none";
-                return;
-            }
-
-            scrollBtn.style.display = "inline-flex";
-
-            if (scrollUnreadBadge) {
-                if (unreadInView > 0) {
-                    scrollUnreadBadge.style.display = "inline-flex";
-                    scrollUnreadBadge.textContent =
-                        unreadInView > 99 ? "99+" : unreadInView.toString();
-                } else {
-                    scrollUnreadBadge.style.display = "none";
+            } else {
+                scrollBtn.style.display = "inline-flex";
+                if (scrollUnreadBadge) {
+                    if (unreadInView > 0) {
+                        scrollUnreadBadge.style.display = "inline-flex";
+                        scrollUnreadBadge.textContent =
+                            unreadInView > 99 ? "99+" : unreadInView.toString();
+                    } else {
+                        scrollUnreadBadge.style.display = "none";
+                    }
                 }
             }
         }
@@ -72,7 +66,7 @@
             }
         }
 
-        // --- Инициализация скролла ---
+        // --- Init scroll state ---
         scrollToBottom({ smooth: false });
         isAtBottom = true;
         updateScrollButton();
@@ -83,7 +77,6 @@
             if (nowAtBottom && !isAtBottom) {
                 unreadInView = 0;
             }
-
             isAtBottom = nowAtBottom;
             updateScrollButton();
         });
@@ -97,47 +90,65 @@
             });
         }
 
-        // --- Отправка сообщения ---
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            if (!input) return;
+        // --- Send message ---
+        async function sendMessage(text) {
+            if (!sendUrl) return;
 
-            const text = input.value.trim();
-            if (!text) return;
+            // IMPORTANT: include CSRF token by sending the actual form.
+            // The template contains {% csrf_token %}.
+            const formData = new FormData(form);
+
+            // Ensure text is what we are sending (in case the textarea value was cleared).
+            formData.set("text", text);
 
             let resp;
             try {
                 resp = await fetch(sendUrl, {
                     method: "POST",
+                    body: formData,
                     headers: { "X-Requested-With": "XMLHttpRequest" },
-                    body: new FormData(form)
+                    credentials: "same-origin"
                 });
-            } catch (err) {
-                console.error("Ошибка при отправке сообщения:", err);
+            } catch (e) {
+                console.error("Ошибка при отправке сообщения:", e);
                 return;
             }
 
             if (!resp.ok) {
+                // Most common cause: CSRF (403)
                 console.warn("messages_send bad status:", resp.status);
                 return;
             }
 
-            const data = await resp.json();
-            if (data.html) {
-                list.insertAdjacentHTML("beforeend", data.html);
-                lastId = data.id;
-                input.value = "";
-
+            // Insert immediately as fallback (in case WS is slow/down).
+            // WebSocket push will also come; we de-duplicate by message id.
+            const data = await resp.json().catch(() => null);
+            if (data && data.html && data.id) {
+                const already = list.querySelector(`.message-item[data-id="${data.id}"]`);
+                if (!already) {
+                    list.insertAdjacentHTML("beforeend", data.html);
+                }
                 scrollToBottom({ smooth: true });
                 isAtBottom = true;
                 unreadInView = 0;
                 updateScrollButton();
-
                 triggerGlobalUnreadUpdate();
             }
+        }
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!input) return;
+
+            const text = (input.value || "").trim();
+            if (!text) return;
+
+            // Clear UI immediately.
+            input.value = "";
+            await sendMessage(text);
         });
 
-        // Enter = отправить, Shift+Enter = перенос
+        // --- Hotkeys ---
         if (input) {
             input.addEventListener("keydown", (e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -147,57 +158,65 @@
             });
         }
 
-        // --- Пул новых сообщений ---
-        async function poll() {
-            if (!pollUrl) return;
+        // --- WS push handler ---
+        function handleMessageNew(detail) {
+            if (!detail || detail.type !== "message_new") return;
+            if (!detail.html) return;
 
-            let resp;
-            try {
-                resp = await fetch(`${pollUrl}?after=${lastId}`, {
-                    headers: { "X-Requested-With": "XMLHttpRequest" }
-                });
-            } catch (err) {
-                console.error("Ошибка при пулле новых сообщений:", err);
-                return;
+            // De-duplicate: if we already inserted this message (e.g. after POST response), skip.
+            if (detail.message_id) {
+                const existing = list.querySelector(
+                    `.message-item[data-id="${detail.message_id}"]`
+                );
+                if (existing) {
+                    // Still may need unread refresh.
+                    triggerGlobalUnreadUpdate();
+                    return;
+                }
             }
 
-            if (!resp.ok) {
-                console.warn("messages_poll bad status:", resp.status);
+            // If we are on a thread page, only insert messages related to this thread.
+            if (otherUsername && detail.other_username && detail.other_username !== otherUsername) {
                 return;
             }
-
-            const data = await resp.json();
-            if (!data.html) return;
 
             const wasAtBottom = isAtBottom;
 
-            list.insertAdjacentHTML("beforeend", data.html);
-
-            const items = list.querySelectorAll(".message-item");
-            if (items.length > 0) {
-                lastId = parseInt(items[items.length - 1].dataset.id);
-            }
+            list.insertAdjacentHTML("beforeend", detail.html);
 
             if (wasAtBottom) {
                 scrollToBottom({ smooth: true });
                 isAtBottom = true;
                 unreadInView = 0;
             } else {
-                const delta =
-                    typeof data.count === "number" && data.count > 0
-                        ? data.count
-                        : 1;
-                unreadInView += delta;
+                unreadInView += 1;
             }
 
             updateScrollButton();
+
+            // If this is an incoming message, mark it read immediately.
+            if (detail.incoming === true && typeof window.GermifyWS?.send === "function") {
+                window.GermifyWS.send({ type: "mark_read", ids: [detail.message_id] });
+            }
+
             triggerGlobalUnreadUpdate();
         }
 
-        pollTimer = setInterval(poll, 2500);
+        // Subscribe to global events produced by messages.js
+        const handler = (ev) => handleMessageNew(ev.detail);
+        window.addEventListener("germify:message_new", handler);
+
+        // On page unload, cleanup
+        window.addEventListener("beforeunload", () => {
+            window.removeEventListener("germify:message_new", handler);
+        });
     }
 
-    // экспортируем и запускаем при первой загрузке
     window.germifyInitThread = initThread;
-    document.addEventListener("DOMContentLoaded", initThread);
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initThread);
+    } else {
+        initThread();
+    }
 })();
