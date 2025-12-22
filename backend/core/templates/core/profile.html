@@ -137,7 +137,7 @@
         </div>
       </div>
       <div class="card-body">
-        <div class="posts-list">
+        <div class="posts-list d-flex flex-column gap-3">
           {% for post in posts %}
             {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
           {% empty %}

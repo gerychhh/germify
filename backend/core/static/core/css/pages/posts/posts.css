@@ -1,76 +1,5 @@
-/* ===== СПИСОК ПОСТОВ ===== */
-
-.posts-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
 
 /* ===== КАРТОЧКА ПОСТА ===== */
-
-.post-card {
-    background: var(--g-surface);
-    border-radius: 16px;
-    border: 1px solid var(--g-border);
-    padding: 10px 14px 10px;
-}
-
-.post-layout {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-}
-
-.post-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.post-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-}
-
-.post-author {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.post-author-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.post-author-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--g-text);
-    text-decoration: none;
-}
-
-.post-author-name:hover {
-    text-decoration: underline;
-}
-
-.post-author-username {
-    font-size: 13px;
-    color: var(--g-muted);
-}
-
-.post-date {
-    font-size: 12px;
-    color: var(--g-muted-2);
-    white-space: nowrap;
-}
-
-/* текст поста */
-
 .post-text {
     margin: 2px 0 0;
     font-size: 15px;
@@ -80,41 +9,6 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     word-break: break-word;
-}
-
-/* футер поста + лайки */
-
-.post-footer-row {
-    margin-top: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.post-likes {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.post-delete-form {
-    margin: 0;
-}
-
-.post-delete-button {
-    border: none;
-    border-radius: 999px;
-    padding: 6px 14px;
-    background: #b91c1c;
-    color: #fee2e2;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.post-delete-button:hover {
-    background: #dc2626;
 }
 
 /* ===== БЛОК КОММЕНТАРИЕВ К ПОСТУ ===== */
@@ -495,12 +389,6 @@
 
 /* ===== МЕНЮ ПОСТА (⋯) ===== */
 
-.post-header-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
 .post-menu-wrapper {
     position: relative;
 }
@@ -560,24 +448,6 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-wrap: anywhere;
-}
-
-/* АДАПТИВ ПОСТОВ */
-
-@media (max-width: 640px) {
-    .post-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .post-date {
-        margin-top: 2px;
-    }
-
-    .post-footer-row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
 }
 
 /* ========= ЛАЙКИ НА ПОСТАХ ========= */

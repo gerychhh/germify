@@ -8,8 +8,6 @@
     <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=13">
 {% endblock %}
 
-
-
 {% block content %}
 <div class="feed-page">
 
@@ -80,7 +78,7 @@
     </section>
 
     <!-- Лента постов -->
-    <section class="posts-list"
+    <section class="posts-list d-flex flex-column gap-3"
              id="posts-list"
              data-next-page="{% if has_next %}{{ next_page }}{% else %}0{% endif %}"
              data-has-next="{% if has_next %}1{% else %}0{% endif %}">

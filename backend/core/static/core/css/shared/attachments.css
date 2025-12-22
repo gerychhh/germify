@@ -11,6 +11,15 @@
     margin-top: 6px;
 }
 
+.attachment-gallery[data-layout="one"] .gallery-item {
+    display: flex;
+    justify-content: center;
+}
+
+.attachment-gallery[data-layout="one"] .gallery-img {
+    margin: 0 auto;
+}
+
 .attachment-gallery[data-count="0"] {
     display: none;
 }
