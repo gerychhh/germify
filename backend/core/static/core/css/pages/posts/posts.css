@@ -1,4 +1,3 @@
-
 /* ===== КАРТОЧКА ПОСТА ===== */
 .post-text {
     margin: 2px 0 0;
@@ -6,55 +5,7 @@
     color: var(--g-text);
     line-height: 1.6;
     text-align: left;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
     word-break: break-word;
-}
-
-/* ===== БЛОК КОММЕНТАРИЕВ К ПОСТУ ===== */
-
-.comments-wrap {
-    margin-top: 6px;
-}
-
-.comments-toggle {
-    width: 100%;
-    background: var(--g-surface);
-    border: 1px solid var(--g-border);
-    border-radius: 8px;
-    padding: 4px 8px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-}
-
-.comments-toggle-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--g-muted);
-}
-
-.comments-count-badge {
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: var(--g-border);
-    color: var(--g-text);
-    font-size: 12px;
-}
-
-.comments-toggle-arrow {
-    font-size: 12px;
-    color: var(--g-muted-2);
-}
-
-.comments-body {
-    margin-top: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
 }
 
 /* ===== СЛУЖЕБНОЕ ===== */
@@ -65,124 +16,10 @@
 
 /* ===== КОММЕНТАРИЙ ===== */
 
-.comment-item {
-    background: var(--g-surface);
-    border: 1px solid var(--g-border);
-    border-radius: 10px;
-    padding: 6px 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: 6px;
-}
-
-.comment-item .avatar--sm {
-    width: 24px;
-    height: 24px;
-    font-size: 12px;
-}
-
-
-.comment-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-}
-
-.comment-author-block {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-}
-
-.comment-author-line {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 13px;
-    flex-wrap: wrap;
-}
-
-.comment-display-name {
-    font-weight: 600;
-    color: var(--g-text);
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.comment-display-name:hover {
-    text-decoration: underline;
-}
-
-.comment-username {
-    font-size: 12px;
-    color: var(--g-muted);
-}
-.comment-reply-meta {
-    font-size: 11px;
-    color: var(--g-muted);
-}
-.comment-time {
-    font-size: 11px;
-    color: var(--g-muted-2);
-}
-
 .comment-text {
     margin-top: 2px;
     font-size: 13px;
     color: var(--g-text);
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-.comment-footer {
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    flex-wrap: wrap;
-}
-
-.comment-like-button {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 15px;
-    padding: 0;
-}
-
-.comment-like-count {
-    color: var(--g-muted);
-}
-
-.comment-actions-inline {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.comment-reply-toggle {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 12px;
-    color: #93c5fd;
-    padding: 0;
-}
-
-.comment-reply-toggle:hover {
-    color: #bfdbfe;
-}
-
-.comment-delete-btn {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 12px;
-    color: #fca5a5;
-    padding: 0;
 }
 
 /* ===== Пакетный показ комментариев/ответов ("Показать ещё") ===== */
@@ -190,39 +27,7 @@
     display: none !important;
 }
 
-.comments-more-btn,
-.replies-more-btn {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: #93c5fd;
-    font-size: 12px;
-    padding: 0;
-    margin-top: 8px;
-}
-
-.comments-more-btn:hover,
-.replies-more-btn:hover {
-    color: #bfdbfe;
-}
-
-/* ===== ОТВЕТЫ ===== */
-
 /* ===== ОТВЕТЫ / ВЕТКИ КОММЕНТАРИЕВ ===== */
-
-/* контейнер с ответами — просто вертикальная колонка,
-   БЕЗ дополнительных отступов */
-.replies-block {
-    margin-top: 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-/* глубина вложенности комментария (0–3), дальше отступ не растёт */
-.comment-item {
-    margin-left: 0;
-}
 
 .comment-depth-0 {
     margin-left: 0;
@@ -240,151 +45,10 @@
     margin-left: 1px;   /* третий и глубже — одинаковый отступ */
 }
 
-/* сами «карточки» ответов чуть компактнее */
-.reply-item {
-    background: var(--g-surface);
-    border: 1px solid var(--g-border);
-    border-radius: 10px;
-    padding: 5px 7px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-
-
-.reply-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-}
-
-.reply-author-block {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-}
-
-.reply-author-line {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    flex-wrap: wrap;
-}
-
-.reply-display-name {
-    font-weight: 600;
-    color: var(--g-text);
-}
-.reply-username {
-    font-size: 11px;
-    color: var(--g-muted);
-}
-.reply-time {
-    font-size: 11px;
-    color: var(--g-muted-2);
-}
-
 .reply-text {
     margin-top: 2px;
     font-size: 12px;
     color: var(--g-text);
-    white-space: pre-wrap;
-}
-
-.reply-footer {
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    flex-wrap: wrap;
-}
-
-.reply-like-button {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 14px;
-    padding: 0;
-}
-
-.reply-like-count {
-    color: var(--g-muted);
-}
-
-.reply-delete-btn {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 11px;
-    color: #fecaca;
-    padding: 0;
-}
-
-/* ===== ФОРМЫ КОММЕНТОВ / ОТВЕТОВ ===== */
-
-.comment-add-toggle {
-    margin-top: 4px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 12px;
-    color: #93c5fd;
-    padding: 0;
-    align-self: flex-start;
-}
-
-.comment-add-toggle:hover {
-    color: #bfdbfe;
-}
-
-.comment-form,
-.reply-form {
-    margin-top: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.comment-input,
-.reply-input {
-    width: 100%;
-    background: var(--g-surface);
-    border-radius: 8px;
-    border: 1px solid var(--g-border);
-    padding: 6px 8px;
-    font-size: 13px;
-    color: var(--g-text);
-    resize: vertical;
-}
-
-.comment-input {
-    min-height: 40px;
-    max-height: 120px;
-}
-
-.reply-input {
-    min-height: 32px;
-    max-height: 100px;
-}
-
-.comment-btn,
-.reply-btn {
-    align-self: flex-end;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: none;
-    background: #2563eb;
-    color: #f9fafb;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.comment-btn:hover,
-.reply-btn:hover {
-    background: #1d4ed8;
 }
 
 /* ===== МЕНЮ ПОСТА (⋯) ===== */
@@ -592,6 +256,7 @@
 .post-text-toggle:hover {
     color: #bfdbfe;
 }
+
 /* ============================
    Upload previews (images/files)
    ============================ */

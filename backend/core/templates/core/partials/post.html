@@ -154,7 +154,7 @@
                     <div class="attachments">
 
                         {# КАРТИНКИ — сетка #}
-                        <div class="attachment-gallery"
+                        <div class="attachment-gallery w-100"
                              data-count="{{ post.attachments.all|length }}">
                             {% for att in post.attachments.all %}
                                 {% if att.is_image %}
@@ -280,7 +280,7 @@
 
                     </div>
                     {% endif %}
-                    <div class="post-text">{{ post.text|md }}</div>
+                    <div class="post-text ">{{ post.text|md }}</div>
                     <div class="post-text-gradient"></div>
                 </div>
 
@@ -396,15 +396,17 @@
             </div>
 
             {# ------ КОММЕНТАРИИ К ПОСТУ ------ #}
-            <div class="comments-wrap w-100">
+            <div class="comments-wrap w-100 mt-2">
                 <button type="button"
-                        class="comments-toggle btn btn-outline-secondary btn-sm w-100"
+                        class="comments-toggle btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-between"
                         data-post-id="{{ post.id }}">
-                    <span class="comments-toggle-label">
-                        💬 Комментарии
-                        <span class="comments-count-badge">{{ post.comments.count }}</span>
+                    <span class="comments-toggle-label d-flex align-items-center gap-2">
+                        <span>💬 Комментарии</span>
+                        <span class="comments-count-badge badge rounded-pill text-bg-light">
+                            {{ post.comments.count }}
+                        </span>
                     </span>
-                    <span class="comments-toggle-arrow">▾</span>
+                    <span class="comments-toggle-arrow small text-muted">▾</span>
                 </button>
                 {% if user.is_authenticated %}
                         <button type="button"

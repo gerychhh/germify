@@ -128,3 +128,10 @@ textarea.form-control {
     align-items: center;
     justify-content: center;
 }
+/* Глобальная ширина ленты/постов */
+.feed-page {
+    max-width: 820px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+}

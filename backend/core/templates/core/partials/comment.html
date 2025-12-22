@@ -2,7 +2,8 @@
 {% load tz %}
 
 {% with depth=level %}
-<div class="comment-item {% if depth > 0 %}reply-item{% endif %}
+<div class="comment-item border rounded-3 p-2 bg-body mt-2
+            {% if depth > 0 %}reply-item{% endif %}
             comment-depth-{% if depth > 3 %}3{% else %}{{ depth }}{% endif %}"
      data-comment-id="{{ c.id }}"
      data-post-id="{{ c.post.id }}">
@@ -11,26 +12,26 @@
     <div class="comment-header d-flex align-items-start gap-2">
         {% include "core/partials/avatar.html" with user_obj=c.author size="sm" %}
 
-        <div class="comment-author-block">
-            <div class="comment-author-line">
+        <div class="comment-author-block d-flex flex-column lh-sm flex-grow-1">
+            <div class="comment-author-line d-flex align-items-center gap-1 flex-wrap">
                 <a href="{% url 'user_profile' c.author.username %}"
-                   class="comment-display-name text-decoration-none">
+                   class="comment-display-name fw-semibold text-body text-decoration-none">
                     {{ c.author.display_name|default:c.author.username }}
                 </a>
 
                 <a href="{% url 'user_profile' c.author.username %}"
-                   class="comment-username text-decoration-none">
+                   class="comment-username small text-muted text-decoration-none">
                     @{{ c.author.username }}
                 </a>
 
                 {% if c.parent %}
-                    <span class="comment-reply-meta">
+                    <span class="comment-reply-meta small text-muted">
                         в ответ @{{ c.parent.author.username }}
                         «{{ c.parent.text|truncatechars:18 }}»
                     </span>
                 {% endif %}
 
-                <span class="comment-time">
+                <span class="comment-time small text-muted ms-auto">
                     {{ c.created_at|localtime|date:"d.m.Y H:i" }}
                 </span>
             </div>
@@ -38,25 +39,28 @@
     </div>
 
     <!-- TEXT (пошаговое раскрытие как у постов) -->
-    <div class="post-text-block comment-text-block">
+    <div class="post-text-block comment-text-block mt-1">
         <div class="post-text-wrapper">
-            <div class="comment-text">{{ c.text }}</div>
+            <div class="comment-text mt-1">{{ c.text }}</div>
             <div class="post-text-gradient"></div>
         </div>
-        <button type="button" class="btn btn-link btn-sm p-0 post-text-toggle hidden">Показать ещё</button>
+        <button type="button"
+                class="btn btn-link btn-sm p-0 post-text-toggle hidden">
+            Показать ещё
+        </button>
     </div>
 
     <!-- FOOTER -->
-    <div class="comment-footer d-flex align-items-center gap-2 flex-wrap">
+    <div class="comment-footer d-flex align-items-center gap-2 flex-wrap small mt-1">
 
         {# лайк на комментарий #}
         {% if user.is_authenticated %}
             <form method="post"
                   action="{% url 'toggle_comment_like' c.id %}"
-                  class="comment-like-form"
+                  class="comment-like-form m-0"
                   data-comment-id="{{ c.id }}">
                 {% csrf_token %}
-                <button class="comment-like-button btn btn-sm"
+                <button class="comment-like-button btn btn-link p-0 text-decoration-none"
                         type="submit"
                         data-liked="{% if c.id in liked_comment_ids %}true{% else %}false{% endif %}">
                     {% if c.id in liked_comment_ids %}❤️{% else %}🤍{% endif %}
@@ -64,14 +68,14 @@
             </form>
         {% endif %}
 
-        <span class="comment-like-count"
+        <span class="comment-like-count text-muted"
               data-comment-id="{{ c.id }}">
             {{ c.likes.count }} лайков
         </span>
 
         {% if user.is_authenticated %}
             {# показать/скрыть форму "Ответить" #}
-            <button class="comment-reply-toggle btn btn-link btn-sm p-0"
+            <button class="comment-reply-toggle btn btn-link btn-sm p-0 text-decoration-none"
                     type="button"
                     data-comment-id="{{ c.id }}">
                 Ответить
@@ -79,7 +83,7 @@
 
             {# кнопка показать/скрыть блок ответов #}
             {% if c.replies.count %}
-                <button class="replies-toggle btn btn-link btn-sm p-0"
+                <button class="replies-toggle btn btn-link btn-sm p-0 text-decoration-none"
                         type="button"
                         data-comment-id="{{ c.id }}">
                     Ответы ({{ c.replies.count }})
@@ -90,12 +94,12 @@
             {% if user == c.author or user.is_superuser %}
                 <form method="post"
                       action="{% url 'delete_comment' c.id %}"
-                      class="comment-delete-form"
+                      class="comment-delete-form m-0"
                       data-comment-id="{{ c.id }}"
                       data-post-id="{{ c.post.id }}">
                     {% csrf_token %}
                     <button type="submit"
-                            class="comment-delete-btn btn btn-link btn-sm p-0">
+                            class="comment-delete-btn btn btn-link btn-sm p-0 text-decoration-none text-danger">
                         Удалить
                     </button>
                 </form>
@@ -122,7 +126,7 @@
 
     {# ВЛОЖЕННЫЕ ОТВЕТЫ — по умолчанию спрятаны, открываются кнопкой "Ответы" #}
     {% if c.replies.exists %}
-        <div class="replies-block hidden"
+        <div class="replies-block hidden mt-2 d-flex flex-column gap-1"
              data-parent-id="{{ c.id }}">
             {% for r in c.replies.all %}
                 {% include "core/partials/comment.html" with c=r user=user liked_comment_ids=liked_comment_ids level=depth|add:"1" %}
