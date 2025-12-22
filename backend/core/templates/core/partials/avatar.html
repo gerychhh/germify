@@ -1,4 +1,4 @@
-{# Ожидает: user_obj, size = "xl" | "lg" | "md" | "sm" #}
+{# Ожидает: user_obj, size = "xl" | "lg" | "md" | "sm" | "xs" #}
 {% if user_obj %}
 <div class="avatar avatar--{{ size|default:'md' }}">
     {% if user_obj.avatar %}
@@ -9,8 +9,10 @@
             {# display_name может быть пустым, берём username; если и его нет — "?" #}
             {% with dn=user_obj.display_name|default:'' %}
             {% with un=user_obj.username|default:'' %}
-            {% with nm=dn|default:un %}
+            {% with tt=user_obj.title|default:'' %}
+            {% with nm=dn|default:un|default:tt %}
                 {{ nm|default:"?"|slice:":1"|upper }}
+            {% endwith %}
             {% endwith %}
             {% endwith %}
             {% endwith %}

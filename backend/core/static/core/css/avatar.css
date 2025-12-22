@@ -15,6 +15,7 @@
 .avatar--lg { width: 64px; height: 64px; font-size: 26px; }
 .avatar--md { width: 40px; height: 40px; font-size: 18px; }
 .avatar--sm { width: 28px; height: 28px; font-size: 14px; }
+.avatar--xs { width: 22px; height: 22px; font-size: 12px; }
 
 .avatar img {
     width: 100%;

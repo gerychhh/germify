@@ -16,7 +16,7 @@
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link {% if current == 'messages_inbox' or current == 'messages_thread' %}active{% endif %}" href="{% url 'messages_inbox' %}">
+                    <a class="nav-link {% if current == 'messages_inbox' or current == 'messages_thread' or current == 'messages_chat' or current == 'messages_group_create' %}active{% endif %}" href="{% url 'messages_inbox' %}">
                         Сообщения
                         {% if request.user.is_authenticated %}
                             {% if unread_messages_count %}

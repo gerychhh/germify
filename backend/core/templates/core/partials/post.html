@@ -1,5 +1,6 @@
 {# core/partials/post.html #}
 {% load tz %}
+{% load tz markdown_extras %}
 
 <article class="post-card card shadow-sm" id="post-{{ post.id }}">
     <div class="post-layout card-body p-3">
@@ -147,7 +148,7 @@
 {# ==== ТЕКСТ + МЕДИА С СВЁРТКОЙ ==== #}
             <div class="post-text-block">
                 <div class="post-text-wrapper">
-                    <p class="post-text">{{ post.text }}</p>
+
 
                     {# =================== ВЛОЖЕНИЯ =================== #}
                     {% if post.attachments.all %}
@@ -280,7 +281,7 @@
 
                     </div>
                     {% endif %}
-
+                    <div class="post-text">{{ post.text|md }}</div>
                     <div class="post-text-gradient"></div>
                 </div>
 

@@ -264,6 +264,158 @@ class Message(models.Model):
         return f"{self.sender} → {self.recipient}: {self.text[:30]}"
 
 
+# ============================
+# Chats (DM + Groups)
+# ============================
+
+class Chat(models.Model):
+    KIND_DM = "dm"
+    KIND_GROUP = "group"
+    KIND_CHOICES = [(KIND_DM, "DM"), (KIND_GROUP, "Group")]
+
+    # В БД поле kind создавалось max_length=16 и с default='dm'
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES, default=KIND_DM)
+
+    # For groups (в миграции было max_length=120)
+    title = models.CharField(max_length=120, blank=True)
+    avatar = models.ImageField(upload_to="chat_avatars/", blank=True, null=True)
+
+    # For DM: store ordered pair for uniqueness
+    dm_user1 = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        related_name="dm_chats_as_user1",
+        on_delete=models.SET_NULL,
+    )
+    dm_user2 = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        related_name="dm_chats_as_user2",
+        on_delete=models.SET_NULL,
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        related_name="created_chats",
+        on_delete=models.SET_NULL,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    # Важно: поле есть в БД (created by migration), но в модели отсутствовало — из-за этого падал INSERT.
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # Denormalization for fast inbox sorting
+    last_message_at = models.DateTimeField(null=True, blank=True)
+    last_message_id = models.BigIntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-last_message_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["dm_user1", "dm_user2"], name="uniq_dm_pair"),
+        ]
+
+    def __str__(self) -> str:
+        if self.kind == self.KIND_GROUP:
+            return f"GroupChat({self.id}): {self.title}"
+        return f"DM({self.id}): {self.dm_user1_id}-{self.dm_user2_id}"
+
+    # --- Adapter under existing avatar.html (expects user_obj.avatar/display_name/username) ---
+    @property
+    def display_name(self) -> str:
+        if self.kind == self.KIND_GROUP:
+            return self.title or "Группа"
+        # For DM: display_name is resolved in views (other user)
+        return "Чат"
+
+    @property
+    def username(self) -> str:
+        # Used only for search haystack; not an actual username.
+        return f"chat-{self.id}"
+
+
+class ChatMember(models.Model):
+    ROLE_OWNER = "owner"
+    ROLE_ADMIN = "admin"
+    ROLE_MEMBER = "member"
+    ROLE_CHOICES = [(ROLE_OWNER, "Owner"), (ROLE_ADMIN, "Admin"), (ROLE_MEMBER, "Member")]
+
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="memberships")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_memberships")
+
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default=ROLE_MEMBER)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    # Fast unread counters
+    unread_count = models.PositiveIntegerField(default=0)
+    last_read_message_id = models.BigIntegerField(null=True, blank=True)
+
+    # Hide chat from inbox without destroying history (optional)
+    is_hidden = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("chat", "user")
+
+    def __str__(self) -> str:
+        return f"ChatMember(chat={self.chat_id}, user={self.user_id}, role={self.role})"
+
+
+class ChatMessage(models.Model):
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chat_messages")
+    text = models.TextField("Сообщение")
+    created_at = models.DateTimeField("Отправлено", auto_now_add=True)
+
+    edited_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self) -> str:
+        return f"ChatMessage({self.chat_id}) {self.sender_id}: {self.text[:30]}"
+
+
+class ChatMessageAttachment(models.Model):
+    """Вложения к сообщениям в чатах.
+
+    Делаем максимально похожим на PostAttachment, чтобы UI и медиа-плееры
+    работали одинаково в постах и сообщениях.
+    """
+
+    message = models.ForeignKey(
+        ChatMessage,
+        related_name="attachments",
+        on_delete=models.CASCADE,
+        verbose_name="Сообщение",
+    )
+    file = models.FileField(
+        upload_to="attachments/",
+        verbose_name="Файл",
+    )
+    original_name = models.CharField(
+        "Оригинальное имя файла",
+        max_length=255,
+        blank=True,
+    )
+
+    def __str__(self):
+        return self.original_name or self.file.name
+
+    @property
+    def is_image(self):
+        type_, _ = mimetypes.guess_type(self.file.name)
+        return bool(type_ and type_.startswith("image/"))
+
+    def delete(self, *args, **kwargs):
+        storage = self.file.storage
+        name = self.file.name
+        super().delete(*args, **kwargs)
+        if name:
+            storage.delete(name)
+
+
 class PostAttachment(models.Model):
     post = models.ForeignKey(
         Post,
@@ -312,5 +464,12 @@ def delete_attachment_file(sender, instance, **kwargs):
     Подчистить файл, если по какой-то причине метод delete() не сработал.
     (Например, при нестандартных операциях.)
     """
+    if instance.file:
+        instance.file.delete(False)
+
+
+@receiver(post_delete, sender=ChatMessageAttachment)
+def delete_chat_attachment_file(sender, instance, **kwargs):
+    """Подчистить файл вложения чата при удалении записи."""
     if instance.file:
         instance.file.delete(False)

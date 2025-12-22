@@ -2,9 +2,139 @@
 {% load tz %}
 
 <div class="message-item {% if message.sender == request.user %}me{% else %}other{% endif %}" data-id="{{ message.id }}">
-    {% include "core/partials/avatar.html" with user_obj=message.sender size="sm" %}
-    <div class="message-body">
-        <div class="message-text">{{ message.text }}</div>
+
+    {% if message.sender == request.user %}
+        <div class="message-body">
+    {% else %}
+        {% include "core/partials/avatar.html" with user_obj=message.sender size="sm" %}
+        <div class="message-body">
+    {% endif %}
+
+        {# =================== ВЛОЖЕНИЯ (как в постах) =================== #}
+        {% if message.attachments.all %}
+        <div class="attachments message-attachments">
+
+            {# КАРТИНКИ — сетка #}
+            <div class="attachment-gallery" data-count="{{ message.attachments.all|length }}">
+                {% for att in message.attachments.all %}
+                    {% if att.is_image %}
+                        <div class="gallery-item">
+                            <img src="{{ att.file.url }}"
+                                 alt="{{ att.original_name }}"
+                                 class="gallery-img"
+                                 data-full="{{ att.file.url }}">
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {# ВИДЕО #}
+            <div class="attachment-videos">
+                {% for att in message.attachments.all %}
+                    {% with name=att.original_name|lower %}
+                        {% if ".mp4" in name or ".mov" in name %}
+                            <div class="video-wrapper">
+                                <div class="video-inner">
+                                    <video class="video-player" preload="metadata">
+                                        <source src="{{ att.file.url }}">
+                                    </video>
+                                </div>
+                                <div class="video-controls">
+                                    <button type="button" class="video-btn video-play">▶</button>
+
+                                    <div class="video-progress-bar">
+                                        <div class="video-buffer"></div>
+                                        <div class="video-progress"></div>
+                                    </div>
+
+                                    <div class="video-time">
+                                        <span class="video-current">0:00</span> /
+                                        <span class="video-duration">0:00</span>
+                                    </div>
+
+                                    <button type="button" class="video-btn video-mute">🔊</button>
+                                    <button type="button" class="video-btn video-fullscreen">⛶</button>
+
+                                    <a href="{{ att.file.url }}" download class="video-btn video-download" title="Скачать видео">⤓</a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                {% endfor %}
+            </div>
+
+            {# АУДИО (mp3/wav/ogg/webm) — кастомный плеер #}
+            <div class="attachment-audios">
+                {% for att in message.attachments.all %}
+                    {% with name=att.original_name|lower %}
+                        {% if ".mp3" in name or ".wav" in name or ".ogg" in name or ".webm" in name %}
+                            <div class="audio-wrapper">
+
+                                <audio class="audio-player">
+                                    <source src="{{ att.file.url }}">
+                                </audio>
+
+                                <div class="audio-controls">
+                                    <button type="button" class="audio-play">▶</button>
+
+                                    <div class="audio-progress-bar">
+                                        <div class="audio-buffer"></div>
+                                        <div class="audio-progress"></div>
+                                        <input type="range" class="audio-slider" max="100" min="0" value="0" step="0.1">
+                                    </div>
+
+                                    <div class="audio-time">
+                                        <span class="audio-current">0:00</span> /
+                                        <span class="audio-duration">0:00</span>
+                                    </div>
+
+                                    <a href="{{ att.file.url }}" download class="audio-download">⤓</a>
+                                </div>
+
+                                <div class="audio-filename">{{ att.original_name }}</div>
+
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                {% endfor %}
+            </div>
+
+            {# ПРОЧИЕ ФАЙЛЫ #}
+            <div class="attachment-files">
+                {% for att in message.attachments.all %}
+                    {% with name=att.original_name|lower %}
+                        {% if not att.is_image and ".mp3" not in name and ".wav" not in name and ".ogg" not in name and ".webm" not in name and ".mp4" not in name and ".mov" not in name %}
+                            <a class="file-card" href="{{ att.file.url }}" download>
+                                <div class="file-icon">
+                                    {% if ".pdf" in name %}
+                                        📄
+                                    {% elif ".zip" in name %}
+                                        🗜️
+                                    {% elif ".txt" in name %}
+                                        📄
+                                    {% elif ".doc" in name or ".docx" in name %}
+                                        📝
+                                    {% else %}
+                                        📁
+                                    {% endif %}
+                                </div>
+                                <div class="file-name">{{ att.original_name }}</div>
+                            </a>
+                        {% endif %}
+                    {% endwith %}
+                {% endfor %}
+            </div>
+
+        </div>
+        {% endif %}
+
+        {% if message.text %}
+            <div class="message-text">{{ message.text }}</div>
+        {% endif %}
+
         <div class="message-time">{{ message.created_at|localtime|date:"H:i" }}</div>
     </div>
+    {% if message.sender == request.user %}
+        {% include "core/partials/avatar.html" with user_obj=message.sender size="sm" %}
+    {% endif %}
 </div>

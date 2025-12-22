@@ -15,18 +15,38 @@ from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator
+from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
 from django.utils.text import slugify
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.urls import reverse
+
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.test.client import RequestFactory
+
+from core.consumers import user_group_name
+
+from core.services.messages import (
+    build_threads_for_user,
+    get_or_create_dm_chat,
+    get_other_user_for_dm,
+    get_unread_total,
+    mark_chat_read,
+)
 
 
 
-from .forms import RegisterForm, PostForm, PostEditForm, MessageForm, ProfileForm, CommunityForm, CommunityPostForm
+from .forms import RegisterForm, PostForm, PostEditForm, MessageForm, GroupChatCreateForm, ProfileForm, CommunityForm, CommunityPostForm
 from .constants import MAX_ATTACHMENTS_PER_POST
 from .models import (
     Post,
     User,
     Message,
+    Chat,
+    ChatMember,
+    ChatMessage,
+    ChatMessageAttachment,
     Follow,
     Like,
     Comment,
@@ -621,72 +641,197 @@ def messages_inbox_poll(request):
     return JsonResponse({"html": html})
 
 
-def build_threads_for_user(user):
-    qs = (
-        Message.objects
-        .filter(Q(sender=user) | Q(recipient=user))
-        .select_related("sender", "recipient")
-        .order_by("-created_at")
+
+# ---------------------------------------------------------------------------
+# WS helpers for messages (group events: rename / members changes / kick)
+# ---------------------------------------------------------------------------
+
+_rf_messages = RequestFactory()
+
+
+def _render_inbox_for_user(user: User) -> str:
+    req = _rf_messages.get("/messages/_ws_render/")
+    req.user = user
+    threads = build_threads_for_user(user)
+    return render_to_string("core/partials/messages_inbox_list.html", {"threads": threads}, request=req)
+
+
+def _ws_send_to_user(user_id: int, payload: dict) -> None:
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
+    async_to_sync(channel_layer.group_send)(
+        user_group_name(int(user_id)),
+        {"type": "notify", "payload": payload},
     )
 
-    threads = []
-    seen_ids = set()
 
-    for msg in qs:
-        other = msg.recipient if msg.sender == user else msg.sender
-        if other.id in seen_ids:
-            continue
+def _ws_broadcast_to_chat(chat: Chat, payload_builder) -> None:
+    """Send a WS payload to each active member of the chat.
 
-        unread_count = Message.objects.filter(
-            sender=other,
-            recipient=user,
-            is_read=False,
-        ).count()
-
-        threads.append({
-            "other_user": other,
-            "last_message": msg,
-            "unread_count": unread_count,
-        })
-        seen_ids.add(other.id)
-
-    return threads
+    payload_builder(user) -> dict
+    """
+    memberships = (
+        ChatMember.objects.filter(chat=chat, is_hidden=False)
+        .select_related("user")
+        .only("user__id", "user__username", "user__display_name")
+    )
+    for m in memberships:
+        u = m.user
+        payload = payload_builder(u)
+        if payload:
+            _ws_send_to_user(u.id, payload)
 
 
-@login_required
-def messages_thread(request, username):
-    other = get_object_or_404(User, username=username)
+def _get_chat_or_404_for_user(request, chat_id: int):
+    chat = get_object_or_404(Chat.objects.select_related("dm_user1", "dm_user2"), id=chat_id)
+    member = ChatMember.objects.filter(chat=chat, user=request.user, is_hidden=False).first()
+    if not member:
+        raise PermissionDenied
+    return chat
 
-    msgs_qs = Message.objects.filter(
-        Q(sender=request.user, recipient=other) |
-        Q(sender=other, recipient=request.user)
-    ).order_by("created_at")
 
+def _is_group_manager(chat: Chat, user: User) -> bool:
+    """Owner/admin can manage group. Also allow chat.created_by as manager
+    in case role is inconsistent in DB (defensive fix).
+    """
+    if chat.kind != Chat.KIND_GROUP:
+        return False
+    member = ChatMember.objects.filter(chat=chat, user=user, is_hidden=False).first()
+    if member and member.role in (ChatMember.ROLE_OWNER, ChatMember.ROLE_ADMIN):
+        return True
+    return bool(chat.created_by_id and int(chat.created_by_id) == int(user.id))
+
+
+def _redirect_next_or(request, fallback_viewname: str, **kwargs):
+    """Redirect back to the page that opened an action form.
+
+    We use it for inline management UI inside the chat header dropdown.
+    """
+    next_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_url)
+    return redirect(fallback_viewname, **kwargs)
+
+
+def _render_chat_page(request, chat: Chat, other_user=None):
+    if other_user is None:
+        other_user = get_other_user_for_dm(chat, request.user)
+
+    msgs_qs = (
+        ChatMessage.objects.filter(chat=chat)
+        .select_related("sender")
+        .order_by("created_at")
+    )
     msgs = list(msgs_qs)
     last_id = msgs[-1].id if msgs else 0
 
-    Message.objects.filter(
-        sender=other,
-        recipient=request.user,
-        is_read=False,
-    ).update(is_read=True)
+    # Mark read (server-side) when opening the chat.
+    mark_chat_read(request.user, chat, last_id)
 
-    if request.method == "POST" and not request.headers.get("x-requested-with"):
-        form = MessageForm(request.POST)
-        if form.is_valid():
-            Message.objects.create(
-                sender=request.user,
-                recipient=other,
-                text=form.cleaned_data["text"],
-            )
-            return redirect("messages_thread", username=other.username)
-    else:
-        form = MessageForm()
-
+    form = MessageForm()
     threads = build_threads_for_user(request.user)
 
+    members_count = ChatMember.objects.filter(chat=chat, is_hidden=False).count() if chat.kind == Chat.KIND_GROUP else 2
+
+    chat_title = (
+        (other_user.display_name or other_user.username) if other_user is not None else (chat.title or "Группа")
+    )
+
+    # Membership (only active membership matters for UI decisions)
+    my_member = ChatMember.objects.filter(chat=chat, user=request.user, is_hidden=False).first()
+    my_role = getattr(my_member, 'role', None)
+
+    # Defensive: if creator's role drifted (e.g. due to manual DB edits/migrations),
+    # restore it to OWNER so the UI + permissions remain usable.
+    if (
+        chat.kind == Chat.KIND_GROUP
+        and chat.created_by_id
+        and int(chat.created_by_id) == int(request.user.id)
+        and my_member
+        and my_member.role != ChatMember.ROLE_OWNER
+    ):
+        my_member.role = ChatMember.ROLE_OWNER
+        my_member.save(update_fields=["role"])
+        my_role = ChatMember.ROLE_OWNER
+
+    is_manager = _is_group_manager(chat, request.user)
+    can_delete = bool(chat.kind == Chat.KIND_GROUP and is_manager)
+    can_manage = bool(chat.kind == Chat.KIND_GROUP and is_manager)
+
+    # Preview members for the chat header (so user can see who is in the group).
+    group_members_preview = []
+    group_members = []
+    dm_contacts_for_add = []
+    if chat.kind == Chat.KIND_GROUP:
+        memberships = (
+            ChatMember.objects.filter(chat=chat, is_hidden=False)
+            .select_related("user")
+            .only("id", "role", "user__id", "user__username", "user__display_name", "user__avatar")
+        )
+        role_weight = {
+            ChatMember.ROLE_OWNER: 0,
+            ChatMember.ROLE_ADMIN: 1,
+            ChatMember.ROLE_MEMBER: 2,
+        }
+        members_sorted = sorted(
+            list(memberships),
+            key=lambda m: (role_weight.get(m.role, 9), (m.user.username or "").lower()),
+        )
+        group_members_preview = [m.user for m in members_sorted[:6]]
+
+        # Full members list for the dropdown under the title.
+        # Include remove permissions (owner/admin only; admin cannot remove admins/owner).
+        def can_remove_member(target: ChatMember) -> bool:
+            if not can_manage:
+                return False
+            if int(target.user_id) == int(request.user.id):
+                return False
+            if target.role == ChatMember.ROLE_OWNER:
+                return False
+            if my_role == ChatMember.ROLE_OWNER:
+                return True
+            # admin can remove only regular members
+            return target.role == ChatMember.ROLE_MEMBER
+
+        group_members = [
+            {
+                "user": m.user,
+                "role": m.role,
+                "can_remove": can_remove_member(m),
+            }
+            for m in members_sorted
+        ]
+
+        # Eligible contacts to add: users from existing DM dialogs.
+        # (As requested: simple “human” selector; global search can be added later.)
+        dm_contacts = []
+        seen_ids = set()
+        for t in threads:
+            if (t.get("kind") == Chat.KIND_DM) and t.get("other_user"):
+                u = t["other_user"]
+                if u.id and u.id != request.user.id and u.id not in seen_ids:
+                    seen_ids.add(u.id)
+                    dm_contacts.append(u)
+
+        active_ids = {m["user"].id for m in group_members if m.get("user") and m["user"].id}
+        dm_contacts_for_add = [u for u in dm_contacts if u.id not in active_ids] if can_manage else []
+
     context = {
-        "other_user": other,
+        "chat": chat,
+        "chat_title": chat_title,
+        "other_user": other_user,
+        "members_count": members_count,
+        "group_members_preview": group_members_preview,
+        "group_members": group_members,
+        "dm_contacts": dm_contacts_for_add,
+        "my_role": my_role,
+        "can_delete": can_delete,
+        "can_manage": can_manage,
         "messages": msgs,
         "form": form,
         "last_id": last_id,
@@ -705,7 +850,161 @@ def messages_thread(request, username):
 
 
 @login_required
+def messages_thread(request, username):
+    """Legacy DM URL: /messages/<username>/"""
+
+    other = get_object_or_404(User, username=username)
+
+    if other.id == request.user.id:
+        return redirect("messages_inbox")
+
+    chat = get_or_create_dm_chat(request.user, other)
+
+    # Non-AJAX fallback (old behavior)
+    if request.method == "POST" and request.headers.get("x-requested-with") != "XMLHttpRequest":
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            ChatMessage.objects.create(
+                chat=chat,
+                sender=request.user,
+                text=form.cleaned_data["text"],
+            )
+            return redirect("messages_thread", username=other.username)
+
+    return _render_chat_page(request, chat, other_user=other)
+
+
+@login_required
+def messages_chat(request, chat_id: int):
+    """Group / DM chat by id: /messages/chat/<id>/"""
+
+    try:
+        chat = _get_chat_or_404_for_user(request, chat_id)
+    except PermissionDenied:
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"redirect": reverse("messages_inbox")}, status=403)
+        return redirect("messages_inbox")
+
+
+    # Non-AJAX fallback
+    if request.method == "POST" and request.headers.get("x-requested-with") != "XMLHttpRequest":
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            ChatMessage.objects.create(
+                chat=chat,
+                sender=request.user,
+                text=form.cleaned_data["text"],
+            )
+            return redirect("messages_chat", chat_id=chat.id)
+
+    return _render_chat_page(request, chat)
+
+
+
+
+@login_required
+def messages_chat_header(request, chat_id: int):
+    """Return only chat header HTML for realtime refresh (rename/members changes)."""
+    try:
+        chat = _get_chat_or_404_for_user(request, chat_id)
+    except PermissionDenied:
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"redirect": reverse("messages_inbox")}, status=403)
+        return redirect("messages_inbox")
+
+    other_user = get_other_user_for_dm(chat, request.user)
+
+    # Build group-specific header context (members dropdown)
+    members_count = 2
+    group_members_preview = []
+    group_members = []
+    dm_contacts_for_add = []
+    my_member = ChatMember.objects.filter(chat=chat, user=request.user, is_hidden=False).first()
+    my_role = getattr(my_member, "role", None)
+
+    if (
+        chat.kind == Chat.KIND_GROUP
+        and chat.created_by_id
+        and int(chat.created_by_id) == int(request.user.id)
+        and my_member
+        and my_member.role != ChatMember.ROLE_OWNER
+    ):
+        my_member.role = ChatMember.ROLE_OWNER
+        my_member.save(update_fields=["role"])
+        my_role = ChatMember.ROLE_OWNER
+
+    can_manage = _is_group_manager(chat, request.user)
+    can_delete = bool(chat.kind == Chat.KIND_GROUP and can_manage)
+
+    if chat.kind == Chat.KIND_GROUP:
+        memberships = (
+            ChatMember.objects.filter(chat=chat, is_hidden=False)
+            .select_related("user")
+            .only("id", "role", "user__id", "user__username", "user__display_name", "user__avatar")
+        )
+        role_weight = {
+            ChatMember.ROLE_OWNER: 0,
+            ChatMember.ROLE_ADMIN: 1,
+            ChatMember.ROLE_MEMBER: 2,
+        }
+        members_sorted = sorted(
+            list(memberships),
+            key=lambda m: (role_weight.get(m.role, 9), (m.user.username or "").lower()),
+        )
+        members_count = len(members_sorted)
+        group_members_preview = [m.user for m in members_sorted[:6]]
+
+        def can_remove_member(target: ChatMember) -> bool:
+            if not can_manage:
+                return False
+            if int(target.user_id) == int(request.user.id):
+                return False
+            if target.role == ChatMember.ROLE_OWNER:
+                return False
+            if my_role == ChatMember.ROLE_OWNER:
+                return True
+            return target.role == ChatMember.ROLE_MEMBER
+
+        group_members = [
+            {"user": m.user, "role": m.role, "can_remove": can_remove_member(m)}
+            for m in members_sorted
+        ]
+
+        # Contacts to add = users from existing DM dialogs
+        threads = build_threads_for_user(request.user)
+        dm_contacts = []
+        seen_ids = set()
+        for t in threads:
+            if (t.get("kind") == Chat.KIND_DM) and t.get("other_user"):
+                u = t["other_user"]
+                if u.id and u.id != request.user.id and u.id not in seen_ids:
+                    seen_ids.add(u.id)
+                    dm_contacts.append(u)
+
+        active_ids = {m["user"].id for m in group_members if m.get("user") and m["user"].id}
+        dm_contacts_for_add = [u for u in dm_contacts if u.id not in active_ids] if can_manage else []
+
+    html = render_to_string(
+        "core/partials/messages_thread_header.html",
+        {
+            "chat": chat,
+            "other_user": other_user,
+            "members_count": members_count,
+            "group_members_preview": group_members_preview,
+            "group_members": group_members,
+            "dm_contacts": dm_contacts_for_add,
+            "my_role": my_role,
+            "can_delete": can_delete,
+            "can_manage": can_manage,
+        },
+        request=request,
+    )
+    return HttpResponse(html)
+
+@login_required
 def messages_delete_thread(request, username):
+    """Legacy DM delete endpoint."""
+
     other = get_object_or_404(User, username=username)
 
     if request.method != "POST":
@@ -713,10 +1012,21 @@ def messages_delete_thread(request, username):
             return JsonResponse({"error": "Only POST allowed"}, status=400)
         return redirect("messages_inbox")
 
-    Message.objects.filter(
-        Q(sender=request.user, recipient=other) |
-        Q(sender=other, recipient=request.user)
-    ).delete()
+    # Delete DM chat + history (same behavior as before)
+    try:
+        u1, u2 = (request.user.id, other.id) if request.user.id < other.id else (other.id, request.user.id)
+        chat = Chat.objects.filter(kind=Chat.KIND_DM, dm_user1_id=u1, dm_user2_id=u2).first()
+        if chat:
+            chat.delete()
+        else:
+            # fallback for very old DB (before migration)
+            Message.objects.filter(
+                Q(sender=request.user, recipient=other) |
+                Q(sender=other, recipient=request.user)
+            ).delete()
+    except Exception:
+        # never crash on delete
+        pass
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return JsonResponse({"ok": True})
@@ -725,58 +1035,498 @@ def messages_delete_thread(request, username):
 
 
 @login_required
+def messages_chat_leave(request, chat_id: int):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST"}, status=400)
+
+    chat = get_object_or_404(Chat, id=chat_id)
+    # "Leave" = hide + stop notifications (keeps history if needed)
+    ChatMember.objects.filter(chat=chat, user=request.user).update(is_hidden=True, unread_count=0)
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"ok": True})
+    return redirect("messages_inbox")
+
+
+@login_required
+def messages_chat_delete(request, chat_id: int):
+    """Delete a group chat (owner/admin only).
+
+    Defensive: creator can delete even if role is inconsistent in DB.
+    """
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST"}, status=400)
+
+    chat = get_object_or_404(Chat, id=chat_id)
+    if not _is_group_manager(chat, request.user):
+        return JsonResponse({"error": "Forbidden"}, status=403)
+
+    chat.delete()
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"ok": True})
+    return redirect("messages_inbox")
+
+
+
+@login_required
+def messages_chat_manage(request, chat_id: int):
+    """Manage a group chat (rename, add/remove members).
+
+    Only owner/admin can manage. Defensive: creator can manage even if role is inconsistent.
+    """
+
+    try:
+        chat = _get_chat_or_404_for_user(request, chat_id)
+    except PermissionDenied:
+        return redirect("messages_inbox")
+
+    if chat.kind != Chat.KIND_GROUP:
+        return redirect("messages_chat", chat_id=chat.id)
+
+    my_member = ChatMember.objects.filter(chat=chat, user=request.user, is_hidden=False).first()
+
+    # Any member can open the "members" page. Only managers can rename / add / remove.
+    can_manage = _is_group_manager(chat, request.user)
+
+    my_role = getattr(my_member, 'role', None)
+    if chat.created_by_id and int(chat.created_by_id) == int(request.user.id):
+        # Treat creator as owner for UI logic if needed
+        my_role = ChatMember.ROLE_OWNER
+        if my_member and my_member.role != ChatMember.ROLE_OWNER:
+            my_member.role = ChatMember.ROLE_OWNER
+            my_member.save(update_fields=["role"])
+
+    threads = build_threads_for_user(request.user)
+
+    # Contacts = users from existing DM dialogs (same approach as group create)
+    dm_contacts = []
+    seen_ids = set()
+    for t in threads:
+        if (t.get('kind') == Chat.KIND_DM) and t.get('other_user'):
+            u = t['other_user']
+            if u.id and u.id != request.user.id and u.id not in seen_ids:
+                seen_ids.add(u.id)
+                dm_contacts.append(u)
+
+    memberships = (
+        ChatMember.objects.filter(chat=chat, is_hidden=False)
+        .select_related('user')
+    )
+
+    role_weight = {
+        ChatMember.ROLE_OWNER: 0,
+        ChatMember.ROLE_ADMIN: 1,
+        ChatMember.ROLE_MEMBER: 2,
+    }
+    members = sorted(
+        list(memberships),
+        key=lambda m: (role_weight.get(m.role, 9), (m.user.username or '').lower()),
+    )
+
+    active_ids = {m.user_id for m in members}
+    eligible_contacts = [u for u in dm_contacts if u.id not in active_ids and u.id != request.user.id] if can_manage else []
+
+    def can_remove(target: ChatMember) -> bool:
+        if not can_manage:
+            return False
+        if target.user_id == request.user.id:
+            return False
+        if target.role == ChatMember.ROLE_OWNER:
+            return False
+        if my_role == ChatMember.ROLE_OWNER:
+            return True
+        return target.role == ChatMember.ROLE_MEMBER
+
+    members_view = [
+        {'m': m, 'user': m.user, 'can_remove': can_remove(m)}
+        for m in members
+    ]
+
+    return render(
+        request,
+        'core/messages_group_manage.html',
+        {
+            'chat': chat,
+            'threads': threads,
+            'members': members_view,
+            'dm_contacts': eligible_contacts,
+            'my_role': my_role,
+            'can_manage': can_manage,
+        },
+    )
+
+
+@login_required
+def messages_chat_rename(request, chat_id: int):
+    if request.method != "POST":
+        return redirect("messages_chat_manage", chat_id=chat_id)
+
+    chat = _get_chat_or_404_for_user(request, chat_id)
+    if chat.kind != Chat.KIND_GROUP:
+        return redirect("messages_chat", chat_id=chat.id)
+
+    my_member = ChatMember.objects.filter(chat=chat, user=request.user, is_hidden=False).first()
+    if not _is_group_manager(chat, request.user):
+        raise PermissionDenied
+
+    title = (request.POST.get("title") or "").strip()
+    if not title:
+        messages.error(request, "Название не может быть пустым")
+        return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+    if len(title) > 255:
+        title = title[:255]
+
+    chat.title = title
+    chat.save(update_fields=["title", "updated_at"])
+
+    # Realtime: notify all group members about rename (update inbox + header)
+    def _payload(u: User) -> dict:
+        return {
+            "type": "chat_renamed",
+            "chat_id": chat.id,
+            "title": chat.title,
+            "inbox_html": _render_inbox_for_user(u),
+            "unread_total": get_unread_total(u),
+            "refresh_header": True,
+        }
+    _ws_broadcast_to_chat(chat, _payload)
+
+    messages.success(request, "Название чата обновлено")
+    return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+
+@login_required
+def messages_chat_members_add(request, chat_id: int):
+    if request.method != "POST":
+        return redirect("messages_chat_manage", chat_id=chat_id)
+
+    chat = _get_chat_or_404_for_user(request, chat_id)
+    if chat.kind != Chat.KIND_GROUP:
+        return redirect("messages_chat", chat_id=chat.id)
+
+    my_member = ChatMember.objects.filter(chat=chat, user=request.user, is_hidden=False).first()
+    if not _is_group_manager(chat, request.user):
+        raise PermissionDenied
+
+    # Allow adding only from existing DM contacts for now
+    threads = build_threads_for_user(request.user)
+    allowed_ids = set()
+    for t in threads:
+        if (t.get("kind") == Chat.KIND_DM) and t.get("other_user"):
+            u = t["other_user"]
+            if u.id and u.id != request.user.id:
+                allowed_ids.add(int(u.id))
+
+    members_ids = []
+    for raw in request.POST.getlist("members_ids"):
+        try:
+            uid = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if uid in allowed_ids and uid != request.user.id:
+            members_ids.append(uid)
+
+    members_ids = list(dict.fromkeys(members_ids))
+
+    if not members_ids:
+        messages.error(request, "Выберите участников из списка")
+        return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+    with transaction.atomic():
+        for uid in members_ids:
+            cm, created = ChatMember.objects.get_or_create(
+                chat=chat,
+                user_id=uid,
+                defaults={"role": ChatMember.ROLE_MEMBER},
+            )
+            if not created and cm.is_hidden:
+                cm.is_hidden = False
+                cm.unread_count = 0
+                cm.save(update_fields=["is_hidden", "unread_count"])
+
+
+    # Realtime: notify members about added participants (inbox + header)
+    added_ids = list(members_ids)
+    def _payload(u: User) -> dict:
+        return {
+            "type": "chat_member_added",
+            "chat_id": chat.id,
+            "added_user_ids": added_ids,
+            "inbox_html": _render_inbox_for_user(u),
+            "unread_total": get_unread_total(u),
+            "refresh_header": True,
+        }
+    _ws_broadcast_to_chat(chat, _payload)
+
+    messages.success(request, "Участники добавлены")
+    return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+
+@login_required
+def messages_chat_members_remove(request, chat_id: int, user_id: int):
+    if request.method != "POST":
+        return redirect("messages_chat_manage", chat_id=chat_id)
+
+    chat = _get_chat_or_404_for_user(request, chat_id)
+    if chat.kind != Chat.KIND_GROUP:
+        return redirect("messages_chat", chat_id=chat.id)
+
+    my_member = ChatMember.objects.filter(chat=chat, user=request.user, is_hidden=False).first()
+    if not _is_group_manager(chat, request.user):
+        raise PermissionDenied
+
+
+    effective_role = getattr(my_member, 'role', None)
+    if (chat.created_by_id and int(chat.created_by_id) == int(request.user.id)):
+        effective_role = ChatMember.ROLE_OWNER
+
+    if int(user_id) == int(request.user.id):
+        messages.error(request, "Чтобы выйти из чата, используйте кнопку «Выйти»")
+        return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+    target = ChatMember.objects.filter(chat=chat, user_id=user_id, is_hidden=False).first()
+    if not target:
+        messages.error(request, "Участник не найден")
+        return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+    if target.role == ChatMember.ROLE_OWNER:
+        messages.error(request, "Нельзя удалить владельца чата")
+        return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+    if effective_role == ChatMember.ROLE_ADMIN and target.role != ChatMember.ROLE_MEMBER:
+        messages.error(request, "Админ может удалять только участников")
+        return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+    target.is_hidden = True
+    target.unread_count = 0
+    target.save(update_fields=["is_hidden", "unread_count"])
+
+
+    removed_user_id = int(user_id)
+
+    # Realtime: notify removed user (kick) and remaining members (update header/inbox)
+    try:
+        removed_user = User.objects.only("id", "username", "display_name").get(id=removed_user_id)
+    except User.DoesNotExist:
+        removed_user = None
+
+    if removed_user is not None:
+        _ws_send_to_user(
+            removed_user.id,
+            {
+                "type": "chat_access_revoked",
+                "chat_id": chat.id,
+                "redirect_url": reverse("messages_inbox"),
+                "inbox_html": _render_inbox_for_user(removed_user),
+                "unread_total": get_unread_total(removed_user),
+                "reason": "removed",
+            },
+        )
+
+    def _payload(u: User) -> dict:
+        return {
+            "type": "chat_member_removed",
+            "chat_id": chat.id,
+            "removed_user_id": removed_user_id,
+            "inbox_html": _render_inbox_for_user(u),
+            "unread_total": get_unread_total(u),
+            "refresh_header": True,
+        }
+    _ws_broadcast_to_chat(chat, _payload)
+
+
+    messages.success(request, "Участник удалён")
+    return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+
+@login_required
+def messages_chat_avatar_update(request, chat_id: int):
+    """Update group chat avatar (upload or remove)."""
+    if request.method != "POST":
+        return _redirect_next_or(request, "messages_chat_manage", chat_id=chat_id)
+
+    chat = _get_chat_or_404_for_user(request, chat_id)
+    if chat.kind != Chat.KIND_GROUP:
+        return redirect("messages_chat", chat_id=chat.id)
+
+    if not _is_group_manager(chat, request.user):
+        raise PermissionDenied
+
+    remove = (request.POST.get("remove") or "").strip() == "1"
+    uploaded = request.FILES.get("avatar")
+
+    if remove:
+        # Remove avatar
+        if chat.avatar:
+            try:
+                chat.avatar.delete(save=False)
+            except Exception:
+                pass
+        chat.avatar = None
+        chat.save(update_fields=["avatar", "updated_at"])
+
+    else:
+        if not uploaded:
+            messages.error(request, "Выберите изображение")
+            return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+        # Basic validation
+        ctype = getattr(uploaded, "content_type", "") or ""
+        if not ctype.startswith("image/"):
+            messages.error(request, "Файл должен быть изображением")
+            return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+        if getattr(uploaded, "size", 0) and uploaded.size > 10 * 1024 * 1024:
+            messages.error(request, "Файл слишком большой (макс 10MB)")
+            return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+        chat.avatar = uploaded
+        chat.save(update_fields=["avatar", "updated_at"])
+
+    # Realtime: refresh header + inbox for all members
+    def _payload(u: User) -> dict:
+        return {
+            "type": "chat_avatar_updated",
+            "chat_id": chat.id,
+            "inbox_html": _render_inbox_for_user(u),
+            "unread_total": get_unread_total(u),
+            "refresh_header": True,
+        }
+    _ws_broadcast_to_chat(chat, _payload)
+
+    messages.success(request, "Аватар группы обновлён")
+    return _redirect_next_or(request, "messages_chat_manage", chat_id=chat.id)
+
+
+@login_required
 def messages_send(request, username):
+    """Legacy DM send endpoint: /messages/<username>/send/"""
+
     if request.method != "POST":
         return JsonResponse({"error": "Only POST"}, status=400)
 
     other = get_object_or_404(User, username=username)
-    text = request.POST.get("text", "").strip()
-    if not text:
+    if other.id == request.user.id:
+        return JsonResponse({"error": "self"}, status=400)
+
+    text = (request.POST.get("text", "") or "").strip()
+    files = request.FILES.getlist("attachments")
+
+    # Разрешаем отправку без текста, если есть вложения/голосовое
+    if not text and not files:
         return JsonResponse({"error": "empty"}, status=400)
 
-    msg = Message.objects.create(
-        sender=request.user,
-        recipient=other,
-        text=text,
-    )
+    if len(files) > MAX_ATTACHMENTS_PER_POST:
+        return JsonResponse(
+            {"error": f"Максимум файлов в одном сообщении: {MAX_ATTACHMENTS_PER_POST}."},
+            status=400,
+        )
+
+    chat = get_or_create_dm_chat(request.user, other)
+
+    # Важно: создаём сообщение и вложения в одном atomic, чтобы WS-уведомление
+    # (signals.py) улетало уже с готовыми вложениями.
+    with transaction.atomic():
+        msg = ChatMessage.objects.create(
+            chat=chat,
+            sender=request.user,
+            text=text,
+        )
+
+        for f in files:
+            ChatMessageAttachment.objects.create(
+                message=msg,
+                file=f,
+                original_name=getattr(f, "name", "") or "",
+            )
 
     html = render_to_string(
         "core/partials/message_item.html",
         {"message": msg},
         request=request,
     )
-    return JsonResponse({"html": html, "id": msg.id})
+
+    return JsonResponse({"html": html, "id": msg.id, "chat_id": chat.id})
+
+
+@login_required
+def messages_chat_send(request, chat_id: int):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST"}, status=400)
+
+    try:
+        chat = _get_chat_or_404_for_user(request, chat_id)
+    except PermissionDenied:
+        return JsonResponse({"redirect": reverse("messages_inbox")}, status=403)
+
+    text = (request.POST.get("text", "") or "").strip()
+    files = request.FILES.getlist("attachments")
+
+    # Разрешаем отправку без текста, если есть вложения/голосовое
+    if not text and not files:
+        return JsonResponse({"error": "empty"}, status=400)
+
+    if len(files) > MAX_ATTACHMENTS_PER_POST:
+        return JsonResponse(
+            {"error": f"Максимум файлов в одном сообщении: {MAX_ATTACHMENTS_PER_POST}."},
+            status=400,
+        )
+
+    # Важно: создаём сообщение и вложения в одном atomic, чтобы WS-уведомление
+    # (signals.py) улетало уже с готовыми вложениями.
+    with transaction.atomic():
+        msg = ChatMessage.objects.create(
+            chat=chat,
+            sender=request.user,
+            text=text,
+        )
+
+        for f in files:
+            ChatMessageAttachment.objects.create(
+                message=msg,
+                file=f,
+                original_name=getattr(f, "name", "") or "",
+            )
+
+    html = render_to_string(
+        "core/partials/message_item.html",
+        {"message": msg},
+        request=request,
+    )
+
+    return JsonResponse({"html": html, "id": msg.id, "chat_id": chat.id})
 
 
 @login_required
 def messages_unread_count(request):
-    total = Message.objects.filter(
-        recipient=request.user,
-        is_read=False,
-    ).count()
-    return JsonResponse({"count": total})
+    return JsonResponse({"count": get_unread_total(request.user)})
 
 
 @login_required
 def messages_poll(request, username):
+    """Legacy DM poll endpoint."""
+
     other = get_object_or_404(User, username=username)
+    chat = get_or_create_dm_chat(request.user, other)
 
     try:
         last_id = int(request.GET.get("after", 0))
     except (TypeError, ValueError):
         last_id = 0
 
-    new_msgs_qs = Message.objects.filter(
-        Q(sender=request.user, recipient=other) |
-        Q(sender=other, recipient=request.user)
-    ).filter(id__gt=last_id).order_by("created_at")
-
+    new_msgs_qs = (
+        ChatMessage.objects.filter(chat=chat, id__gt=last_id)
+        .select_related("sender")
+        .prefetch_related("attachments")
+        .order_by("created_at")
+    )
     new_msgs = list(new_msgs_qs)
 
-    to_mark_ids = [m.id for m in new_msgs
-                   if m.recipient_id == request.user.id and not m.is_read]
-    if to_mark_ids:
-        Message.objects.filter(id__in=to_mark_ids).update(is_read=True)
+    if new_msgs:
+        mark_chat_read(request.user, chat, new_msgs[-1].id)
 
     html = "".join(
         render_to_string(
@@ -788,6 +1538,114 @@ def messages_poll(request, username):
     )
 
     return JsonResponse({"html": html, "count": len(new_msgs)})
+
+
+@login_required
+def messages_chat_poll(request, chat_id: int):
+    try:
+        chat = _get_chat_or_404_for_user(request, chat_id)
+    except PermissionDenied:
+        return JsonResponse({"redirect": reverse("messages_inbox")}, status=403)
+
+
+    try:
+        last_id = int(request.GET.get("after", 0))
+    except (TypeError, ValueError):
+        last_id = 0
+
+    new_msgs_qs = (
+        ChatMessage.objects.filter(chat=chat, id__gt=last_id)
+        .select_related("sender")
+        .prefetch_related("attachments")
+        .order_by("created_at")
+    )
+    new_msgs = list(new_msgs_qs)
+
+    if new_msgs:
+        mark_chat_read(request.user, chat, new_msgs[-1].id)
+
+    html = "".join(
+        render_to_string(
+            "core/partials/message_item.html",
+            {"message": m},
+            request=request,
+        )
+        for m in new_msgs
+    )
+
+    return JsonResponse({"html": html, "count": len(new_msgs)})
+
+
+@login_required
+def messages_group_create(request):
+    """Group creation page.
+
+    UX requirement: user should not be forced to know usernames.
+    For now we allow selecting participants from the list of existing DM dialogs.
+    (Later it can be extended to a global search.)
+    """
+
+    threads = build_threads_for_user(request.user)
+
+    # Contacts = unique users from existing DM chats (in inbox order)
+    dm_contacts = []
+    seen_ids = set()
+    for t in threads:
+        if (t.get("kind") == Chat.KIND_DM) and t.get("other_user"):
+            u = t["other_user"]
+            if u.id and u.id != request.user.id and u.id not in seen_ids:
+                seen_ids.add(u.id)
+                dm_contacts.append(u)
+
+    if request.method == "POST":
+        form = GroupChatCreateForm(request.POST)
+        if form.is_valid():
+            title = (form.cleaned_data.get("title") or "").strip()
+
+            # Preferred: selection from existing DM contacts
+            members_ids = []
+            for raw in request.POST.getlist("members_ids"):
+                try:
+                    members_ids.append(int(raw))
+                except (TypeError, ValueError):
+                    continue
+
+            allowed_ids = seen_ids
+            members_ids = [uid for uid in dict.fromkeys(members_ids) if uid in allowed_ids and uid != request.user.id]
+
+            # Backward-compatible fallback: usernames via comma separated input (hidden in UI)
+            raw_members = (form.cleaned_data.get("members") or "").strip()
+            usernames = [u.strip() for u in raw_members.split(",") if u.strip()]
+            usernames = list(dict.fromkeys(usernames))
+
+            if not members_ids and usernames:
+                members_ids = list(
+                    User.objects.filter(username__in=usernames)
+                    .exclude(id=request.user.id)
+                    .values_list("id", flat=True)
+                )
+
+            if not members_ids:
+                form.add_error("members", "Выберите хотя бы одного участника")
+            else:
+                users = list(User.objects.filter(id__in=members_ids))
+
+                with transaction.atomic():
+                    chat = Chat.objects.create(kind=Chat.KIND_GROUP, title=title, created_by=request.user)
+                    ChatMember.objects.create(chat=chat, user=request.user, role=ChatMember.ROLE_OWNER)
+
+                    for u in users:
+                        ChatMember.objects.get_or_create(chat=chat, user=u, defaults={"role": ChatMember.ROLE_MEMBER})
+
+                return redirect("messages_chat", chat_id=chat.id)
+    else:
+        form = GroupChatCreateForm()
+
+    return render(
+        request,
+        "core/messages_group_create.html",
+        {"form": form, "threads": threads, "dm_contacts": dm_contacts},
+    )
 
 
 def register_view(request):

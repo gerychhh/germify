@@ -1,116 +1,150 @@
 {% if threads %}
     {% for t in threads %}
-        {% with other_user=t.other_user last_message=t.last_message unread=t.unread_count %}
-        <div class="dialog-item{% if unread %} has-unread{% endif %}"
-             data-search="{{ other_user.username }} {{ other_user.display_name|default:other_user.username }} {{ last_message.text|default_if_none:'' }}">
+        {% with chat=t.chat last_message=t.last_message unread=t.unread_count %}
+        {% if t.kind == 'dm' %}
+            {% with other_user=t.other_user %}
+            <div class="dialog-item{% if unread %} has-unread{% endif %}"
+                 data-search="{{ other_user.username }} {{ other_user.display_name|default:other_user.username }} {{ last_message.text|default_if_none:'' }}">
 
-            <a href="{% url 'messages_thread' other_user.username %}"
-               class="dialog-main-link">
-                {% include "core/partials/avatar.html" with user_obj=other_user size="sm" %}
+                <a href="{% url 'messages_thread' other_user.username %}"
+                   class="dialog-main-link">
+                    {% include "core/partials/avatar.html" with user_obj=other_user size="sm" %}
 
-                <div class="dialog-main">
-                    <div class="dialog-top-row">
-                        <span class="dialog-username">
-                            {{ other_user.display_name|default:other_user.username }}
-                        </span>
-
-                        <div class="dialog-top-right">
-                            <span class="dialog-date">
-                                {{ last_message.created_at|date:"d.m H:i" }}
+                    <div class="dialog-main">
+                        <div class="dialog-top-row">
+                            <span class="dialog-username">
+                                {{ other_user.display_name|default:other_user.username }}
                             </span>
-                            {% if unread %}
-                                <span class="dialog-unread-badge">{{ unread }}</span>
-                            {% endif %}
+
+                            <div class="dialog-top-right">
+                                <span class="dialog-date">
+                                    {% if last_message %}{{ last_message.created_at|date:"d.m H:i" }}{% endif %}
+                                </span>
+                                {% if unread %}
+                                    <span class="dialog-unread-badge">{{ unread }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="dialog-last-line">
+                            <span class="dialog-last-text">
+                                {% if last_message %}
+                                    {% if last_message.sender_id == request.user.id %}Вы: {% endif %}
+                                    {{ last_message.text|truncatechars:40 }}
+                                {% endif %}
+                            </span>
                         </div>
                     </div>
+                </a>
 
-                    <div class="dialog-last-line">
-                        <span class="dialog-last-text">
-                            {% if last_message.sender_id == request.user.id %}Вы: {% endif %}
-                            {{ last_message.text|truncatechars:40 }}
-                        </span>
-                    </div>
+                <div class="dropdown dialog-menu-wrapper">
+                    <button type="button"
+                            class="btn btn-sm btn-light border dropdown-toggle dialog-menu-toggle"
+                            data-bs-toggle="dropdown"
+                            data-bs-display="static"
+                            aria-expanded="false"
+                            aria-label="Действия с диалогом"
+                            style="padding: 2px 10px; border-radius: 999px; line-height: 1;">
+                        ⋯
+                    </button>{% url 'messages_chat_manage' chat.id as manage_url %}
+
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button type="button"
+                                    class="dropdown-item text-danger dialog-menu-item dialog-menu-item--delete"
+                                    data-delete-url="{% url 'messages_delete_thread' other_user.username %}"
+                                    data-username="{{ other_user.username }}"
+                                    data-chat-id="{{ chat.id }}">
+                                Удалить чат
+                            </button>
+                        </li>
+                    </ul>
                 </div>
-            </a>
-
-            <div class="dropdown dialog-menu-wrapper">
-                <button type="button"
-                        class="btn btn-sm btn-light border dropdown-toggle dialog-menu-toggle"
-                        data-bs-toggle="dropdown"
-                        data-bs-display="static"
-                        aria-expanded="false"
-                        aria-label="Действия с диалогом"
-                        style="padding: 2px 10px; border-radius: 999px; line-height: 1;">
-                    ⋯
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <button type="button"
-                                class="dropdown-item text-danger dialog-menu-item dialog-menu-item--delete"
-                                data-delete-url="{% url 'messages_delete_thread' other_user.username %}"
-                                data-username="{{ other_user.username }}">
-                            Удалить чат
-                        </button>
-                    </li>
-                </ul>
             </div>
-        </div>
+            {% endwith %}
+
+        {% else %}
+            {# Group chat #}
+            <div class="dialog-item{% if unread %} has-unread{% endif %}"
+                 data-search="{{ chat.title }} {{ last_message.text|default_if_none:'' }}">
+
+                <a href="{% url 'messages_chat' chat.id %}"
+                   class="dialog-main-link">
+                    {% include "core/partials/avatar.html" with user_obj=chat size="sm" %}
+
+                    <div class="dialog-main">
+                        <div class="dialog-top-row">
+                            <span class="dialog-username">
+                                {{ chat.title|default:"Группа" }}
+                            </span>
+
+                            <div class="dialog-top-right">
+                                <span class="dialog-date">
+                                    {% if last_message %}{{ last_message.created_at|date:"d.m H:i" }}{% endif %}
+                                </span>
+                                {% if unread %}
+                                    <span class="dialog-unread-badge">{{ unread }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="dialog-last-line">
+                            <span class="dialog-last-text">
+                                {% if last_message %}
+                                    {% if last_message.sender_id == request.user.id %}Вы: {% endif %}
+                                    {{ last_message.text|truncatechars:40 }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </a>
+
+                <div class="dropdown dialog-menu-wrapper">
+                    <button type="button"
+                            class="btn btn-sm btn-light border dropdown-toggle dialog-menu-toggle"
+                            data-bs-toggle="dropdown"
+                            data-bs-display="static"
+                            aria-expanded="false"
+                            aria-label="Действия с диалогом"
+                            style="padding: 2px 10px; border-radius: 999px; line-height: 1;">
+                        ⋯
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+{% if manage_url %}
+                        <li>
+                            <a class="dropdown-item" href="{{ manage_url|default:'#' }}">Участники</a>
+                        </li>
+{% endif %}
+                        {% if t.can_manage %}
+{% if manage_url %}
+                            <li>
+                                <a class="dropdown-item" href="{{ manage_url|default:'#' }}">Настройки</a>
+                            </li>
+{% endif %}
+                        {% endif %}
+                        <li>
+                            <button type="button"
+                                    class="dropdown-item dialog-menu-item dialog-menu-item--leave"
+                                    data-delete-url="{% url 'messages_chat_leave' chat.id %}"
+                                    data-chat-id="{{ chat.id }}">
+                                Выйти из чата
+                            </button>
+                        </li>
+                        {% if t.can_delete %}
+                        <li>
+                            <button type="button"
+                                    class="dropdown-item text-danger dialog-menu-item dialog-menu-item--delete"
+                                    data-delete-url="{% url 'messages_chat_delete' chat.id %}"
+                                    data-chat-id="{{ chat.id }}">
+                                Удалить чат
+                            </button>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
         {% endwith %}
-    {% endfor %}
-
-{% elif conversations %}
-    {% for other_user, last_message in conversations.items %}
-        <div class="dialog-item"
-             data-search="{{ other_user.username }} {{ other_user.display_name|default:other_user.username }} {{ last_message.text|default_if_none:'' }}">
-
-            <a href="{% url 'messages_thread' other_user.username %}"
-               class="dialog-main-link">
-                {% include "core/partials/avatar.html" with user_obj=other_user size="sm" %}
-
-                <div class="dialog-main">
-                    <div class="dialog-top-row">
-                        <span class="dialog-username">
-                            {{ other_user.display_name|default:other_user.username }}
-                        </span>
-
-                        <div class="dialog-top-right">
-                            <span class="dialog-date">
-                                {{ last_message.created_at|date:"d.m H:i" }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="dialog-last-line">
-                        <span class="dialog-last-text">
-                            {% if last_message.sender_id == request.user.id %}Вы: {% endif %}
-                            {{ last_message.text|truncatechars:40 }}
-                        </span>
-                    </div>
-                </div>
-            </a>
-
-            <div class="dropdown dialog-menu-wrapper">
-                <button type="button"
-                        class="btn btn-sm btn-light border dropdown-toggle dialog-menu-toggle"
-                        data-bs-toggle="dropdown"
-                        data-bs-display="static"
-                        aria-expanded="false"
-                        aria-label="Действия с диалогом"
-                        style="padding: 2px 10px; border-radius: 999px; line-height: 1;">
-                    ⋯
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <button type="button"
-                                class="dropdown-item text-danger dialog-menu-item dialog-menu-item--delete"
-                                data-delete-url="{% url 'messages_delete_thread' other_user.username %}"
-                                data-username="{{ other_user.username }}">
-                            Удалить чат
-                        </button>
-                    </li>
-                </ul>
-            </div>
-        </div>
     {% endfor %}
 
 {% else %}

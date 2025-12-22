@@ -8,10 +8,12 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.test.client import RequestFactory
+from django.db.models import F
+from django.db import transaction
 
-from core.models import Message
-from core.services.messages import build_threads_for_user
 from core.consumers import user_group_name
+from core.models import Chat, ChatMember, ChatMessage
+from core.services.messages import build_threads_for_user, get_other_user_for_dm, get_unread_total
 
 _rf = RequestFactory()
 
@@ -38,76 +40,77 @@ def _send_to_user(user_id: int, payload: Dict[str, Any]) -> None:
     )
 
 
-@receiver(post_save, sender=Message)
-def message_created_notify(sender, instance: Message, created: bool, **kwargs: Any) -> None:
-    """Push websocket events when a new message is created."""
+@receiver(post_save, sender=ChatMessage)
+def chat_message_created_notify(sender, instance: ChatMessage, created: bool, **kwargs: Any) -> None:
+    """Push websocket events when a new chat message is created."""
 
     if not created:
         return
 
-    msg = instance
+    # Важно: сообщение может иметь вложения, которые создаются сразу после ChatMessage.
+    # Чтобы websocket-уведомление улетало уже с готовыми вложениями, отложим отправку
+    # до коммита транзакции.
+    msg_id = instance.id
 
-    # Render message item for each side (different CSS class 'me/other').
-    html_for_recipient = _render_for_user(
-        msg.recipient,
-        "core/partials/message_item.html",
-        {"message": msg},
-    )
-    html_for_sender = _render_for_user(
-        msg.sender,
-        "core/partials/message_item.html",
-        {"message": msg},
-    )
+    def _notify() -> None:
+        msg = (
+            ChatMessage.objects.select_related("chat")
+            .prefetch_related("attachments")
+            .get(id=msg_id)
+        )
+        chat = msg.chat
 
-    # Refresh inbox list HTML for both users.
-    recipient_threads = build_threads_for_user(msg.recipient)
-    sender_threads = build_threads_for_user(msg.sender)
+        # Update denormalized chat fields
+        Chat.objects.filter(id=chat.id).update(last_message_at=msg.created_at, last_message_id=msg.id)
 
-    inbox_html_for_recipient = _render_for_user(
-        msg.recipient,
-        "core/partials/messages_inbox_list.html",
-        {"threads": recipient_threads},
-    )
-    inbox_html_for_sender = _render_for_user(
-        msg.sender,
-        "core/partials/messages_inbox_list.html",
-        {"threads": sender_threads},
-    )
+        # Increment unread counters for everyone except sender
+        ChatMember.objects.filter(chat_id=chat.id).exclude(user_id=msg.sender_id).update(
+            unread_count=F("unread_count") + 1
+        )
 
-    # Unread totals (after creation).
-    recipient_unread_total = Message.objects.filter(
-        recipient=msg.recipient,
-        is_read=False,
-    ).count()
-    sender_unread_total = Message.objects.filter(
-        recipient=msg.sender,
-        is_read=False,
-    ).count()
+        memberships = (
+            ChatMember.objects.filter(chat_id=chat.id, is_hidden=False)
+            .select_related(
+                "user",
+                "chat",
+                "chat__dm_user1",
+                "chat__dm_user2",
+            )
+        )
 
-    # Recipient payload
-    _send_to_user(
-        msg.recipient_id,
-        {
-            "type": "message_new",
-            "message_id": msg.id,
-            "other_username": msg.sender.username,
-            "html": html_for_recipient,
-            "inbox_html": inbox_html_for_recipient,
-            "unread_total": recipient_unread_total,
-            "incoming": True,
-        },
-    )
+        for member in memberships:
+            user = member.user
+            other_user = get_other_user_for_dm(chat, user)
 
-    # Sender payload (needed for other tabs/devices)
-    _send_to_user(
-        msg.sender_id,
-        {
-            "type": "message_new",
-            "message_id": msg.id,
-            "other_username": msg.recipient.username,
-            "html": html_for_sender,
-            "inbox_html": inbox_html_for_sender,
-            "unread_total": sender_unread_total,
-            "incoming": False,
-        },
-    )
+            html = _render_for_user(
+                user,
+                "core/partials/message_item.html",
+                {"message": msg, "chat": chat, "other_user": other_user},
+            )
+
+            threads = build_threads_for_user(user)
+            inbox_html = _render_for_user(
+                user,
+                "core/partials/messages_inbox_list.html",
+                {"threads": threads},
+            )
+
+            unread_total = get_unread_total(user)
+
+            payload: Dict[str, Any] = {
+                "type": "message_new",
+                "message_id": msg.id,
+                "chat_id": chat.id,
+                "chat_kind": chat.kind,
+                "html": html,
+                "inbox_html": inbox_html,
+                "unread_total": unread_total,
+                "incoming": user.id != msg.sender_id,
+            }
+
+            if other_user is not None:
+                payload["other_username"] = other_user.username
+
+            _send_to_user(user.id, payload)
+
+    transaction.on_commit(_notify)

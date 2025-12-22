@@ -1,7 +1,18 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User, Post, Message, Follow, Like, Community, CommunityMembership
+from .models import (
+    User,
+    Post,
+    Message,
+    Follow,
+    Like,
+    Community,
+    CommunityMembership,
+    Chat,
+    ChatMember,
+    ChatMessage,
+)
 
 
 # ========= Пользователь =========
@@ -30,13 +41,38 @@ class PostAdmin(admin.ModelAdmin):
     short_text.short_description = "Текст"
 
 
-# Остальные модели (чтобы были видны в админке)
+# ========= Legacy DM messages (kept for backward compatibility) =========
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
     list_display = ("id", "sender", "recipient", "created_at", "is_read")
     search_fields = ("text", "sender__username", "recipient__username")
 
+
+# ========= Chats =========
+
+@admin.register(Chat)
+class ChatAdmin(admin.ModelAdmin):
+    list_display = ("id", "kind", "title", "dm_user1", "dm_user2", "last_message_at")
+    list_filter = ("kind",)
+    search_fields = ("title", "dm_user1__username", "dm_user2__username")
+
+
+@admin.register(ChatMember)
+class ChatMemberAdmin(admin.ModelAdmin):
+    list_display = ("id", "chat", "user", "role", "unread_count", "is_hidden", "joined_at")
+    list_filter = ("role", "is_hidden")
+    search_fields = ("chat__title", "user__username", "user__display_name")
+
+
+@admin.register(ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display = ("id", "chat", "sender", "created_at")
+    search_fields = ("text", "sender__username", "sender__display_name", "chat__title")
+    list_filter = ("created_at",)
+
+
+# ========= Other models =========
 
 @admin.register(Follow)
 class FollowAdmin(admin.ModelAdmin):

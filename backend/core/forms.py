@@ -7,7 +7,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
 from .constants import POST_TEXT_MAX_LENGTH
-from .models import User, Post, Message, Comment, Community
+from .models import User, Post, Message, Comment, Community, Chat, ChatMessage
 
 
 class BootstrapFormMixin:
@@ -99,7 +99,7 @@ class PostEditForm(BootstrapFormMixin, forms.ModelForm):
 
 class MessageForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
-        model = Message
+        model = ChatMessage
         fields = ("text",)
         widgets = {
             "text": forms.Textarea(
@@ -111,6 +111,31 @@ class MessageForm(BootstrapFormMixin, forms.ModelForm):
         }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.apply_bootstrap()
+
+
+class GroupChatCreateForm(BootstrapFormMixin, forms.Form):
+    """Минимальная форма создания группового чата.
+
+    Чтобы не ломать уже готовый визуал, это отдельная простая страница.
+
+    members: usernames через запятую (например: "alice, bob, charlie").
+    """
+
+    title = forms.CharField(
+        label="Название",
+        max_length=255,
+        widget=forms.TextInput(attrs={"placeholder": "Название группы..."}),
+    )
+    members = forms.CharField(
+        label="Участники",
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "username1, username2, ..."}),
+        help_text="Usernames через запятую. Себя добавлять не нужно.",
+    )
+
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
 

@@ -146,16 +146,30 @@
 .dialog-menu-item--delete { color: #dc2626; }
 
 /* Чат */
-#messages-list {
+
+.messages-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow-x: hidden !important;
 }
 
 .message-item {
-  display: flex;
+  display: inline-flex;
   gap: 8px;
   align-items: flex-end;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.message-item.other {
+  align-self: flex-start;
+}
+
+.message-item.me {
+  align-self: flex-end;
+  flex-direction: row-reverse;
 }
 
 .message-item .avatar {
@@ -166,6 +180,7 @@
 
 .message-body {
   max-width: min(560px, 76%);
+  min-width: 0;
   border-radius: 18px;
   padding: 8px 10px;
   font-size: 13px;
@@ -173,10 +188,6 @@
   border: 1px solid var(--g-border);
   background: var(--g-surface-2);
   color: var(--g-text);
-}
-
-.message-item.me {
-  justify-content: flex-end;
 }
 
 .message-item.me .message-body {
@@ -191,7 +202,24 @@
   text-align: right;
 }
 
+/* Вложения в сообщениях: не даём разъезжаться по ширине */
+.message-attachments,
+.message-attachments * {
+  max-width: 100%;
+}
+
+.message-attachments .attachment-videos {
+  grid-template-columns: 1fr !important;
+}
+
+.message-attachments .video-player {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 /* Кнопка "вниз" */
+
 .scroll-bottom-btn {
   position: fixed;
   right: 18px;
@@ -224,27 +252,6 @@
   align-items: center;
   justify-content: center;
   padding: 0 5px;
-}
-
-/* ===== FIX v9: reliable left/right alignment (без зависимости от justify/width) ===== */
-/* Делаем выравнивание через align-self, чтобы "me" всегда уходил вправо. */
-
-#messages-list{
-  align-items: flex-start !important;
-}
-
-.message-item{
-  /* пусть ширина зависит от контента, а позиционирование — от align-self */
-  width: auto !important;
-  max-width: 100% !important;
-}
-
-.message-item.other{
-  align-self: flex-start !important;
-}
-
-.message-item.me{
-  align-self: flex-end !important;
 }
 
 /* ===== FIX: убрать caret (треугольник) у кнопки ⋯ ===== */

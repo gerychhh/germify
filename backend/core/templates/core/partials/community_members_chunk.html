@@ -12,11 +12,17 @@
 
       <div class="flex-grow-1 min-w-0">
         <div class="d-flex align-items-center gap-2">
-          <div class="fw-semibold text-truncate">{{ u.display_name|default:u.username }}</div>
+
+          <a href="{% url 'user_profile' u.username %}"
+             class="fw-semibold text-truncate text-decoration-none">
+            {{ u.display_name|default:u.username }}
+          </a>
+
           {% if m.is_admin %}
             <span class="badge text-bg-light border">Админ</span>
           {% endif %}
         </div>
+
         <div class="small text-secondary text-truncate">
           @{{ u.username }} · вступил {{ m.joined_at|date:"d.m.Y" }}
         </div>
@@ -26,3 +32,4 @@
   </div>
   {% endwith %}
 {% endfor %}
+

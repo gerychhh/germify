@@ -1490,3 +1490,24 @@
     .post-edit-att-name { max-width: 160px; }
     .post-edit-block { padding: 8px; }
 }
+
+/* ===== БЛОКИ КОДА В ПОСТАХ ===== */
+
+.post-text pre {
+    background: var(--g-surface-2);
+    border: 1px solid var(--g-border);
+    padding: 10px 12px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 6px 0;
+    white-space: pre;
+}
+
+.post-text code {
+    background: var(--g-surface-2);
+    padding: 2px 4px;
+    border-radius: 6px;
+    font-size: 14px;
+}

@@ -46,7 +46,7 @@
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link {% if current == 'messages_inbox' or current == 'messages_thread' %}active{% endif %}" href="{% url 'messages_inbox' %}">
+                    <a class="nav-link {% if current == 'messages_inbox' or current == 'messages_thread' or current == 'messages_chat' or current == 'messages_group_create' %}active{% endif %}" href="{% url 'messages_inbox' %}">
                         Сообщения
                         {% if request.user.is_authenticated %}
                             {% if unread_messages_count %}
@@ -103,7 +103,7 @@
         </a>
 
         {% if request.user.is_authenticated %}
-            <a class="nav-link text-center small {% if current == 'messages_inbox' or current == 'messages_thread' %}fw-semibold{% endif %}" href="{% url 'messages_inbox' %}" style="position: relative;">
+            <a class="nav-link text-center small {% if current == 'messages_inbox' or current == 'messages_thread' or current == 'messages_chat' or current == 'messages_group_create' %}fw-semibold{% endif %}" href="{% url 'messages_inbox' %}" style="position: relative;">
                 <div style="font-size:18px; line-height: 1;">💬</div>
                 <div>Сообщения</div>
                 {% if unread_messages_count %}

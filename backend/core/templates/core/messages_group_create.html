@@ -1,0 +1,112 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'core/css/pages/messages/messages.css' %}?v=1">
+{% endblock %}
+
+{% block title %}Новый групповой чат — Germify{% endblock %}
+
+{% block content %}
+<div class="row g-3 messages-layout">
+
+    <div class="col-12 col-lg-4">
+        <div class="card messages-sidebar-card d-flex flex-column">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                <span class="fw-semibold">Сообщения</span>
+                <a href="{% url 'messages_inbox' %}" class="btn btn-sm btn-outline-secondary" style="padding: 2px 10px; border-radius: 999px; line-height: 1;">Назад</a>
+            </div>
+
+            <div class="p-2">
+                <input type="text"
+                       class="form-control form-control-sm"
+                       placeholder="Поиск по диалогам…"
+                       id="dialogs-search">
+            </div>
+
+            <div class="flex-grow-1 overflow-auto"
+                 id="dialogs-wrapper"
+                 data-poll-url="{% url 'messages_inbox_poll' %}">
+                {% include "core/partials/messages_inbox_list.html" with threads=threads %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+        <div class="card p-3">
+            <div class="h5 mb-3">Создать групповой чат</div>
+
+            <form method="post" class="d-flex flex-column gap-2">
+                {% csrf_token %}
+                <div>
+                    <label class="form-label">{{ form.title.label }}</label>
+                    {{ form.title }}
+                </div>
+
+                <div>
+                    <label class="form-label">Участники</label>
+
+                    {% if dm_contacts %}
+                        <input type="text" class="form-control form-control-sm mb-2" id="members-search" placeholder="Поиск по вашим диалогам…">
+
+                        <div class="border rounded-3 p-2" style="max-height: 340px; overflow: auto;">
+                            {% for u in dm_contacts %}
+                                <label class="dialog-item mb-1 member-pick-item" style="cursor: pointer;" data-search="{{ u.display_name|default:u.username }} @{{ u.username }}">
+                                    <div class="d-flex align-items-center gap-2" style="min-width: 0;">
+                                        {% include "core/partials/avatar.html" with user_obj=u size="sm" %}
+                                        <div class="dialog-main" style="min-width: 0;">
+                                            <div class="dialog-username text-truncate">{{ u.display_name|default:u.username }}</div>
+                                            <div class="dialog-last-line"><span class="text-body-secondary">@{{ u.username }}</span></div>
+                                        </div>
+                                    </div>
+
+                                    <input class="form-check-input" type="checkbox" name="members_ids" value="{{ u.id }}" style="margin-left:auto;">
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text">Выберите участников из списка ваших личных диалогов.</div>
+                    {% else %}
+                        <div class="alert alert-light border mb-0">У вас пока нет личных диалогов — не из кого выбрать участников.</div>
+                    {% endif %}
+
+                    {# Backward-compatible fallback (can be hidden later) #}
+                    <details class="mt-2">
+                        <summary class="small text-body-secondary" style="cursor: pointer;">Добавить по username (опционально)</summary>
+                        <div class="mt-2">
+                            {{ form.members }}
+                            <div class="form-text">{{ form.members.help_text }}</div>
+                            {% if form.members.errors %}
+                                <div class="text-danger small mt-1">{{ form.members.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </details>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                    <a href="{% url 'messages_inbox' %}" class="btn btn-light border">Отмена</a>
+                </div>
+            </form>
+
+            <div class="text-body-secondary small mt-3">
+                Сейчас список участников берётся из ваших уже начатых личных диалогов. Позже можно расширить до глобального поиска.
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function(){
+  const input = document.getElementById('members-search');
+  if(!input) return;
+  input.addEventListener('input', function(){
+    const q = (input.value || '').trim().toLowerCase();
+    document.querySelectorAll('.member-pick-item').forEach(function(item){
+      const hay = (item.dataset.search || '').toLowerCase();
+      item.style.display = (!q || hay.includes(q)) ? '' : 'none';
+    });
+  });
+})();
+</script>
+{% endblock %}

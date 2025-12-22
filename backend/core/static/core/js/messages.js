@@ -182,6 +182,13 @@
             // Let other scripts (thread page) know about new messages.
             if (data.type === "message_new") {
                 window.dispatchEvent(new CustomEvent("germify:message_new", { detail: data }));
+                document.dispatchEvent(new CustomEvent("germify:message_new", { detail: data }));
+            }
+
+            // Group chat meta updates (rename / members / kick)
+            if (data.type && (data.type === "chat_access_revoked" || String(data.type).startsWith("chat_"))) {
+                window.dispatchEvent(new CustomEvent("germify:chat_event", { detail: data }));
+                document.dispatchEvent(new CustomEvent("germify:chat_event", { detail: data }));
             }
         }
 
@@ -279,6 +286,7 @@
             const dialogItem = deleteBtn.closest(".dialog-item");
             const deleteUrl = deleteBtn.dataset.deleteUrl;
             const username = deleteBtn.dataset.username;
+            const chatId = deleteBtn.dataset.chatId;
 
             if (!dialogItem || !deleteUrl) return;
 
@@ -311,10 +319,13 @@
                 } else {
                     dialogItem.remove();
 
-                    if (
+                    const path = window.location.pathname;
+                    if (chatId && path.includes(`/messages/chat/${chatId}/`)) {
+                        window.location.href = "/messages/";
+                    } else if (
                         username &&
-                        window.location.pathname.includes("/messages/") &&
-                        window.location.pathname.includes(username)
+                        path.includes("/messages/") &&
+                        path.includes(username)
                     ) {
                         window.location.href = "/messages/";
                     }
@@ -351,7 +362,7 @@
                 return;
             }
 
-            const deleteBtn = targetEl.closest(".dialog-menu-item--delete");
+            const deleteBtn = targetEl.closest(".dialog-menu-item--delete, .dialog-menu-item--leave");
             if (deleteBtn) {
                 event.preventDefault();
                 event.stopPropagation();

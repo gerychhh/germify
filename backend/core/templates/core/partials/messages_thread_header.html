@@ -1,0 +1,154 @@
+{# core/partials/messages_thread_header.html #}
+
+<div class="d-flex align-items-center gap-2">
+    {% if other_user %}
+        {% include "core/partials/avatar.html" with user_obj=other_user size="sm" %}
+        <div class="d-flex flex-column">
+            <a id="messagesChatTitle"
+               href="{% url 'user_profile' other_user.username %}"
+               class="text-decoration-none fw-semibold">
+                {{ other_user.display_name|default:other_user.username }}
+            </a>
+            <div class="text-body-secondary small">@{{ other_user.username }}</div>
+        </div>
+    {% else %}
+        {% include "core/partials/avatar.html" with user_obj=chat size="sm" %}
+        <div class="d-flex flex-column">
+            <div id="messagesChatTitle" class="fw-semibold">{{ chat.title|default:"Группа" }}</div>
+
+            {# Members dropdown under title #}
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="dropdown">
+                    <a class="text-body-secondary small text-decoration-none dropdown-toggle"
+                       href="#"
+                       role="button"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false">
+                        Участники ({{ members_count }})
+                    </a>
+
+                    <div class="dropdown-menu p-2" style="min-width: 320px; max-height: 360px; overflow: auto;">
+                        <div class="fw-semibold small mb-2">Участники</div>
+                        <div class="d-flex flex-column gap-1">
+                            {% for mv in group_members %}
+                                <div class="d-flex align-items-center justify-content-between gap-2 py-1" data-member-user-id="{{ mv.user.id }}">
+                                    <div class="d-flex align-items-center gap-2" style="min-width: 0;">
+                                        <a href="{% url 'user_profile' mv.user.username %}" class="text-decoration-none">
+                                            {% include "core/partials/avatar.html" with user_obj=mv.user size="xs" %}
+                                        </a>
+                                        <div class="small" style="min-width: 0;">
+                                            <div class="fw-semibold text-truncate" style="max-width: 200px;">
+                                                {{ mv.user.display_name|default:mv.user.username }}
+                                                {% if mv.role == 'owner' %}<span class="badge text-bg-secondary ms-1">owner</span>{% endif %}
+                                                {% if mv.role == 'admin' %}<span class="badge text-bg-secondary ms-1">admin</span>{% endif %}
+                                            </div>
+                                            <div class="text-body-secondary text-truncate" style="max-width: 200px;">@{{ mv.user.username }}</div>
+                                        </div>
+                                    </div>
+
+                                    {% if can_manage and mv.can_remove %}
+                                        <form method="post" action="{% url 'messages_chat_members_remove' chat.id mv.user.id %}" class="m-0">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить">×</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <div class="text-body-secondary small">Нет участников</div>
+                            {% endfor %}
+                        </div>
+
+                        {% if can_manage %}
+                            <hr class="my-2">
+
+                            <div class="fw-semibold small mb-2">Добавить из ЛС</div>
+                            <input type="text" class="form-control form-control-sm mb-2" placeholder="Поиск..." data-members-filter>
+                            <form method="post" action="{% url 'messages_chat_members_add' chat.id %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <div class="d-flex flex-column gap-1" data-members-filter-list>
+                                    {% for u in dm_contacts %}
+                                        <label class="d-flex align-items-center gap-2 small members-add-option" data-members-name="{{ u.username }} {{ u.display_name|default:'' }}">
+                                            <input type="checkbox" name="members_ids" value="{{ u.id }}">
+                                            {% include "core/partials/avatar.html" with user_obj=u size="xs" %}
+                                            <span class="text-truncate" style="max-width: 230px;">
+                                                {{ u.display_name|default:u.username }}
+                                                <span class="text-body-secondary">@{{ u.username }}</span>
+                                            </span>
+                                        </label>
+                                    {% empty %}
+                                        <div class="text-body-secondary small">Нет доступных контактов (нужны уже начатые ЛС)</div>
+                                    {% endfor %}
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary mt-2 w-100">Добавить</button>
+                            </form>
+
+                            <hr class="my-2">
+                            <div class="fw-semibold small mb-2">Название группы</div>
+                            <form method="post" action="{% url 'messages_chat_rename' chat.id %}" class="d-flex gap-2 m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <input type="text" name="title" class="form-control form-control-sm" value="{{ chat.title|default:'' }}" maxlength="255" placeholder="Название">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Сохранить</button>
+                            </form>
+
+                            <hr class="my-2">
+                            <div class="fw-semibold small mb-2">Аватар группы</div>
+                            <form method="post"
+                                  action="{% url 'messages_chat_avatar_update' chat.id %}"
+                                  enctype="multipart/form-data"
+                                  class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <input type="file" name="avatar" accept="image/*" class="form-control form-control-sm">
+                                <div class="d-flex gap-2 mt-2">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary w-100">Загрузить</button>
+                                    {% if chat.avatar %}
+                                        <button type="submit" name="remove" value="1" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                    {% endif %}
+                                </div>
+                                <div class="form-text">PNG/JPG/WebP, до 10MB</div>
+                            </form>
+
+                            <div class="mt-2">
+                                <a href="{% url 'messages_chat_manage' chat.id %}" class="small text-decoration-none">Открыть страницу участников</a>
+                            </div>
+                        {% else %}
+                            <div class="mt-2">
+                                <a href="{% url 'messages_chat_manage' chat.id %}" class="small text-decoration-none">Список участников</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<div class="d-flex gap-2">
+    {% if other_user %}
+        <button type="button"
+                class="btn btn-sm btn-outline-danger messages-delete-thread"
+                data-delete-url="{% url 'messages_delete_thread' other_user.username %}">
+            Удалить чат
+        </button>
+    {% else %}
+        <a href="{% url 'messages_chat_manage' chat.id %}"
+           class="btn btn-sm {% if can_manage %}btn-outline-primary{% else %}btn-outline-secondary{% endif %}">
+            {% if can_manage %}Настройки{% else %}Участники{% endif %}
+        </a>
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary messages-delete-thread"
+                data-delete-url="{% url 'messages_chat_leave' chat.id %}">
+            Выйти
+        </button>
+        {% if can_delete %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-danger messages-delete-thread"
+                    data-delete-url="{% url 'messages_chat_delete' chat.id %}">
+                Удалить
+            </button>
+        {% endif %}
+    {% endif %}
+</div>

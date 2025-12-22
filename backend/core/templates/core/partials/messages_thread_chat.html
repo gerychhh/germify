@@ -1,65 +1,66 @@
 {# core/partials/messages_thread_chat.html #}
 
-<section class="card messages-chat-card d-flex flex-column" data-username="{{ other_user.username }}">
+<div id="messagesChatCard"
+     class="card messages-chat-card messages-chat d-flex flex-column"
+     data-chat-id="{{ chat.id }}"
+     data-username="{% if other_user %}{{ other_user.username }}{% endif %}"
+     data-kind="{{ chat.kind }}"
+     data-header-url="{% url 'messages_chat_header' chat.id %}">
 
-    <div class="card-header bg-white d-flex align-items-center gap-2">
-        {% include "core/partials/avatar.html" with user_obj=other_user size="md" %}
-
-        <div class="d-flex flex-column">
-            <a href="{% url 'user_profile' other_user.username %}" class="text-decoration-none">
-                <span class="fw-semibold text-body">{{ other_user.display_name|default:other_user.username }}</span>
-            </a>
-            <span class="text-body-secondary small">@{{ other_user.username }}</span>
-        </div>
+    <div id="messagesChatHeader" class="card-header messages-chat-header d-flex align-items-center justify-content-between">
+        {% include "core/partials/messages_thread_header.html" %}
     </div>
 
-    <div class="d-flex flex-column flex-grow-1" style="min-height:0;">
+    <div id="messagesList"
+         class="card-body messages-list flex-grow-1 overflow-auto"
+         data-last-id="{{ last_id }}"
+         data-poll-url="{% if other_user %}{% url 'messages_poll' other_user.username %}{% else %}{% url 'messages_chat_poll' chat.id %}{% endif %}">
 
-        <div class="thread-messages flex-grow-1 overflow-auto p-3" style="min-height:0;">
-            <div id="messages-list"
-                 data-poll-url="{% url 'messages_poll' other_user.username %}"
-                 data-last-id="{{ last_id|default:'0' }}">
+        {% for message in messages %}
+            {% include "core/partials/message_item.html" with message=message %}
+        {% endfor %}
 
-                {% if messages %}
-                    {% for message in messages %}
-                        {% include "core/partials/message_item.html" with message=message %}
-                    {% endfor %}
-                {% else %}
-                    <p class="text-body-secondary mb-0">
-                        Сообщений пока нет. Напишите первое 👇
-                    </p>
-                {% endif %}
+    </div>
 
-            </div>
+    <div class="card-footer">
+        <form id="messageForm"
+              class="messages-form"
+              method="post"
+              enctype="multipart/form-data"
+              data-send-url="{% if other_user %}{% url 'messages_send' other_user.username %}{% else %}{% url 'messages_chat_send' chat.id %}{% endif %}">
+            {% csrf_token %}
 
-            <button type="button"
-                    id="scroll-bottom-btn"
-                    class="scroll-bottom-btn"
-                    style="display:none;">
-                ↓
-                <span class="scroll-bottom-unread" style="display:none;">0</span>
-            </button>
-        </div>
+            <div class="d-flex gap-2 align-items-end">
+                <button type="button"
+                        class="btn btn-light border messages-attach-btn"
+                        id="messages-attach-btn"
+                        title="Прикрепить файлы">📎</button>
 
-        <div class="border-top p-2">
-            <form id="message-form"
-                  method="post"
-                  data-send-url="{% url 'messages_send' other_user.username %}">
-                {% csrf_token %}
-                {{ form.non_field_errors }}
+                <button type="button"
+                        class="btn btn-light border voice-record-btn"
+                        id="chat-voice-record-btn"
+                        title="Записать голосовое">🎙 Голос</button>
 
-                <div class="d-flex gap-2 align-items-end">
-                    <div class="flex-grow-1">
-                        {{ form.text.errors }}
-                        {{ form.text }}
+                <div class="flex-grow-1">
+                    {{ form.text }}
+
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        <span id="chat-voice-record-status" class="small text-muted"></span>
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                        Отправить
-                    </button>
+
+                    <audio id="chat-voice-preview" class="hidden w-100 mt-2" controls></audio>
+
+                    <div id="messages-selected-files" class="post-edit-attachments-list mt-2"></div>
+
+                    <div id="message-upload-progress" class="progress hidden mt-2" style="height: 6px;">
+                        <div id="message-upload-progress-bar" class="progress-bar" style="width: 0%;"></div>
+                    </div>
                 </div>
-            </form>
-        </div>
 
+                <input type="file" id="message-attachments-input" name="attachments" multiple class="d-none" />
+
+                <button type="submit" class="btn btn-primary">Отправить</button>
+            </div>
+        </form>
     </div>
-
-</section>
+</div>

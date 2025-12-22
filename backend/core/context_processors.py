@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
+from django.db.models import Sum
 from django.http import HttpRequest
 
-from .models import Message
 from .constants import POST_TEXT_MAX_LENGTH, MAX_ATTACHMENTS_PER_POST
+from .models import ChatMember
 
 
 def unread_messages_count(request: HttpRequest) -> Dict[str, Any]:
@@ -18,10 +19,8 @@ def unread_messages_count(request: HttpRequest) -> Dict[str, Any]:
             "MAX_ATTACHMENTS_PER_POST": MAX_ATTACHMENTS_PER_POST,
         }
 
-    total = Message.objects.filter(
-        recipient=request.user,
-        is_read=False,
-    ).count()
+    agg = ChatMember.objects.filter(user=request.user, is_hidden=False).aggregate(total=Sum("unread_count"))
+    total = int(agg.get("total") or 0)
 
     return {
         "unread_messages_count": total,
