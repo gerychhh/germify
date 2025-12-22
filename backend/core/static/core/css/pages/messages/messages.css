@@ -172,12 +172,6 @@
   flex-direction: row-reverse;
 }
 
-.message-item .avatar {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-}
-
 .message-body {
   max-width: min(560px, 76%);
   min-width: 0;
