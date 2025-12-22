@@ -30,6 +30,7 @@ ALLOWED_HOSTS = [
     'www.germify.ddns.net',
     '127.0.0.1',
     'localhost',
+    '79.170.108.189'
 ]
 
 CSRF_TRUSTED_ORIGINS = [

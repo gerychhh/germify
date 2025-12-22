@@ -4,6 +4,7 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'core/css/pages/messages/messages.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'core/css/shared/attachments.css' %}?v=1">
 {% endblock %}
 
 {% block title %}{% if chat_title %}{{ chat_title }}{% elif chat.title %}{{ chat.title }}{% else %}Чат{% endif %} — Germify{% endblock %}
