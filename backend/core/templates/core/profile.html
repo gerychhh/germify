@@ -1,4 +1,6 @@
 {% extends "core/base.html" %}
+{% load tz static markdown_extras %}
+
 {% load tz static %}
 
 {% block title %}Профиль — Germify{% endblock %}
@@ -6,13 +8,13 @@
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'core/css/shared/attachments.css' %}?v=1">
   <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=13">
-  <link rel="stylesheet" href="{% static 'core/css/pages/profile/profile.css' %}?v=12">
+  <link rel="stylesheet" href="{% static 'core/css/pages/profile/profile.css' %}?v=13">
+  <link rel="stylesheet" href="{% static 'core/css/pages/profile/profile_dropdowns.css' %}?v=1">
 {% endblock %}
-
 
 {% block content %}
 
-<div class="container profile-container">
+<div class="container profile-container g-page">
   <div class="profile-page">
 
     {# ====== HERO ====== #}
@@ -23,7 +25,6 @@
           <div class="profile-avatar-wrap">
             {% include "core/partials/avatar.html" with user_obj=profile_user size="xl" %}
 
-            {# Плашка «изменить фото» (появляется только в режиме редактирования) #}
             {% if user.is_authenticated and user.username == profile_user.username and form %}
               <label id="profileAvatarOverlay" class="profile-avatar-overlay d-none" for="id_avatar" title="Загрузить новое фото">
                 <span class="profile-avatar-overlay__icon">📷</span>
@@ -74,21 +75,90 @@
             </div>
           </div>
 
-          <div class="profile-stats">
-            <span class="profile-stat">
-              <strong class="profile-followers-count">{{ profile_user.followers_count }}</strong>
-              <span class="text-body-secondary">подписчиков</span>
-            </span>
-            <span class="profile-stat">
-              <strong>{{ profile_user.following_count }}</strong>
-              <span class="text-body-secondary">подписок</span>
-            </span>
+          <div class="profile-stats-row d-flex flex-wrap gap-3 align-items-center" data-profile-username="{{ profile_user.username }}">
+
+            <div class="dropdown profile-dd" data-bs-auto-close="outside">
+              <button type="button"
+                      class="profile-stat-link profile-dd-toggle"
+                      data-bs-toggle="dropdown"
+                      data-caption="Подписчики"
+                      data-url="{% url 'profile_followers_json' profile_user.username %}">
+                <strong class="me-1" data-profile-count="followers">{{ profile_user.followers_count }}</strong> подписчиков
+              </button>
+
+              <div class="dropdown-menu dropdown-menu-start profile-dd-menu">
+                <div class="profile-dd-head p-2 border-bottom">
+                  <div class="profile-dd-caption mb-2">Подписчики</div>
+                  <input type="search" class="form-control form-control-sm profile-dd-search" placeholder="Поиск...">
+                </div>
+                <div class="profile-dd-list"></div>
+                <div class="profile-dd-empty p-3 text-muted small d-none">Ничего не найдено</div>
+              </div>
+            </div>
+
+            <div class="dropdown profile-dd" data-bs-auto-close="outside">
+              <button type="button"
+                      class="profile-stat-link profile-dd-toggle"
+                      data-bs-toggle="dropdown"
+                      data-caption="Подписки"
+                      data-url="{% url 'profile_following_json' profile_user.username %}">
+                <strong class="me-1" data-profile-count="following">{{ profile_user.following_count }}</strong> подписок
+              </button>
+
+              <div class="dropdown-menu dropdown-menu-start profile-dd-menu">
+                <div class="profile-dd-head p-2 border-bottom">
+                  <div class="profile-dd-caption mb-2">Подписки</div>
+                  <input type="search" class="form-control form-control-sm profile-dd-search" placeholder="Поиск...">
+                </div>
+                <div class="profile-dd-list"></div>
+                <div class="profile-dd-empty p-3 text-muted small d-none">Ничего не найдено</div>
+              </div>
+            </div>
+
+            <div class="dropdown profile-dd" data-bs-auto-close="outside">
+              <button type="button"
+                      class="profile-stat-link profile-dd-toggle"
+                      data-bs-toggle="dropdown"
+                      data-caption="Сообщества"
+                      data-url="{% url 'profile_communities_admin_json' profile_user.username %}">
+                <strong class="me-1" data-profile-count="communities_admin">{{ communities_admin_count|default:0 }}</strong> сообществ
+              </button>
+
+              <div class="dropdown-menu dropdown-menu-start profile-dd-menu">
+                <div class="profile-dd-head p-2 border-bottom">
+                  <div class="profile-dd-caption mb-2">Сообщества</div>
+                  <input type="search" class="form-control form-control-sm profile-dd-search" placeholder="Поиск...">
+                </div>
+                <div class="profile-dd-list"></div>
+                <div class="profile-dd-empty p-3 text-muted small d-none">Ничего не найдено</div>
+              </div>
+            </div>
+
+            <div class="dropdown profile-dd" data-bs-auto-close="outside">
+              <button type="button"
+                      class="profile-stat-link profile-dd-toggle"
+                      data-bs-toggle="dropdown"
+                      data-caption="Подписки на сообщества"
+                      data-url="{% url 'profile_communities_joined_json' profile_user.username %}">
+                <strong class="me-1" data-profile-count="communities_joined">{{ communities_joined_count|default:0 }}</strong> подписок на сообщества
+              </button>
+
+              <div class="dropdown-menu dropdown-menu-start profile-dd-menu">
+                <div class="profile-dd-head p-2 border-bottom">
+                  <div class="profile-dd-caption mb-2">Подписки на сообщества</div>
+                  <input type="search" class="form-control form-control-sm profile-dd-search" placeholder="Поиск...">
+                </div>
+                <div class="profile-dd-list"></div>
+                <div class="profile-dd-empty p-3 text-muted small d-none">Ничего не найдено</div>
+              </div>
+            </div>
+
           </div>
 
           {# ===== BIO VIEW ===== #}
           <div id="profileBioView" class="profile-bio-view">
             {% if profile_user.bio %}
-              <div class="profile-bio">{{ profile_user.bio }}</div>
+              <div class="profile-bio post-text">{{ profile_user.bio|md }}</div>
             {% else %}
               <div class="profile-bio profile-bio--empty">Пока нет описания.</div>
             {% endif %}
@@ -111,7 +181,6 @@
                   </div>
                 </div>
 
-                {# input type=file (не показываем как кнопку, но оставляем кликабельным через label-overlay) #}
                 <div class="d-none">
                   {{ form.avatar }}
                 </div>
@@ -129,27 +198,30 @@
     </section>
 
     {# ====== POSTS ====== #}
-    <section class="card">
-      <div class="card-header bg-white">
-        <div class="d-flex align-items-center justify-content-between">
-          <div class="fw-semibold">Посты</div>
-          <span class="badge text-bg-light">{{ posts|length }}</span>
+    <div class="feed-page">
+      <section class="card">
+        <div class="card-header bg-white">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="fw-semibold">Посты</div>
+            <span class="badge text-bg-light">{{ posts|length }}</span>
+          </div>
         </div>
-      </div>
-      <div class="card-body">
-        <div class="posts-list d-flex flex-column gap-3">
-          {% for post in posts %}
-            {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
-          {% empty %}
-            <div class="text-body-secondary">У пользователя пока нет постов.</div>
-          {% endfor %}
+        <div class="card-body">
+          <div class="posts-list d-flex flex-column gap-3">
+            {% for post in posts %}
+              {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
+            {% empty %}
+              <div class="text-body-secondary">У пользователя пока нет постов.</div>
+            {% endfor %}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
 
   </div>
 </div>
 
+<script src="{% static 'core/js/profile_dropdowns.js' %}?v=3" defer></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -170,7 +242,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (overlay) overlay.classList.toggle('d-none', !isEditing);
     document.body.classList.toggle('profile-is-editing', isEditing);
 
-    // фокус на био
     if (isEditing) {
       const bioField = document.getElementById('id_bio');
       if (bioField) bioField.focus();
@@ -187,12 +258,10 @@ document.addEventListener('DOMContentLoaded', function () {
   if (cancelBtn) {
     cancelBtn.addEventListener('click', function () {
       setEditing(false);
-      // сброс выбранного файла
       if (fileInput) fileInput.value = '';
     });
   }
 
-  // Превью выбранного аватара прямо в круге аватара
   if (fileInput && avatarWrap) {
     fileInput.addEventListener('change', function () {
       const file = this.files && this.files[0];

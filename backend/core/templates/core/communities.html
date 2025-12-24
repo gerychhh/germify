@@ -14,49 +14,51 @@
 
 {% block content %}
 
-<div class="d-flex flex-column gap-3">
+<div class="g-page">
+  <div class="d-flex flex-column gap-3">
 
-  <div class="card">
-    <form method="get" action="{% url 'communities' %}" id="communities-search-form" class="row g-2 align-items-center">
-      <div class="col-12 col-md">
-        <input type="text" id="communities-search-input" name="q" value="{{ q|default:'' }}" placeholder="Поиск сообществ…"
-               autocomplete="off" class="form-control">
-      </div>
-
-      <div class="col-12 col-md-auto d-grid d-md-block">
-        <button type="submit" class="btn btn-success" id="communities-search-btn">Найти</button>
-      </div>
-
-      {% if q %}
-        <div class="col-12 col-md-auto d-grid d-md-block">
-          <a href="{% url 'communities' %}" class="btn btn-outline-secondary">Сбросить</a>
+    <div class="card">
+      <form method="get" action="{% url 'communities' %}" id="communities-search-form" class="row g-2 align-items-center">
+        <div class="col-12 col-md">
+          <input type="text" id="communities-search-input" name="q" value="{{ q|default:'' }}" placeholder="Поиск сообществ…"
+                 autocomplete="off" class="form-control">
         </div>
-      {% endif %}
-    </form>
-  </div>
 
-  {% if user.is_authenticated %}
-    <div class="d-flex justify-content-end">
-      <a href="{% url 'community_create' %}" class="btn btn-success">Создать сообщество</a>
+        <div class="col-12 col-md-auto d-grid d-md-block">
+          <button type="submit" class="btn btn-success" id="communities-search-btn">Найти</button>
+        </div>
+
+        {% if q %}
+          <div class="col-12 col-md-auto d-grid d-md-block">
+            <a href="{% url 'communities' %}" class="btn btn-outline-secondary">Сбросить</a>
+          </div>
+        {% endif %}
+      </form>
     </div>
-  {% endif %}
 
-  <div id="communities-list" class="d-flex flex-column gap-3">
-  {% for c in communities %}
-    {% include "core/partials/community_card.html" with c=c %}
-  {% empty %}
-    <div class="card" style="color:#9ca3af;">Ничего не найдено.</div>
-  {% endfor %}
+    {% if user.is_authenticated %}
+      <div class="d-flex justify-content-end">
+        <a href="{% url 'community_create' %}" class="btn btn-success">Создать сообщество</a>
+      </div>
+    {% endif %}
+
+    <div id="communities-list" class="d-flex flex-column gap-3">
+    {% for c in communities %}
+      {% include "core/partials/community_card.html" with c=c %}
+    {% empty %}
+      <div class="card" style="color:#9ca3af;">Ничего не найдено.</div>
+    {% endfor %}
+    </div>
+
+    <button type="button" id="communities-load-more"
+            class="btn btn-outline-secondary w-100"
+            style="display:{% if has_next %}block{% else %}none{% endif %};">
+      Показать ещё
+    </button>
+
+    <div id="communities-sentinel" style="height:1px;"></div>
+
   </div>
-
-  <button type="button" id="communities-load-more"
-          class="btn btn-outline-secondary w-100"
-          style="display:{% if has_next %}block{% else %}none{% endif %};">
-    Показать ещё
-  </button>
-
-  <div id="communities-sentinel" style="height:1px;"></div>
-
 </div>
 
 <script>

@@ -1,5 +1,5 @@
 {# core/partials/comment.html #}
-{% load tz %}
+{% load tz markdown_extras %}
 
 {% with depth=level %}
 <div class="comment-item border rounded-3 p-2 bg-body mt-2
@@ -38,10 +38,10 @@
         </div>
     </div>
 
-    <!-- TEXT (пошаговое раскрытие как у постов) -->
+    <!-- TEXT -->
     <div class="post-text-block comment-text-block mt-1">
         <div class="post-text-wrapper">
-            <div class="comment-text mt-1">{{ c.text }}</div>
+            <div class="comment-text mt-1">{{ c.text|md }}</div>
             <div class="post-text-gradient"></div>
         </div>
         <button type="button"
@@ -52,8 +52,6 @@
 
     <!-- FOOTER -->
     <div class="comment-footer d-flex align-items-center gap-2 flex-wrap small mt-1">
-
-        {# лайк на комментарий #}
         {% if user.is_authenticated %}
             <form method="post"
                   action="{% url 'toggle_comment_like' c.id %}"
@@ -74,14 +72,12 @@
         </span>
 
         {% if user.is_authenticated %}
-            {# показать/скрыть форму "Ответить" #}
             <button class="comment-reply-toggle btn btn-link btn-sm p-0 text-decoration-none"
                     type="button"
                     data-comment-id="{{ c.id }}">
                 Ответить
             </button>
 
-            {# кнопка показать/скрыть блок ответов #}
             {% if c.replies.count %}
                 <button class="replies-toggle btn btn-link btn-sm p-0 text-decoration-none"
                         type="button"
@@ -90,7 +86,6 @@
                 </button>
             {% endif %}
 
-            {# Удаление комментария #}
             {% if user == c.author or user.is_superuser %}
                 <form method="post"
                       action="{% url 'delete_comment' c.id %}"
@@ -107,7 +102,6 @@
         {% endif %}
     </div>
 
-    {# ФОРМА ОТВЕТА (по умолчанию скрыта, открывается по кнопке "Ответить") #}
     {% if user.is_authenticated %}
         <form method="post"
               action="{% url 'add_reply' c.id %}"
@@ -124,7 +118,6 @@
         </form>
     {% endif %}
 
-    {# ВЛОЖЕННЫЕ ОТВЕТЫ — по умолчанию спрятаны, открываются кнопкой "Ответы" #}
     {% if c.replies.exists %}
         <div class="replies-block hidden mt-2 d-flex flex-column gap-1"
              data-parent-id="{{ c.id }}">

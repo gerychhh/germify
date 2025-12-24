@@ -71,11 +71,13 @@ function initSmartGalleries(root) {
         if (!imgs.length) {
             gallery.dataset.count = "0";
             gallery.dataset.layout = "one";
+            gallery.dataset.firstShape = "land";
             return;
         }
 
-        // Ограничение отображения (на всякий случай, если в старых постах больше 10)
+        // Ограничение отображения
         const maxVisible = 6;
+
         imgs.forEach((img, idx) => {
             const item = img.closest(".gallery-item");
             if (!item) return;
@@ -92,6 +94,14 @@ function initSmartGalleries(root) {
                 const badge = document.createElement("div");
                 badge.className = "gallery-more-badge";
                 badge.textContent = "+" + (imgs.length - maxVisible);
+
+                // ✅ кликабельный бейдж: открывает просмотрщик как клик по фото
+                badge.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (lastVisibleImg) lastVisibleImg.click();
+                });
+
                 lastItem.appendChild(badge);
             }
         }
@@ -100,13 +110,13 @@ function initSmartGalleries(root) {
         gallery.dataset.count = String(visibleCount);
 
         const applyLayout = () => {
-            // по умолчанию считаем первую "не вертикальной", чтобы не раздувать пост до загрузки картинки
             const shapes = imgs.slice(0, visibleCount).map(_imgShape);
             const firstShape = shapes[0] || "land";
+
+            gallery.dataset.firstShape = firstShape; // ✅ нужно для CSS (портрет по центру)
             gallery.dataset.layout = _chooseGalleryLayout(visibleCount, firstShape, shapes);
         };
 
-        // Применяем сразу и ещё раз после загрузки первой картинки (для корректного определения пропорций)
         applyLayout();
         imgs.slice(0, visibleCount).forEach((img) => {
             if (img && !(img.complete && img.naturalWidth)) {
@@ -115,18 +125,116 @@ function initSmartGalleries(root) {
         });
     });
 }
+// ========================
+// Markdown code blocks: wrap + Copy (stable button)
+// ========================
+function initMarkdownCodeBlocks(root = document) {
+  const scope = root || document;
+
+  // собираем “контейнеры кода” (чтобы не оборачивать внутрянку 10 раз)
+  const candidates = scope.querySelectorAll(
+    ".post-text pre, .post-text .highlighttable, .post-text .codehilite, .post-text .highlight"
+  );
+
+  const blocks = new Set();
+
+  candidates.forEach((el) => {
+    let block = el;
+
+    const ht = el.closest?.(".highlighttable");
+    if (ht) block = ht;
+    else if (el.classList?.contains("highlighttable")) block = el;
+    else {
+      const outer = el.closest?.(".codehilite, .highlight");
+      if (outer) block = outer;
+    }
+
+    if (block) blocks.add(block);
+  });
+
+  function extractCodeText(block) {
+    // 1) Pygments table: берём ТОЛЬКО код без номеров строк
+    const pyg = block.querySelector?.("td.code pre");
+    if (pyg) return (pyg.innerText || "").replace(/\n$/, "");
+
+    // 2) обычный pre > code
+    const code = block.querySelector?.("pre code");
+    if (code) return (code.innerText || "").replace(/\n$/, "");
+
+    // 3) fallback
+    const pre = block.matches?.("pre") ? block : block.querySelector?.("pre");
+    if (pre) return (pre.innerText || "").replace(/\n$/, "");
+
+    return (block.innerText || "").replace(/\n$/, "");
+  }
+
+  blocks.forEach((block) => {
+    if (!block) return;
+    if (block.closest(".md-code")) return; // уже обёрнуто
+
+    // если у тебя уже были старые кнопки Copy — уберём, чтобы не плодились
+    block.querySelectorAll?.(".code-copy-btn, .copy-code-btn, .md-code__copy").forEach((b) => b.remove());
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "md-code";
+
+    const scroll = document.createElement("div");
+    scroll.className = "md-code__scroll";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "md-code__copy";
+    btn.textContent = "Copy";
+
+    const parent = block.parentNode;
+    parent.insertBefore(wrapper, block);
+    wrapper.appendChild(btn);
+    wrapper.appendChild(scroll);
+    scroll.appendChild(block);
+
+    // фиксим частый косяк: первая пустая строка в fenced-code
+    const codeEl = block.querySelector?.("pre > code");
+    if (codeEl && codeEl.firstChild && codeEl.firstChild.nodeType === Node.TEXT_NODE) {
+      codeEl.firstChild.textContent = codeEl.firstChild.textContent.replace(/^\n+/, "");
+    }
+
+    btn.addEventListener("click", async () => {
+      const text = extractCodeText(block);
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = "Скопировано";
+        btn.classList.add("is-copied");
+        setTimeout(() => {
+          btn.textContent = "Copy";
+          btn.classList.remove("is-copied");
+        }, 1200);
+      } catch (e) {
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); } catch (_) {}
+        document.body.removeChild(ta);
+
+        btn.textContent = "Скопировано";
+        setTimeout(() => (btn.textContent = "Copy"), 1200);
+      }
+    });
+  });
+}
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    // ===== Пошаговое раскрытие длинного текста =====
-    // посты: свёртка крупнее (моб/десктоп)
-    const IS_MOBILE = window.matchMedia && window.matchMedia("(max-width: 576px)").matches;
-    const MAX_POST_TEXT_HEIGHT = IS_MOBILE ? 320 : 420;
-    const POST_TEXT_STEP = IS_MOBILE ? 240 : 320;
-
-    // описание сообщества + комментарии/ответы: 120px, затем +140px за клик
-    const SOFT_TEXT_INITIAL = 120;
-    const SOFT_TEXT_STEP = 140;
+    // ===== Пошаговое раскрытие длинного текста (ПО СТРОКАМ) =====
+    const COLLAPSE_LINES = {
+        post: { desktop: 30, mobile: 20, stepDesktop: 100, stepMobile: 70 },
+        soft: { desktop: 30, mobile: 20, stepDesktop: 100, stepMobile: 70 },
+        mediaPenalty: 3, // если есть медиа — показываем меньше строк текста по умолчанию
+        minLines: 6
+    };
 
     // ===== Пакетный показ комментариев/ответов =====
     const COMMENTS_BATCH_SIZE = 3;
@@ -150,6 +258,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let selectedFiles = [];
 
+    function isMobile() {
+        return window.matchMedia("(max-width: 576px)").matches;
+    }
+
+    function getLineHeightPx(el) {
+        const cs = window.getComputedStyle(el);
+        const lh = cs.lineHeight;
+
+        if (lh && lh.endsWith("px")) return parseFloat(lh);
+
+        const fs = parseFloat(cs.fontSize) || 16;
+        const unitless = parseFloat(lh);
+
+        if (!Number.isNaN(unitless)) return unitless * fs; // если line-height без px
+        return fs * 1.4;
+    }
+
+    function pxFromLines(textEl, lines) {
+        return Math.round(getLineHeightPx(textEl) * lines);
+    }
+
     // ==========================================================
     //          ОГРАНИЧЕНИЕ СИМВОЛОВ В ПОСТЕ (UI)
     // ==========================================================
@@ -168,42 +297,45 @@ document.addEventListener("DOMContentLoaded", function () {
         render();
     }
 
-    const newPostText = document.getElementById("new-post-text");
+    // (у тебя textarea без id="new-post-text", поэтому делаем fallback)
+    const newPostText =
+        document.getElementById("new-post-text") ||
+        document.querySelector(".new-post-form textarea[name='text']");
+
     const newPostCounter = document.querySelector(".post-text-counter[data-for='new-post-text']");
     bindTextCounter(newPostText, newPostCounter, MAX_POST_CHARS);
 
-// ===== РЕДАКТИРОВАНИЕ ПОСТА: выбранные новые файлы + лимит =====
-document.addEventListener("change", function (e) {
-    const input = e.target;
-    if (!input || !input.classList || !input.classList.contains("post-edit-file-input")) return;
+    // ===== РЕДАКТИРОВАНИЕ ПОСТА: выбранные новые файлы + лимит =====
+    document.addEventListener("change", function (e) {
+        const input = e.target;
+        if (!input || !input.classList || !input.classList.contains("post-edit-file-input")) return;
 
-    const form = input.closest(".post-edit-form");
-    if (!form) return;
+        const form = input.closest(".post-edit-form");
+        if (!form) return;
 
-    const out = form.querySelector(".post-edit-new-files");
-    const files = Array.from(input.files || []);
-    if (!out) return;
+        const out = form.querySelector(".post-edit-new-files");
+        const files = Array.from(input.files || []);
+        if (!out) return;
 
-    // Проверяем лимит: существующие (за вычетом помеченных) + новые
-    const existingCount = form.querySelectorAll(".post-edit-attachment-item").length;
-    const toDelete = form.querySelectorAll(".post-edit-att-check:checked").length;
-    const willRemain = Math.max(0, existingCount - toDelete) + files.length;
+        // Проверяем лимит: существующие (за вычетом помеченных) + новые
+        const existingCount = form.querySelectorAll(".post-edit-attachment-item").length;
+        const toDelete = form.querySelectorAll(".post-edit-att-check:checked").length;
+        const willRemain = Math.max(0, existingCount - toDelete) + files.length;
 
-    if (willRemain > MAX_FILE_COUNT) {
-        alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
-        input.value = "";
-        out.textContent = "";
-        return;
-    }
+        if (willRemain > MAX_FILE_COUNT) {
+            alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
+            input.value = "";
+            out.textContent = "";
+            return;
+        }
 
-    if (!files.length) {
-        out.textContent = "";
-        return;
-    }
+        if (!files.length) {
+            out.textContent = "";
+            return;
+        }
 
-    out.textContent = "Добавится: " + files.map(f => f.name).join(", ");
-});
-
+        out.textContent = "Добавится: " + files.map(f => f.name).join(", ");
+    });
 
     function formatSize(bytes) {
         const mb = bytes / (1024 * 1024);
@@ -218,57 +350,56 @@ document.addEventListener("change", function (e) {
 
     // ----- Отрисовка предпросмотра -----
     function renderPreview() {
-    if (!previewBox) return;
-    previewBox.innerHTML = "";
+        if (!previewBox) return;
+        previewBox.innerHTML = "";
 
-    // делаем превью сеткой (чтобы картинки не растягивались на весь экран)
-    previewBox.classList.add("file-preview");
+        previewBox.classList.add("file-preview");
 
-    selectedFiles.forEach((file, index) => {
-        const wrapper = document.createElement("div");
-        const isImage = (file.type || "").startsWith("image/");
-        wrapper.className = "preview-item " + (isImage ? "preview-item--image" : "preview-item--file");
+        selectedFiles.forEach((file, index) => {
+            const wrapper = document.createElement("div");
+            const isImage = (file.type || "").startsWith("image/");
+            wrapper.className = "preview-item " + (isImage ? "preview-item--image" : "preview-item--file");
 
-        if (isImage) {
-            const img = document.createElement("img");
-            img.className = "preview-img";
-            const url = URL.createObjectURL(file);
-            img.src = url;
-            img.alt = file.name || "image";
-            img.onload = () => URL.revokeObjectURL(url);
-            wrapper.appendChild(img);
-        } else {
-            const row = document.createElement("div");
-            row.className = "file-preview-item";
+            if (isImage) {
+                const img = document.createElement("img");
+                img.className = "preview-img";
+                const url = URL.createObjectURL(file);
+                img.src = url;
+                img.alt = file.name || "image";
+                img.onload = () => URL.revokeObjectURL(url);
+                wrapper.appendChild(img);
+            } else {
+                const row = document.createElement("div");
+                row.className = "file-preview-item";
 
-            const icon = document.createElement("span");
-            icon.className = "file-preview-icon";
-            icon.textContent = "📎";
+                const icon = document.createElement("span");
+                icon.className = "file-preview-icon";
+                icon.textContent = "📎";
 
-            const name = document.createElement("span");
-            name.className = "file-preview-name";
-            name.textContent = file.name || "file";
+                const name = document.createElement("span");
+                name.className = "file-preview-name";
+                name.textContent = file.name || "file";
 
-            row.appendChild(icon);
-            row.appendChild(name);
-            wrapper.appendChild(row);
-        }
+                row.appendChild(icon);
+                row.appendChild(name);
+                wrapper.appendChild(row);
+            }
 
-        const del = document.createElement("button");
-        del.type = "button";
-        del.className = "remove-file-btn";
-        del.setAttribute("aria-label", "Удалить файл");
-        del.innerHTML = "&times;";
-        del.onclick = () => removeFile(index);
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "remove-file-btn";
+            del.setAttribute("aria-label", "Удалить файл");
+            del.innerHTML = "&times;";
+            del.onclick = () => removeFile(index);
 
-        wrapper.appendChild(del);
-        previewBox.appendChild(wrapper);
-    });
+            wrapper.appendChild(del);
+            previewBox.appendChild(wrapper);
+        });
 
-    updateFileInfo();
-}
+        updateFileInfo();
+    }
 
-function removeFile(index) {
+    function removeFile(index) {
         selectedFiles.splice(index, 1);
         renderPreview();
 
@@ -321,7 +452,6 @@ function removeFile(index) {
     // ==========================================================
     //       ПОКАЗАТЬ DROP-ZONE ПРИ DRAG'N'DROP
     // ==========================================================
-
     document.addEventListener("dragenter", function (e) {
         if (!e.dataTransfer || !e.dataTransfer.types.includes("Files")) return;
         if (dropZone) dropZone.classList.remove("hidden");
@@ -370,52 +500,97 @@ function removeFile(index) {
     });
 
     // ----------------------------------------------------------
-    //  ФУНКЦИИ ИНИЦИАЛИЗАЦИИ (ТЕКСТ, ВИДЕО, АУДИО)
+    //  СВЁРТКА ТЕКСТА (ПО СТРОКАМ) — ВАЖНО: без бага высоты
     // ----------------------------------------------------------
+    function computeCollapsePx(block) {
+        const textEl =
+            block.querySelector(".post-text") ||
+            block.querySelector(".comment-text") ||
+            block.querySelector(".reply-text");
 
-    // ---------- СВЁРНУТЫЙ ТЕКСТ + МЕДИА (посты/описание сообщества/комментарии) ----------
-    function getTextCollapseConfig(block) {
-        if (block && (block.classList.contains("comment-text-block") || block.classList.contains("community-desc-block"))) {
-            return { initial: SOFT_TEXT_INITIAL, step: SOFT_TEXT_STEP };
+        if (!textEl) return { initial: 0, step: 0, isSoft: false, label: "Показать ещё" };
+
+        const isSoft =
+            block.classList.contains("comment-text-block") ||
+            !!block.closest(".comment-item");
+
+        const hasMedia = !!block.querySelector(".attachments");
+
+        const mobile = isMobile();
+        let lines = isSoft
+            ? (mobile ? COLLAPSE_LINES.soft.mobile : COLLAPSE_LINES.soft.desktop)
+            : (mobile ? COLLAPSE_LINES.post.mobile : COLLAPSE_LINES.post.desktop);
+
+        const stepLines = isSoft
+            ? (mobile ? COLLAPSE_LINES.soft.stepMobile : COLLAPSE_LINES.soft.stepDesktop)
+            : (mobile ? COLLAPSE_LINES.post.stepMobile : COLLAPSE_LINES.post.stepDesktop);
+
+        if (hasMedia && !isSoft) {
+            lines = Math.max(COLLAPSE_LINES.minLines, lines - COLLAPSE_LINES.mediaPenalty);
         }
-        return { initial: MAX_POST_TEXT_HEIGHT, step: POST_TEXT_STEP };
+
+        const initialPx = pxFromLines(textEl, lines);
+        const stepPx = pxFromLines(textEl, stepLines);
+
+        return {
+            initial: initialPx,
+            step: stepPx,
+            isSoft,
+            label: isSoft ? "Показать ещё" : "Показать полностью"
+        };
     }
 
+    function getTextCollapseConfig(block) {
+        const wrapper = block?.querySelector(".post-text-wrapper");
+        const initialStored = parseInt(wrapper?.dataset?.initialPx || "0", 10);
+        const stepStored = parseInt(wrapper?.dataset?.stepPx || "0", 10);
+
+        if (initialStored > 0 && stepStored > 0) {
+            return { initial: initialStored, step: stepStored };
+        }
+
+        const calc = computeCollapsePx(block);
+        return { initial: calc.initial, step: calc.step };
+    }
+
+    // ✅ теперь поддерживает root (document / newPostEl / commentsBody)
+    // ✅ и пропускает скрытые комментарии (чтобы “Показать ещё” появлялась только после открытия)
     function initPostTextCollapsing(root = document) {
-        if (!root.querySelectorAll) return;
+        const scope = root || document;
 
-        const blocks = root.querySelectorAll(".post-text-block");
+        scope.querySelectorAll(".post-text-block").forEach((block) => {
+            // пропускаем комменты/ответы если они в скрытых контейнерах
+            if (block.closest(".comments-body.hidden") || block.closest(".replies-block.hidden")) return;
 
-        blocks.forEach(block => {
             const wrapper = block.querySelector(".post-text-wrapper");
-            const toggle = block.querySelector(".post-text-toggle");
-            if (!wrapper || !toggle) return;
+            const btn = block.querySelector(".post-text-toggle");
+            if (!wrapper || !btn) return;
 
-            const cfg = getTextCollapseConfig(block);
+            const calc = computeCollapsePx(block);
+            if (!calc.initial || !calc.step) return;
+
+            wrapper.dataset.initialPx = String(calc.initial);
+            wrapper.dataset.stepPx = String(calc.step);
+            wrapper.dataset.collapsedLabel = calc.label;
+            wrapper.dataset.state = "collapsed";
+
+            // измеряем высоту контента
             const fullHeight = wrapper.scrollHeight;
 
-            // Контент низкий — не сворачиваем
-            if (fullHeight <= cfg.initial + 10) {
-                wrapper.style.maxHeight = "";
+            // если коротко — кнопка не нужна
+            if (fullHeight <= calc.initial + 8) {
+                btn.classList.add("hidden");
                 wrapper.classList.remove("is-collapsed");
-                toggle.classList.add("hidden");
-                toggle.dataset.state = "";
+                wrapper.style.maxHeight = "none";
+                wrapper.dataset.state = "expanded";
                 return;
             }
 
-            toggle.classList.remove("hidden");
-
-            // Если ранее уже был полностью развернут — удерживаем состояние
-            if (toggle.dataset.state === "expanded") {
-                wrapper.style.maxHeight = fullHeight + "px";
-                wrapper.classList.remove("is-collapsed");
-                toggle.textContent = "Свернуть";
-            } else {
-                wrapper.style.maxHeight = cfg.initial + "px";
-                wrapper.classList.add("is-collapsed");
-                toggle.textContent = "Показать ещё";
-                toggle.dataset.state = "collapsed";
-            }
+            // сворачиваем
+            wrapper.classList.add("is-collapsed");
+            wrapper.style.maxHeight = `${calc.initial}px`;
+            btn.classList.remove("hidden");
+            btn.textContent = calc.label;
         });
     }
 
@@ -468,7 +643,6 @@ function removeFile(index) {
                 durationEl.textContent = vFormat(video.duration);
                 updateBuffer();
 
-                // mark video orientation for styling (doesn't affect player behavior)
                 if (video.videoWidth && video.videoHeight) {
                     const r = video.videoWidth / video.videoHeight;
                     let shape = "square";
@@ -481,7 +655,6 @@ function removeFile(index) {
             video.addEventListener("loadeddata", updateBuffer);
             video.addEventListener("progress", updateBuffer);
 
-            // play/pause
             playBtn.addEventListener("click", () => {
                 if (video.paused) {
                     video.play();
@@ -492,12 +665,10 @@ function removeFile(index) {
                 }
             });
 
-            // клик по видео — тоже play/pause
             video.addEventListener("click", () => {
                 playBtn.click();
             });
 
-            // mute
             if (muteBtn) {
                 muteBtn.addEventListener("click", () => {
                     video.muted = !video.muted;
@@ -518,7 +689,6 @@ function removeFile(index) {
                 currentEl.textContent = "0:00";
             });
 
-            // SEEK по прогресс-бару
             function seekByClientX(clientX) {
                 if (!video.duration || isNaN(video.duration)) return;
                 const rect = bar.getBoundingClientRect();
@@ -557,7 +727,6 @@ function removeFile(index) {
                 isScrubbing = false;
             });
 
-            // FULLSCREEN
             if (fsBtn) {
                 fsBtn.addEventListener("click", () => {
                     const isFull = document.fullscreenElement === wrapper;
@@ -585,7 +754,6 @@ function removeFile(index) {
     }
 
     // ---------- АУДИО ----------
-
     let currentAudio = null;
 
     function initAudioPlayers(root = document) {
@@ -640,13 +808,10 @@ function removeFile(index) {
             audio.addEventListener("loadeddata", updateAudioBuffer);
             audio.addEventListener("progress", updateAudioBuffer);
 
-            // play / pause
             playButton.addEventListener("click", () => {
                 if (currentAudio && currentAudio !== audio) {
                     currentAudio.pause();
-                    document
-                        .querySelectorAll(".audio-play")
-                        .forEach(btn => (btn.textContent = "▶"));
+                    document.querySelectorAll(".audio-play").forEach(btn => (btn.textContent = "▶"));
                 }
 
                 if (audio.paused) {
@@ -659,7 +824,6 @@ function removeFile(index) {
                 }
             });
 
-            // SEEK по клику/перетаскиванию по дорожке
             function seekAudioByClientX(clientX) {
                 if (!audio.duration || isNaN(audio.duration)) return;
 
@@ -704,7 +868,6 @@ function removeFile(index) {
                 isSeeking = false;
             });
 
-            // input range — невидимый помощник
             slider.addEventListener("input", () => {
                 if (!audio.duration || isNaN(audio.duration)) return;
                 if (isSeeking) return;
@@ -716,7 +879,6 @@ function removeFile(index) {
                 currentTimeEl.textContent = aFormat(newTime);
             });
 
-            // timeupdate: душим частоту
             audio.addEventListener("timeupdate", () => {
                 if (!audio.duration || isNaN(audio.duration)) return;
                 if (isSeeking) return;
@@ -748,7 +910,6 @@ function removeFile(index) {
     // ==========================================================
     function directChildren(container, selector) {
         if (!container) return [];
-        // :scope поддерживается в современных браузерах; fallback — через children
         try {
             return Array.from(container.querySelectorAll(":scope > " + selector));
         } catch (e) {
@@ -767,7 +928,6 @@ function removeFile(index) {
 
     function placeRepliesMoreButton(block, btn) {
         if (!block || !btn) return;
-        // строго внизу ответов
         block.appendChild(btn);
     }
 
@@ -775,11 +935,9 @@ function removeFile(index) {
         if (!body) return;
         if (body.dataset.orderInited === "1") return;
 
-        // убираем кнопку, если она уже существует (на всякий случай)
         const oldBtn = body.querySelector(":scope > .comments-more-btn") || body.querySelector(".comments-more-btn");
         if (oldBtn) oldBtn.remove();
 
-        // временно убираем элементы управления, чтобы они остались внизу
         const addToggle = body.querySelector(":scope > .comment-add-toggle") || body.querySelector(".comment-add-toggle");
         const form = body.querySelector(":scope > .comment-form") || body.querySelector(".comment-form");
         const keep = [];
@@ -787,17 +945,12 @@ function removeFile(index) {
         if (form && form.parentElement === body) keep.push(form);
         keep.forEach(el => body.removeChild(el));
 
-        // разворачиваем порядок: новые сверху
         const items = directChildren(body, ".comment-item");
         const frag = document.createDocumentFragment();
-        for (let i = items.length - 1; i >= 0; i--) {
-            frag.appendChild(items[i]);
-        }
+        for (let i = items.length - 1; i >= 0; i--) frag.appendChild(items[i]);
         body.appendChild(frag);
 
-        // возвращаем управление
         keep.forEach(el => body.appendChild(el));
-
         body.dataset.orderInited = "1";
     }
 
@@ -810,9 +963,7 @@ function removeFile(index) {
 
         const items = directChildren(block, ".comment-item");
         const frag = document.createDocumentFragment();
-        for (let i = items.length - 1; i >= 0; i--) {
-            frag.appendChild(items[i]);
-        }
+        for (let i = items.length - 1; i >= 0; i--) frag.appendChild(items[i]);
         block.appendChild(frag);
 
         block.dataset.orderInited = "1";
@@ -825,9 +976,8 @@ function removeFile(index) {
         if (!btn) return;
 
         const hiddenCount = items.filter(el => el.classList.contains("batch-hidden")).length;
-        if (hiddenCount <= 0) {
-            btn.remove();
-        } else {
+        if (hiddenCount <= 0) btn.remove();
+        else {
             btn.textContent = "Показать ещё (" + hiddenCount + ")";
             placeCommentsMoreButton(body, btn);
         }
@@ -840,9 +990,8 @@ function removeFile(index) {
         if (!btn) return;
 
         const hiddenCount = items.filter(el => el.classList.contains("batch-hidden")).length;
-        if (hiddenCount <= 0) {
-            btn.remove();
-        } else {
+        if (hiddenCount <= 0) btn.remove();
+        else {
             btn.textContent = "Показать ещё (" + hiddenCount + ")";
             placeRepliesMoreButton(block, btn);
         }
@@ -851,7 +1000,6 @@ function removeFile(index) {
     function initCommentsBatchingForBody(body) {
         if (!body) return;
 
-        // порядок: новые сверху
         ensureNewestFirstComments(body);
 
         if (body.dataset.batchInited === "1") {
@@ -865,7 +1013,6 @@ function removeFile(index) {
             return;
         }
 
-        // показываем первые N (самые новые), остальные прячем
         for (let i = 0; i < items.length; i++) {
             if (i >= COMMENTS_BATCH_SIZE) items[i].classList.add("batch-hidden");
         }
@@ -882,7 +1029,6 @@ function removeFile(index) {
     function initRepliesBatchingForBlock(block) {
         if (!block) return;
 
-        // порядок: новые сверху
         ensureNewestFirstReplies(block);
 
         if (block.dataset.batchInited === "1") {
@@ -921,7 +1067,6 @@ function removeFile(index) {
 
             const fd = new FormData(form);
 
-            // Учитываем будущие вложения (файлы + голосовое) и проверяем лимит
             const voiceWillBeAdded = Boolean(form._voiceBlob && !form._voiceBlobUsed);
             const totalFilesToSend = selectedFiles.length + (voiceWillBeAdded ? 1 : 0);
             if (totalFilesToSend > MAX_FILE_COUNT) {
@@ -929,10 +1074,8 @@ function removeFile(index) {
                 return;
             }
 
-            // обычные файлы из предпросмотра
             selectedFiles.forEach(f => fd.append("attachments", f));
 
-            // голосовое сообщение, если записано (Blob из voice_recorder.js)
             if (form._voiceBlob && !form._voiceBlobUsed) {
                 const blob = form._voiceBlob;
                 const name = form._voiceFilename || "voice-message.webm";
@@ -943,7 +1086,7 @@ function removeFile(index) {
                     : new File([blob], name, { type });
 
                 fd.append("attachments", voiceFile);
-                form._voiceBlobUsed = true; // чтобы не дублировать
+                form._voiceBlobUsed = true;
             }
 
             if (uploadProgress && uploadProgressBar) {
@@ -984,22 +1127,20 @@ function removeFile(index) {
                         list.insertAdjacentHTML("afterbegin", data.html);
                         const newPostEl = list.firstElementChild;
 
-                        // инициализируем в новом посте текст/видео/аудио
                         initPostTextCollapsing(newPostEl);
                         initVideoPlayers(newPostEl);
                         initAudioPlayers(newPostEl);
                         initSmartGalleries(newPostEl);
+                        initMarkdownCodeBlocks(newPostEl);
 
                         form.reset();
                         clearFilePreview();
                         if (dropZone) dropZone.classList.add("hidden");
 
                     } else {
-                        // если пришёл не JSON (например, редирект на логин) — просто перезагружаем
                         window.location.reload();
                     }
                 } else {
-                    // постараемся показать серверную ошибку (например, лимит файлов/символов)
                     const ctErr = xhr.getResponseHeader("content-type") || "";
                     if (ctErr.indexOf("application/json") !== -1) {
                         try {
@@ -1108,26 +1249,18 @@ function removeFile(index) {
                     const body = document.querySelector('.comments-body[data-post-id="' + pid + '"]');
                     if (!body) return;
 
-                    // Новый комментарий — самый новый: добавляем В НАЧАЛО списка.
-                    // Кнопка "Показать ещё" при этом остаётся внизу.
                     ensureNewestFirstComments(body);
+
                     const firstItem = body.querySelector(":scope > .comment-item") || body.querySelector(".comment-item");
                     const addBtn = body.querySelector(":scope > .comment-add-toggle") || body.querySelector(".comment-add-toggle");
-                    if (firstItem) {
-                        firstItem.insertAdjacentHTML("beforebegin", data.html);
-                    } else if (addBtn) {
-                        addBtn.insertAdjacentHTML("beforebegin", data.html);
-                    } else {
-                        body.insertAdjacentHTML("afterbegin", data.html);
-                    }
 
-                    // Инициализируем пошаговую свёртку для нового комментария
+                    if (firstItem) firstItem.insertAdjacentHTML("beforebegin", data.html);
+                    else if (addBtn) addBtn.insertAdjacentHTML("beforebegin", data.html);
+                    else body.insertAdjacentHTML("afterbegin", data.html);
+
                     initPostTextCollapsing(body);
 
-                    // Если батчинг уже включен — пересчитаем кнопку
-                    if (body.dataset.batchInited === "1") {
-                        updateCommentsMoreButton(body);
-                    }
+                    if (body.dataset.batchInited === "1") updateCommentsMoreButton(body);
 
                     const badge = document.querySelector(
                         '.comments-toggle[data-post-id="' + pid + '"] .comments-count-badge'
@@ -1169,9 +1302,8 @@ function removeFile(index) {
 
                     const repliesBlock = parentEl.querySelector(".replies-block");
                     if (repliesBlock) {
-                        // Новый ответ — самый новый: добавляем В НАЧАЛО ответов.
-                        // Кнопка "Показать ещё" остаётся внизу.
                         ensureNewestFirstReplies(repliesBlock);
+
                         const firstReply = repliesBlock.querySelector(":scope > .comment-item") || repliesBlock.querySelector(".comment-item");
                         if (firstReply) {
                             firstReply.insertAdjacentHTML("beforebegin", data.html);
@@ -1181,10 +1313,8 @@ function removeFile(index) {
                             else repliesBlock.insertAdjacentHTML("afterbegin", data.html);
                         }
 
-                        // Инициализируем свёртку текста в новых ответах
                         initPostTextCollapsing(repliesBlock);
 
-                        // Если батчинг уже включен — пересчитаем кнопку
                         if (repliesBlock.dataset.batchInited === "1") {
                             updateRepliesMoreButton(repliesBlock);
                         }
@@ -1224,7 +1354,6 @@ function removeFile(index) {
                     const repliesContainer = el ? el.closest('.replies-block') : null;
                     if (el) el.remove();
 
-                    // Пересчёт "Показать ещё" после удаления
                     const body = document.querySelector('.comments-body[data-post-id="' + postId + '"]');
                     if (body && body.dataset.batchInited === "1") updateCommentsMoreButton(body);
                     if (repliesContainer && repliesContainer.dataset.batchInited === "1") updateRepliesMoreButton(repliesContainer);
@@ -1242,62 +1371,59 @@ function removeFile(index) {
 
             return;
         }
-        
 
-// ---------- РЕДАКТИРОВАНИЕ ПОСТА (AJAX) ----------
-if (form.classList.contains("post-edit-form")) {
-    e.preventDefault();
+        // ---------- РЕДАКТИРОВАНИЕ ПОСТА (AJAX) ----------
+        if (form.classList.contains("post-edit-form")) {
+            e.preventDefault();
 
-    const postCard = form.closest(".post-card");
-    if (!postCard) return;
+            const postCard = form.closest(".post-card");
+            if (!postCard) return;
 
-    // Лимит файлов: существующие (за вычетом помеченных на удаление) + новые <= MAX_FILE_COUNT
-    const existingItems = form.querySelectorAll(".post-edit-attachment-item");
-    let existingCount = existingItems.length;
+            const existingItems = form.querySelectorAll(".post-edit-attachment-item");
+            const existingCount = existingItems.length;
 
-    const toDelete = form.querySelectorAll(".post-edit-att-check:checked").length;
-    const newCount = (form.querySelector(".post-edit-file-input")?.files?.length) || 0;
+            const toDelete = form.querySelectorAll(".post-edit-att-check:checked").length;
+            const newCount = (form.querySelector(".post-edit-file-input")?.files?.length) || 0;
 
-    const willRemain = Math.max(0, existingCount - toDelete) + newCount;
-    if (willRemain > MAX_FILE_COUNT) {
-        alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
-        return;
-    }
-
-    ajaxPost(form.action, form)
-        .then(async (resp) => {
-            const data = await resp.json().catch(() => ({}));
-            if (!resp.ok || !data.success) {
-                const msg = data.error || "Не удалось сохранить изменения.";
-                alert(msg);
+            const willRemain = Math.max(0, existingCount - toDelete) + newCount;
+            if (willRemain > MAX_FILE_COUNT) {
+                alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
                 return;
             }
 
-            if (!data.html) return;
+            ajaxPost(form.action, form)
+                .then(async (resp) => {
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || !data.success) {
+                        const msg = data.error || "Не удалось сохранить изменения.";
+                        alert(msg);
+                        return;
+                    }
 
-            // Заменяем карточку поста целиком на обновлённую
-            const tmp = document.createElement("div");
-            tmp.innerHTML = data.html.trim();
-            const newEl = tmp.firstElementChild;
-            if (!newEl) return;
+                    if (!data.html) return;
 
-            postCard.replaceWith(newEl);
+                    const tmp = document.createElement("div");
+                    tmp.innerHTML = data.html.trim();
+                    const newEl = tmp.firstElementChild;
+                    if (!newEl) return;
 
-            // Переинициализация поведения для нового DOM-узла
-            initPostTextCollapsing(newEl);
-            initSmartGalleries(newEl);
-            initVideoPlayers(newEl);
-            initAudioPlayers(newEl);
-        })
-        .catch((err) => {
-            console.error("edit post error:", err);
-            alert("Не удалось сохранить изменения.");
-        });
+                    postCard.replaceWith(newEl);
 
-    return;
-}
+                    initPostTextCollapsing(newEl);
+                    initSmartGalleries(newEl);
+                    initVideoPlayers(newEl);
+                    initAudioPlayers(newEl);
+                    initMarkdownCodeBlocks(newEl);
+                })
+                .catch((err) => {
+                    console.error("edit post error:", err);
+                    alert("Не удалось сохранить изменения.");
+                });
 
-// ---------- УДАЛЕНИЕ ПОСТА ----------
+            return;
+        }
+
+        // ---------- УДАЛЕНИЕ ПОСТА ----------
         if (form.classList.contains("post-delete-form")) {
             e.preventDefault();
 
@@ -1306,7 +1432,6 @@ if (form.classList.contains("post-edit-form")) {
             ajaxPost(form.action, form)
                 .then((response) => {
                     if (!response.ok) {
-                        // Сервер вернул ошибку (403, 500 и т.п.)
                         if (response.status === 403) {
                             alert("Вы не можете удалить этот пост");
                         } else {
@@ -1315,7 +1440,6 @@ if (form.classList.contains("post-edit-form")) {
                         return;
                     }
 
-                    // Всё ок — удаляем карточку из DOM
                     if (postCard) postCard.remove();
                 })
                 .catch(err => {
@@ -1325,7 +1449,6 @@ if (form.classList.contains("post-edit-form")) {
 
             return;
         }
-
     });
 
     // ==========================
@@ -1333,126 +1456,136 @@ if (form.classList.contains("post-edit-form")) {
     // ==========================
     document.addEventListener("click", function (e) {
 
-// ----- ОТКРЫТЬ/ЗАКРЫТЬ РЕДАКТИРОВАНИЕ ПОСТА -----
-const editToggle = e.target.closest(".post-edit-toggle");
-if (editToggle) {
-    const postId = editToggle.dataset.postId;
-    const postCard = document.getElementById("post-" + postId);
-    if (!postCard) return;
+        // ----- ОТКРЫТЬ/ЗАКРЫТЬ РЕДАКТИРОВАНИЕ ПОСТА -----
+        const editToggle = e.target.closest(".post-edit-toggle");
+        if (editToggle) {
+            const postId = editToggle.dataset.postId;
+            const postCard = document.getElementById("post-" + postId);
+            if (!postCard) return;
 
-    const viewBlock = postCard.querySelector(".post-view-block");
-    const editBlock = postCard.querySelector(".post-edit-block");
-    if (!editBlock) return;
+            const viewBlock = postCard.querySelector(".post-view-block");
+            const editBlock = postCard.querySelector(".post-edit-block");
+            if (!editBlock) return;
 
-    // закрываем меню, если открыто
-    const menu = postCard.querySelector(".post-menu");
-    if (menu) menu.classList.add("hidden");
+            const menu = postCard.querySelector(".post-menu");
+            if (menu) menu.classList.add("hidden");
 
-    if (viewBlock) viewBlock.classList.toggle("hidden");
-    editBlock.classList.toggle("hidden");
+            if (viewBlock) viewBlock.classList.toggle("hidden");
+            editBlock.classList.toggle("hidden");
 
-    // инициализируем счётчик символов для textarea редактирования
-    const ta = editBlock.querySelector(".post-edit-textarea");
-    const counter = editBlock.querySelector(".post-edit-counter");
-    if (ta && counter) {
-        bindTextCounter(ta, counter, MAX_POST_CHARS);
-        // фикс: при первом открытии показываем актуальную длину
-        const len = (ta.value || "").length;
-        counter.textContent = `${len} / ${MAX_POST_CHARS}`;
-    }
+            const ta = editBlock.querySelector(".post-edit-textarea");
+            const counter = editBlock.querySelector(".post-edit-counter");
+            if (ta && counter) {
+                bindTextCounter(ta, counter, MAX_POST_CHARS);
+                const len = (ta.value || "").length;
+                counter.textContent = `${len} / ${MAX_POST_CHARS}`;
+            }
 
-    return;
-}
+            return;
+        }
 
-// ----- ОТМЕНА РЕДАКТИРОВАНИЯ -----
-const editCancel = e.target.closest(".post-edit-cancel");
-if (editCancel) {
-    const postCard = editCancel.closest(".post-card");
-    if (!postCard) return;
+        // ----- ОТМЕНА РЕДАКТИРОВАНИЯ -----
+        const editCancel = e.target.closest(".post-edit-cancel");
+        if (editCancel) {
+            const postCard = editCancel.closest(".post-card");
+            if (!postCard) return;
 
-    const viewBlock = postCard.querySelector(".post-view-block");
-    const editBlock = postCard.querySelector(".post-edit-block");
-    if (viewBlock) viewBlock.classList.remove("hidden");
-    if (editBlock) editBlock.classList.add("hidden");
+            const viewBlock = postCard.querySelector(".post-view-block");
+            const editBlock = postCard.querySelector(".post-edit-block");
+            if (viewBlock) viewBlock.classList.remove("hidden");
+            if (editBlock) editBlock.classList.add("hidden");
 
-    // откат текста
-    const ta = postCard.querySelector(".post-edit-textarea");
-    if (ta) {
-        const orig = ta.getAttribute("data-original") || "";
-        ta.value = orig;
-    }
+            const ta = postCard.querySelector(".post-edit-textarea");
+            if (ta) {
+                const orig = ta.getAttribute("data-original") || "";
+                ta.value = orig;
+            }
 
-    // снять отметки удаления
-    postCard.querySelectorAll(".post-edit-att-check").forEach(ch => { ch.checked = false; });
-    postCard.querySelectorAll(".post-edit-attachment-item").forEach(it => { it.classList.remove("is-removed"); });
+            postCard.querySelectorAll(".post-edit-att-check").forEach(ch => { ch.checked = false; });
+            postCard.querySelectorAll(".post-edit-attachment-item").forEach(it => { it.classList.remove("is-removed"); });
 
-    // очистить новые файлы
-    const inp = postCard.querySelector(".post-edit-file-input");
-    if (inp) inp.value = "";
-    const box = postCard.querySelector(".post-edit-new-files");
-    if (box) box.textContent = "";
+            const inp = postCard.querySelector(".post-edit-file-input");
+            if (inp) inp.value = "";
+            const box = postCard.querySelector(".post-edit-new-files");
+            if (box) box.textContent = "";
 
-    return;
-}
+            return;
+        }
 
-// ----- УБРАТЬ/ВЕРНУТЬ СУЩЕСТВУЮЩЕЕ ВЛОЖЕНИЕ -----
-const attToggle = e.target.closest(".post-edit-att-toggle");
-if (attToggle) {
-    const item = attToggle.closest(".post-edit-attachment-item");
-    if (!item) return;
+        // ----- УБРАТЬ/ВЕРНУТЬ СУЩЕСТВУЮЩЕЕ ВЛОЖЕНИЕ -----
+        const attToggle = e.target.closest(".post-edit-att-toggle");
+        if (attToggle) {
+            const item = attToggle.closest(".post-edit-attachment-item");
+            if (!item) return;
 
-    const check = item.querySelector(".post-edit-att-check");
-    if (!check) return;
+            const check = item.querySelector(".post-edit-att-check");
+            if (!check) return;
 
-    check.checked = !check.checked;
-    item.classList.toggle("is-removed", check.checked);
-    attToggle.textContent = check.checked ? "↩" : "✕";
-    return;
-}
+            check.checked = !check.checked;
+            item.classList.toggle("is-removed", check.checked);
+            attToggle.textContent = check.checked ? "↩" : "✕";
+            return;
+        }
 
-
-        // ----- РАЗВОРОТ/СВОРАЧИВАНИЕ ДЛИННОГО ПОСТА (ТЕКСТ + МЕДИА) -----
+        // ----- РАЗВОРОТ/СВОРАЧИВАНИЕ ДЛИННОГО ТЕКСТА (FIX высоты) -----
         const textToggle = e.target.closest(".post-text-toggle");
         if (textToggle) {
-            const block   = textToggle.closest(".post-text-block");
+            const block = textToggle.closest(".post-text-block");
             if (!block) return;
 
             const wrapper = block.querySelector(".post-text-wrapper");
             if (!wrapper) return;
 
             const cfg = getTextCollapseConfig(block);
-            const fullHeight = wrapper.scrollHeight;
-            const isExpanded = (!wrapper.classList.contains("is-collapsed")) || (textToggle.dataset.state === "expanded");
+            const collapsedLabel = wrapper.dataset.collapsedLabel || "Показать ещё";
+            const state = wrapper.dataset.state || "collapsed";
 
-            if (isExpanded) {
-                // Свернуть обратно в стартовое состояние
-                wrapper.style.maxHeight = cfg.initial + "px";
+            // Если полностью развернуто — сворачиваем обратно
+            if (state === "expanded") {
+                const full = wrapper.scrollHeight;
+
+                wrapper.style.maxHeight = `${full}px`;
                 wrapper.classList.add("is-collapsed");
-                textToggle.textContent = "Показать ещё";
-                textToggle.dataset.state = "collapsed";
+
+                requestAnimationFrame(() => {
+                    wrapper.style.maxHeight = `${cfg.initial}px`;
+                });
+
+                wrapper.dataset.state = "collapsed";
+                textToggle.textContent = collapsedLabel;
                 return;
             }
 
-            // Пошаговое раскрытие
+            // Идём вверх шагами
             let current = parseInt(wrapper.style.maxHeight || "0", 10);
-            if (!current || current < cfg.initial) current = cfg.initial;
+            if (!current || wrapper.style.maxHeight === "none") current = cfg.initial;
 
+            const fullHeight = wrapper.scrollHeight;
             const next = current + cfg.step;
+
             if (next >= fullHeight - 5) {
-                wrapper.style.maxHeight = fullHeight + "px";
+                // ✅ полный разворот: потом ставим max-height:none, чтобы карточка точно росла и не было налезаний
+                wrapper.style.maxHeight = `${fullHeight}px`;
                 wrapper.classList.remove("is-collapsed");
+                wrapper.dataset.state = "expanded";
                 textToggle.textContent = "Свернуть";
-                textToggle.dataset.state = "expanded";
+
+                wrapper.addEventListener("transitionend", (ev) => {
+                    if (ev.propertyName !== "max-height") return;
+                    wrapper.style.maxHeight = "none";
+                }, { once: true });
+
             } else {
-                wrapper.style.maxHeight = next + "px";
+                wrapper.style.maxHeight = `${next}px`;
                 wrapper.classList.add("is-collapsed");
+                wrapper.dataset.state = "partial";
                 textToggle.textContent = "Показать ещё";
-                textToggle.dataset.state = "partial";
             }
+
             return;
         }
 
-        // ----- "ПОКАЗАТЬ ЕЩЁ" ДЛЯ КОММЕНТАРИЕВ (кнопка внизу) -----
+        // ----- "ПОКАЗАТЬ ЕЩЁ" ДЛЯ КОММЕНТАРИЕВ -----
         const commentsMoreBtn = e.target.closest(".comments-more-btn");
         if (commentsMoreBtn) {
             const body = commentsMoreBtn.closest(".comments-body");
@@ -1466,7 +1599,7 @@ if (attToggle) {
             return;
         }
 
-        // ----- "ПОКАЗАТЬ ЕЩЁ" ДЛЯ ОТВЕТОВ (кнопка внизу) -----
+        // ----- "ПОКАЗАТЬ ЕЩЁ" ДЛЯ ОТВЕТОВ -----
         const repliesMoreBtn = e.target.closest(".replies-more-btn");
         if (repliesMoreBtn) {
             const block = repliesMoreBtn.closest(".replies-block");
@@ -1486,11 +1619,8 @@ if (attToggle) {
             const postId = postMenuToggle.dataset.postId;
 
             document.querySelectorAll(".post-menu").forEach(function (menu) {
-                if (menu.dataset.postId === postId) {
-                    menu.classList.toggle("hidden");
-                } else {
-                    menu.classList.add("hidden");
-                }
+                if (menu.dataset.postId === postId) menu.classList.toggle("hidden");
+                else menu.classList.add("hidden");
             });
 
             return;
@@ -1530,9 +1660,7 @@ if (attToggle) {
         const commentsToggle = e.target.closest(".comments-toggle");
         if (commentsToggle) {
             const postId = commentsToggle.dataset.postId;
-            const body = document.querySelector(
-                '.comments-body[data-post-id="' + postId + '"]'
-            );
+            const body = document.querySelector('.comments-body[data-post-id="' + postId + '"]');
             const arrow = commentsToggle.querySelector(".comments-toggle-arrow");
 
             if (body) {
@@ -1540,19 +1668,15 @@ if (attToggle) {
                 const isHidden = body.classList.contains("hidden");
 
                 if (!isHidden) {
-                    body.querySelectorAll(".comment-form, .reply-form")
-                        .forEach(function (f) { f.classList.add("hidden"); });
-                    body.querySelectorAll(".replies-block")
-                        .forEach(function (b) { b.classList.add("hidden"); });
+                    body.querySelectorAll(".comment-form, .reply-form").forEach(f => f.classList.add("hidden"));
+                    body.querySelectorAll(".replies-block").forEach(b => b.classList.add("hidden"));
 
-                    // Инициализируем свёртку текста и батчинг ТОЛЬКО после открытия комментариев
+                    // ✅ именно тут появляются кнопки “Показать ещё” у комментариев
                     initPostTextCollapsing(body);
                     initCommentsBatchingForBody(body);
                 }
 
-                if (arrow) {
-                    arrow.textContent = isHidden ? "▾" : "▴";
-                }
+                if (arrow) arrow.textContent = isHidden ? "▾" : "▴";
             }
             return;
         }
@@ -1561,14 +1685,11 @@ if (attToggle) {
         const repliesToggle = e.target.closest(".replies-toggle");
         if (repliesToggle) {
             const commentId = repliesToggle.dataset.commentId;
-            const block = document.querySelector(
-                '.replies-block[data-parent-id="' + commentId + '"]'
-            );
+            const block = document.querySelector('.replies-block[data-parent-id="' + commentId + '"]');
             if (block) {
                 block.classList.toggle("hidden");
                 const isHidden = block.classList.contains("hidden");
                 if (!isHidden) {
-                    // Инициализируем свёртку текста + батчинг только после открытия ответов
                     initPostTextCollapsing(block);
                     initRepliesBatchingForBlock(block);
                 }
@@ -1580,9 +1701,7 @@ if (attToggle) {
         const addToggle = e.target.closest(".comment-add-toggle");
         if (addToggle) {
             const postId = addToggle.dataset.postId;
-            const form = document.querySelector(
-                '.comment-form[data-post-id="' + postId + '"]'
-            );
+            const form = document.querySelector('.comment-form[data-post-id="' + postId + '"]');
             if (form) form.classList.toggle("hidden");
             return;
         }
@@ -1591,9 +1710,7 @@ if (attToggle) {
         const replyToggle = e.target.closest(".comment-reply-toggle");
         if (replyToggle) {
             const commentId = replyToggle.dataset.commentId;
-            const form = document.querySelector(
-                '.reply-form[data-parent-id="' + commentId + '"]'
-            );
+            const form = document.querySelector('.reply-form[data-parent-id="' + commentId + '"]');
             if (form) form.classList.toggle("hidden");
             return;
         }
@@ -1604,10 +1721,7 @@ if (attToggle) {
             e.preventDefault();
 
             const isFollowing = followBtn.dataset.following === "1";
-            const url = isFollowing
-                ? followBtn.dataset.unfollowUrl
-                : followBtn.dataset.followUrl;
-
+            const url = isFollowing ? followBtn.dataset.unfollowUrl : followBtn.dataset.followUrl;
             if (!url) return;
 
             fetch(url, {
@@ -1675,28 +1789,21 @@ if (attToggle) {
                 url.searchParams.set("page", String(nextPage));
 
                 const response = await fetch(url.toString(), {
-                    headers: {
-                        "X-Requested-With": "XMLHttpRequest",
-                    },
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
                 });
 
-                if (!response.ok) {
-                    return;
-                }
+                if (!response.ok) return;
 
                 const data = await response.json();
-                if (!data || !data.success || !data.html) {
-                    return;
-                }
+                if (!data || !data.success || !data.html) return;
 
-                // Добавляем новые посты в конец списка
                 container.insertAdjacentHTML("beforeend", data.html);
 
-                // Инициализируем функционал для новых постов
                 initPostTextCollapsing(container);
                 initVideoPlayers(container);
                 initAudioPlayers(container);
                 initSmartGalleries(container);
+                initMarkdownCodeBlocks(container);
 
                 hasNext = !!data.has_next;
                 if (hasNext && data.next_page) {
@@ -1720,24 +1827,21 @@ if (attToggle) {
             const scrollPosition = window.innerHeight + window.scrollY;
             const threshold = document.body.offsetHeight - 300;
 
-            if (scrollPosition >= threshold) {
-                loadMore();
-            }
+            if (scrollPosition >= threshold) loadMore();
         }
 
         window.addEventListener("scroll", onScroll);
-
-        // На случай очень коротких страниц
         onScroll();
     })();
 
     // --------------------------------------------
-    // Инициализируем медиа и свёртку текста
+    // Инициализация (комменты скрытые — пропускаем)
     // --------------------------------------------
     initPostTextCollapsing(document);
     initVideoPlayers(document);
     initAudioPlayers(document);
     initSmartGalleries(document);
+    initMarkdownCodeBlocks(document);
 
 }); // конец DOMContentLoaded
 
@@ -1795,12 +1899,10 @@ function openViewer(urls, index) {
 
     btnClose.onclick = () => overlay.remove();
 
-    // закрытие по клику по фону
     overlay.addEventListener("click", (e) => {
         if (e.target === overlay) overlay.remove();
     });
 
-    // ESC закрыть
     function escHandler(ev) {
         if (ev.key === "Escape") {
             overlay.remove();
@@ -1809,7 +1911,6 @@ function openViewer(urls, index) {
     }
     document.addEventListener("keydown", escHandler);
 
-    // свайпы для телефонов
     let touchStartX = 0;
 
     overlay.addEventListener("touchstart", (ev) => {

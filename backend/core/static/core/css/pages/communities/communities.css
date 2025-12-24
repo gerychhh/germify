@@ -37,3 +37,14 @@
 .community-card .min-w-0 {
   min-width: 0;
 }
+.profile-dd-avatar .avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.profile-dd-avatar img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 50%;
+}

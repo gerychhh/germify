@@ -27,7 +27,7 @@
 .gallery-item {
     position: relative;
     overflow: hidden;
-    background: #000;
+    background: var(--g-surface-2);
 }
 
 .gallery-item.gallery-hidden {
@@ -68,13 +68,25 @@
     grid-template-columns: 1fr;
 }
 
-.attachment-gallery[data-layout="one"] .gallery-img {
-    width: 100%;
-    height: auto;
-    max-height: min(60vh, 520px);
-    object-fit: contain;
-    background: #000;
+.attachment-gallery[data-layout="one"] .gallery-item{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--g-surface-2);
+    padding: 6px;                 /* «рамка» */
 }
+
+.attachment-gallery[data-layout="one"] .gallery-img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: min(65vh, 560px); /* можешь менять высоту */
+    object-fit: contain;
+    margin: 0 auto;
+    background: transparent;
+    border-radius: 10px;          /* мягче внутри рамки */
+}
+
 
 .attachment-gallery[data-layout="two-land"],
 .attachment-gallery[data-layout="two-mixed"],
@@ -155,6 +167,11 @@
 
 .attachment-gallery[data-layout="grid-3"] .gallery-item {
     aspect-ratio: 1 / 1;
+}
+
+.attachment-gallery {
+    border: 1px solid var(--g-border);
+    background: var(--g-surface-2);
 }
 
 @media (max-width: 640px) {

@@ -1,7 +1,17 @@
 /* core/static/core/css/app.css
    Общие правила проекта поверх Bootstrap.
    ВНИМАНИЕ: стили страниц (posts/messages/profile/communities/community_detail) вынесены в core/css/pages/*.
-*/
+ */
+
+:root {
+  /* Ширина ленты с постами (единая настройка).
+     700px = строго как просил.
+     74ch = “по строкам” (обычно выглядит лучше). */
+  --g-posts-width: 700px;
+
+  /* Ограничение ширины одиночных вертикальных фото */
+  --g-media-portrait-max: 28rem;
+}
 
 html { scroll-padding-top: var(--g-navbar-h); }
 
@@ -17,49 +27,24 @@ body {
   }
 }
 
-/* Чуть более «плотный» и читаемый muted */
-.text-muted,
-.text-body-secondary {
-  color: var(--g-muted) !important;
-}
-
-/* Карточки */
-.card {
-  border: 1px solid var(--g-border);
-  border-radius: var(--g-radius);
-  box-shadow: var(--g-shadow-sm);
-}
-
-/* Кнопки */
-.btn {
-  border-radius: calc(var(--g-radius) / 2);
-}
-
-/* Инпуты */
-.form-control,
-.form-select,
-textarea.form-control {
-  border-radius: calc(var(--g-radius) / 2);
-}
-
-/* Бейдж непрочитанных (используется в navbar) */
-.messages-unread-badge {
-  min-width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: var(--g-danger);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
+/* ====== Badges / counters (общие мелочи) ====== */
+.g-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--g-primary);
+  color: #fff;
   line-height: 1;
 }
 
-.messages-unread-badge--pulse {
-  animation: g-badge-pulse 450ms ease-in-out;
+.g-badge--pulse {
+  animation: g-badge-pulse 0.9s ease-in-out infinite;
 }
 
 @keyframes g-badge-pulse {
@@ -95,19 +80,179 @@ textarea.form-control {
   background: var(--g-primary);
 }
 
+.batch-hidden {
+  display: none !important;
+}
+
+/* ===============================
+   Upload previews (new post form)
+   =============================== */
+.file-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: .75rem;
+  margin-top: .75rem;
+}
+
+.preview-item {
+  position: relative;
+  border: 1px solid rgba(15,23,42,.12);
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 120px;
+}
+
+.preview-item--image {
+  padding: 0;
+}
+
+.preview-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.preview-item--file {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .75rem .9rem;
+  background: #f8fafc;
+}
+
+.file-preview-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+}
+
+.file-preview-icon {
+  flex: 0 0 auto;
+}
+
+.file-preview-name {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.remove-file-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,.12);
+  background: rgba(255,255,255,.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  color: #ef4444;
+  cursor: pointer;
+}
+
+.remove-file-btn:hover {
+  background: #fff;
+}
+
+@media (max-width: 576px) {
+  .file-preview { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+
+/* ===============================
+   Text collapse (posts/comments/community)
+   =============================== */
+.post-text-block {
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comment-text-block {
+  margin-top: 0;
+  gap: 2px;
+}
+
+.post-text-wrapper {
+  position: relative;
+  transition: max-height 0.2s ease;
+  display: flow-root;
+}
+
+.post-text-wrapper.is-collapsed {
+  overflow: hidden;
+}
+
+.post-text-gradient {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(2, 6, 23, 0), var(--g-surface));
+}
+
+.post-text-wrapper.is-collapsed .post-text-gradient {
+  display: block;
+}
+
+.post-text-toggle {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: #93c5fd;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+}
+
+.post-text-toggle:hover {
+  color: #bfdbfe;
+}
+
+/* Post menu: delete item */
+.post-menu .dropdown-item {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+
+.post-menu .post-menu-danger {
+  color: #dc3545;
+}
+
+.post-menu .post-menu-danger:hover,
+.post-menu .post-menu-danger:focus {
+  color: #dc3545;
+  background: rgba(220, 53, 69, 0.08);
+}
+
+.post-text > :first-child { margin-top: 0; }
+.post-text > :last-child { margin-bottom: 0; }
+
 /* ===============================
    Avatar (global component)
    =============================== */
 .avatar {
-    border-radius: 999px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: radial-gradient(circle at 30% 30%, #4f46e5, #1d4ed8);
-    color: #e5e7eb;
-    font-weight: 600;
-    flex-shrink: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 30% 30%, #4f46e5, #1d4ed8);
+  color: #e5e7eb;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 /* размеры */
@@ -118,20 +263,584 @@ textarea.form-control {
 .avatar--xs { width: 22px; height: 22px; font-size: 12px; }
 
 .avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .avatar-initial {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-/* Глобальная ширина ленты/постов */
-.feed-page {
-    max-width: 820px;
-    margin-left: auto;
-    margin-right: auto;
-    width: 100%;
+
+/* ===============================
+   Global page width (one standard)
+   =============================== */
+:root{
+  --g-page-w: 700px;
+}
+
+/* универсальная обёртка для страниц/лент */
+.g-page{
+  width: 100%;
+  max-width: var(--g-page-w);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* чтобы старый код не ломать: feed-page = тот же стандарт */
+.feed-page{
+  width: 100%;
+  max-width: var(--g-page-w);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 576px){
+  .g-page,
+  .feed-page{
+    max-width: 100%;
+  }
+}
+/* ===============================
+   Community detail: keep 700px, stack columns
+   =============================== */
+.community-page{
+  width: 100%;
+  max-width: var(--g-page-w);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ===============================
+   Community detail layout:
+   left = 700px, right = aside
+   =============================== */
+:root{
+  --g-page-w: 700px;     /* уже твой стандарт */
+  --g-aside-w: 340px;    /* ширина блока "Участники" (можешь 320/360) */
+}
+
+/* на мобилках — 700 и всё в одну колонку */
+.community-page{
+  width: 100%;
+  max-width: var(--g-page-w);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* на больших экранах — две колонки: 700 + aside */
+@media (min-width: 992px){
+  .community-page{
+    max-width: calc(var(--g-page-w) + var(--g-aside-w) + 24px); /* +gap */
+  }
+
+  .community-page .row.g-4{
+    --bs-gutter-x: 24px; /* расстояние между колонками */
+  }
+
+  /* левая колонка строго 700px */
+  .community-page .col-lg-8{
+    flex: 0 0 var(--g-page-w) !important;
+    max-width: var(--g-page-w) !important;
+  }
+
+  /* правая колонка строго aside */
+  .community-page .col-lg-4{
+    flex: 0 0 var(--g-aside-w) !important;
+    max-width: var(--g-aside-w) !important;
+  }
+
+  /* если хочешь липкий сайдбар */
+  .community-aside-sticky{
+    position: sticky;
+    top: calc(var(--g-navbar-h) + 12px);
+  }
+}
+
+/* ===============================
+   Markdown typography (global)
+   =============================== */
+
+/* ВАЖНО: Markdown = normal, иначе pre-wrap ломает отступы */
+.post-text,
+.comment-text,
+.reply-text {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* нормальные отступы между абзацами */
+.post-text p,
+.comment-text p,
+.reply-text p {
+  margin: 0 0 .55rem;
+}
+
+.post-text p:last-child,
+.comment-text p:last-child,
+.reply-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* списки компактнее */
+.post-text ul,
+.post-text ol,
+.comment-text ul,
+.comment-text ol,
+.reply-text ul,
+.reply-text ol {
+  margin: .25rem 0 .55rem;
+  padding-left: 1.15rem;
+}
+
+.post-text li,
+.comment-text li,
+.reply-text li {
+  margin: .12rem 0;
+}
+
+/* если в списках ты ставил "двойные пробелы" — Markdown мог добавить <br>, убираем */
+.post-text li > br,
+.comment-text li > br,
+.reply-text li > br {
+  display: none;
+}
+
+/* цитаты аккуратнее */
+.post-text blockquote,
+.comment-text blockquote,
+.reply-text blockquote {
+  margin: .55rem 0;
+  padding: .5rem .75rem;
+  border-left: 3px solid rgba(148,163,184,.35);
+  background: rgba(15,23,42,.04);
+  border-radius: 12px;
+}
+
+.post-text blockquote p,
+.comment-text blockquote p,
+.reply-text blockquote p {
+  margin: 0;
+}
+
+/* ===============================
+   Code blocks
+   =============================== */
+
+/* inline code */
+.post-text code,
+.comment-text code,
+.reply-text code {
+  padding: .12rem .35rem;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, .08);
+  border: 1px solid rgba(15, 23, 42, .10);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: .95em;
+}
+
+/* fenced code ``` */
+.codehilite {
+  background: #0b0f19;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 14px;
+  margin: .6rem 0;
+  overflow-x: auto;      /* только по ширине */
+  overflow-y: visible;   /* НЕ делаем “скролл по высоте” */
+  max-height: none !important;
+}
+
+/* таблица для нумерации строк */
+.codehilite table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.codehilite td { padding: 0; vertical-align: top; }
+
+/* номера строк */
+.codehilite td.linenos,
+.codehilite .linenos {
+  user-select: none;
+  text-align: right;
+  padding: 10px 10px 10px 12px;
+  color: rgba(148, 163, 184, .55);
+  border-right: 1px solid rgba(148, 163, 184, .16);
+  background: rgba(255,255,255,.02);
+}
+
+.codehilite td.linenos pre { margin: 0; }
+
+/* код */
+.codehilite td.code { padding: 10px 12px; }
+
+.codehilite pre {
+  margin: 0;
+  background: transparent;
+  color: #e5e7eb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;     /* как в IDE */
+  overflow: visible;    /* убираем вертикальный скролл внутри */
+  max-height: none !important;
+}
+
+/* ===== Pygments colors (dark) ===== */
+.codehilite .c,  .codehilite .c1, .codehilite .cm { color: #94a3b8; }
+.codehilite .k,  .codehilite .kd, .codehilite .kn { color: #60a5fa; }
+.codehilite .kt, .codehilite .kr, .codehilite .kp { color: #38bdf8; }
+.codehilite .s,  .codehilite .s1, .codehilite .s2,
+.codehilite .sa, .codehilite .sb, .codehilite .sc,
+.codehilite .sd, .codehilite .se, .codehilite .sh,
+.codehilite .si, .codehilite .sx { color: #34d399; }
+.codehilite .m,  .codehilite .mi, .codehilite .mf,
+.codehilite .mh, .codehilite .mo { color: #fbbf24; }
+.codehilite .na, .codehilite .nt { color: #f472b6; }
+.codehilite .nb, .codehilite .bp { color: #a78bfa; }
+.codehilite .nf, .codehilite .fm { color: #22c55e; }
+.codehilite .nc, .codehilite .nn { color: #f59e0b; }
+.codehilite .o,  .codehilite .ow { color: #e5e7eb; }
+.codehilite .p { color: rgba(226,232,240,.9); }
+
+/* ===============================
+   Code copy button (global)
+   =============================== */
+
+.codehilite {
+  position: relative; /* чтобы кнопка позиционировалась внутри блока */
+}
+
+.code-copy-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+
+  border: 1px solid rgba(148,163,184,.22);
+  background: rgba(2, 6, 23, .55);
+  color: rgba(226,232,240,.92);
+
+  font-size: 12px;
+  line-height: 1;
+  padding: 7px 10px;
+  border-radius: 10px;
+
+  cursor: pointer;
+  user-select: none;
+  backdrop-filter: blur(6px);
+}
+.code-copy-btn{
+  transition: opacity .15s ease, transform .15s ease, background .15s ease;
+}
+
+@media (hover: hover) and (pointer: fine){
+  .code-copy-btn{
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  .codehilite:hover .code-copy-btn,
+  .md-code:hover .code-copy-btn{
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.code-copy-btn:hover {
+  background: rgba(2, 6, 23, .75);
+}
+
+.code-copy-btn:active {
+  transform: scale(0.98);
+}
+/* ===============================
+   Markdown typography (posts/community desc)
+   =============================== */
+
+/* базовая типографика внутри markdown-контента */
+.post-text {
+  line-height: 1.55;
+}
+
+/* уменьшаем “bootstrap-дыры” */
+.post-text p {
+  margin: 0 0 .55rem;
+}
+.post-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* markdown часто делает: li > p  => убираем жирные отступы внутри пунктов */
+.post-text li > p {
+  margin: 0;
+}
+
+/* списки компактнее */
+.post-text ul,
+.post-text ol {
+  margin: .25rem 0 .6rem 1.25rem;
+  padding: 0;
+}
+.post-text li {
+  margin: .12rem 0;
+}
+
+/* цитаты */
+.post-text blockquote {
+  margin: .55rem 0;
+  padding: .2rem 0 .2rem .9rem;
+  border-left: 3px solid var(--g-border);
+  color: var(--g-muted);
+}
+.post-text blockquote p {
+  margin: 0;
+}
+
+/* inline code (одинарные `...`) */
+.post-text :not(pre) > code {
+  padding: .12em .38em;
+  border-radius: 8px;
+  background: var(--g-surface-2);
+  border: 1px solid var(--g-border);
+  font-size: .95em;
+}
+
+/* ===============================
+   Code blocks wrapper (compact)
+   =============================== */
+
+.md-code{
+  position:relative;
+  margin:.55rem 0;
+  border-radius:14px;
+  background:#0b1220;
+  border:1px solid rgba(148,163,184,.14); /* одна рамка, без “внутренних” */
+  overflow:hidden;
+}
+
+/* скролл только по X, без вертикального “ползунка” */
+.md-code__scroll{
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:10px 10px;
+}
+
+/* если есть бейдж языка — чуть места сверху */
+.md-code__scroll.has-lang{
+  padding-top:34px;
+}
+
+.md-code__copy{
+  position:absolute;
+  top:8px;
+  right:8px;
+  height:28px;
+  padding:0 10px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.18);
+  background:rgba(2,6,23,.55);
+  color:#e5e7eb;
+  font-size:12px;
+  line-height:26px;
+  cursor:pointer;
+  z-index:3;
+}
+.md-code__copy:hover{ background:rgba(2,6,23,.75); }
+.md-code__copy.is-copied{ border-color:rgba(34,197,94,.30); color:#86efac; }
+
+/* бейдж языка */
+.md-code__lang{
+  position:absolute;
+  top:8px;
+  left:48px;            /* НЕ над номерами строк */
+  height:22px;
+  padding:0 8px;
+  border-radius:999px;
+  background:rgba(148,163,184,.16);
+  border:1px solid rgba(148,163,184,.16);
+  color:#e5e7eb;
+  font-size:11px;
+  line-height:20px;
+  z-index:3;
+  user-select:none;
+}
+
+/* скрывать Copy (и язык) на десктопе до hover */
+@media (hover:hover) and (pointer:fine){
+  .md-code__copy,
+  .md-code__lang{
+    opacity:0;
+    transform:translateY(-2px);
+    pointer-events:none;
+    transition:opacity .12s ease, transform .12s ease;
+  }
+  .md-code:hover .md-code__copy,
+  .md-code:hover .md-code__lang{
+    opacity:1;
+    transform:none;
+    pointer-events:auto;
+  }
+}
+
+/* убираем “внутренние рамки/скругления” у того, что генерит markdown/pygments */
+.md-code .highlight,
+.md-code .codehilite{
+  margin:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+
+.md-code pre{
+  margin:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  overflow:visible !important;   /* не создаём второй скролл */
+  border-radius:0 !important;
+  text-indent:0 !important;
+  line-height:1.45;
+  tab-size:4;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+  font-size:13px;
+}
+.md-code code{
+  background:transparent !important;
+  padding:0 !important;
+  border:0 !important;
+  text-indent:0 !important;
+}
+
+/* Pygments table (номера строк) — делаем компактнее */
+.md-code .highlighttable{
+  width:100%;
+  margin:0;
+  border-collapse:collapse;
+  background:transparent !important;
+}
+.md-code .highlighttable td{ padding:0; vertical-align:top; }
+.md-code .highlighttable td.linenos{
+  width:34px; /* было слишком широко */
+  border-right:1px solid rgba(148,163,184,.14);
+  user-select:none;
+}
+.md-code .highlighttable td.linenos pre{
+  padding:0 6px 0 0 !important;   /* меньше места перед цифрами */
+  text-align:right;
+  color:rgba(148,163,184,.75);
+}
+.md-code .highlighttable td.code{
+  padding-left:8px;               /* меньше “воздуха” перед кодом */
+}
+
+/* =========================
+   Code block scrollbars
+   ========================= */
+
+/* Firefox */
+.md-code__scroll{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148,163,184,.45) transparent; /* thumb / track */
+}
+
+/* Chromium / Safari */
+.md-code__scroll::-webkit-scrollbar{
+  height: 4px;   /* горизонтальный */
+  width: 4px;    /* вертикальный (если вдруг появится) */
+}
+
+.md-code__scroll::-webkit-scrollbar-track{
+  background: transparent;
+}
+
+.md-code__scroll::-webkit-scrollbar-thumb{
+  background: rgba(148,163,184,.35);
+  border-radius: 999px;
+}
+
+.md-code__scroll::-webkit-scrollbar-thumb:hover{
+  background: rgba(148,163,184,.55);
+}
+
+/* чуть менее заметные стрелки/углы */
+.md-code__scroll::-webkit-scrollbar-corner{
+  background: transparent;
+}
+
+
+/* =========================
+   GLOBAL SCROLLBARS (site-wide)
+   ========================= */
+:root{
+  --sb-size: 2px;
+  --sb-track: transparent;
+  --sb-thumb: rgba(148,163,184,.35);
+  --sb-thumb-hover: rgba(148,163,184,.55);
+}
+
+/* Firefox (страница + внутренние скроллы) */
+html, body, *{
+  scrollbar-width: thin;
+  scrollbar-color: var(--sb-thumb) var(--sb-track);
+}
+
+/* Chromium/Safari (страница + внутренние скроллы) */
+*::-webkit-scrollbar{
+  width: var(--sb-size);
+  height: var(--sb-size);
+}
+
+*::-webkit-scrollbar-track{
+  background: var(--sb-track);
+}
+
+/* “тоньше” визуально за счёт прозрачной рамки */
+*::-webkit-scrollbar-thumb{
+  background-color: var(--sb-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover{
+  background-color: var(--sb-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner{
+  background: transparent;
+}
+.profile-dd-avatar .avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.profile-dd-avatar img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.profile-hero,
+.profile-hero .card-body,
+.profile-hero__body {
+  overflow: visible !important;
+}
+
+.profile-dd-menu {
+  z-index: 2000;
+}
+
+.profile-dd-avatar .avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.profile-dd-avatar .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }

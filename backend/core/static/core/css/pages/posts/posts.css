@@ -1,348 +1,151 @@
-/* ===== КАРТОЧКА ПОСТА ===== */
+/* core/static/core/css/pages/posts/posts.css
+   Только то, что НЕ закрывает Bootstrap и что относится к постам.
+   Общие компоненты (hidden, upload, text-collapse) — в app.css.
+*/
+
+/* ===== ТЕКСТ ===== */
 .post-text {
-    margin: 2px 0 0;
-    font-size: 15px;
-    color: var(--g-text);
-    line-height: 1.6;
-    text-align: left;
-    word-break: break-word;
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--g-text);
+  line-height: 1.6;
+  text-align: left;
 }
-
-/* ===== СЛУЖЕБНОЕ ===== */
-
-.hidden {
-    display: none !important;
-}
-
-/* ===== КОММЕНТАРИЙ ===== */
 
 .comment-text {
-    margin-top: 2px;
-    font-size: 13px;
-    color: var(--g-text);
-}
-
-/* ===== Пакетный показ комментариев/ответов ("Показать ещё") ===== */
-.batch-hidden {
-    display: none !important;
-}
-
-/* ===== ОТВЕТЫ / ВЕТКИ КОММЕНТАРИЕВ ===== */
-
-.comment-depth-0 {
-    margin-left: 0;
-}
-
-.comment-depth-1 {
-    margin-left: 3px;   /* первый уровень ответов */
-}
-
-.comment-depth-2 {
-    margin-left: 2px;   /* второй уровень */
-}
-
-.comment-depth-3 {
-    margin-left: 1px;   /* третий и глубже — одинаковый отступ */
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--g-text);
 }
 
 .reply-text {
-    margin-top: 2px;
-    font-size: 12px;
-    color: var(--g-text);
-}
-
-/* ===== МЕНЮ ПОСТА (⋯) ===== */
-
-.post-menu-wrapper {
-    position: relative;
-}
-
-.post-menu-toggle {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 20px;
-    line-height: 1;
-    padding: 2px 6px;
-    color: var(--g-muted);
-    border-radius: 999px;
-}
-
-.post-menu-toggle:hover {
-    background: var(--g-surface);
-    color: var(--g-text);
-}
-
-.post-menu {
-    position: absolute;
-    right: 0;
-    top: 24px;
-    background: var(--g-surface);
-    border: 1px solid var(--g-border);
-    border-radius: 8px;
-    padding: 4px 0;
-    min-width: 140px;
-    z-index: 50;
-}
-
-.post-menu-item {
-    width: 100%;
-    padding: 6px 10px;
-    border: none;
-    background: transparent;
-    color: var(--g-text);
-    font-size: 13px;
-    text-align: left;
-    cursor: pointer;
-}
-
-.post-menu-item:hover {
-    background: var(--g-border);
-}
-
-.post-menu-delete-btn {
-    color: #fecaca;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--g-text);
 }
 
 /* перенос длинных слов */
-
 .post-text,
 .comment-text,
 .reply-text {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
-/* ========= ЛАЙКИ НА ПОСТАХ ========= */
+/* ===== ВЛОЖЕННОСТЬ ОТВЕТОВ (0–3) ===== */
+.comment-depth-0 { margin-left: 0; }
+.comment-depth-1 { margin-left: 3px; }
+.comment-depth-2 { margin-left: 2px; }
+.comment-depth-3 { margin-left: 1px; }
 
+/* ===== МЕНЮ ПОСТА (⋯) ===== */
+.post-menu-wrapper { position: relative; }
+
+.post-menu {
+  position: absolute;
+  right: 0;
+  top: 24px;
+  background: var(--g-surface);
+  border: 1px solid var(--g-border);
+  border-radius: 8px;
+  padding: 4px 0;
+  min-width: 140px;
+  z-index: 50;
+}
+
+.post-menu-item {
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: var(--g-text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.post-menu-item:hover { background: var(--g-border); }
+.post-menu-delete-btn { color: #fecaca; }
+
+/* ===== ЛАЙКИ ===== */
 .like-button {
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 18px;
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition:
-        transform 0.18s ease-out,
-        filter 0.18s ease-out;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.18s ease-out, filter 0.18s ease-out;
 }
 
-/* состояние "уже лайкнул" */
 .like-button.is-liked {
-    filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.8));
+  filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.8));
 }
 
-/* подпрыгивание сердечка при клике */
 .like-button.like-animate {
-    animation: like-pop 0.28s ease-out;
+  animation: like-pop 0.28s ease-out;
 }
 
-/* лёгкий “нажим” при удержании */
-.like-button:active {
-    transform: scale(0.9);
-}
+.like-button:active { transform: scale(0.9); }
 
-/* вспышка вокруг сердца */
 .like-button.is-liked::after {
-    content: "";
-    position: absolute;
-    width: 30px;
-    height: 30px;
-    border-radius: 999px;
-    border: 2px solid rgba(248, 113, 113, 0.7);
-    pointer-events: none;
-    opacity: 0;
-    transform: scale(0.4);
-    animation: like-burst 0.45s ease-out;
+  content: "";
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 2px solid rgba(248, 113, 113, 0.7);
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.4);
+  animation: like-burst 0.45s ease-out;
 }
 
 @keyframes like-burst {
-    0% {
-        opacity: 0.8;
-        transform: scale(0.4);
-    }
-    80% {
-        opacity: 0;
-        transform: scale(1.6);
-    }
-    100% {
-        opacity: 0;
-        transform: scale(1.8);
-    }
+  0%   { opacity: 0.8; transform: scale(0.4); }
+  80%  { opacity: 0;   transform: scale(1.6); }
+  100% { opacity: 0;   transform: scale(1.8); }
 }
 
-/* подпрыгивание числа лайков */
-.like-count {
-    transition: color 0.2s ease-out;
-}
+.like-count { transition: color 0.2s ease-out; }
 
 .like-count-bump {
-    animation: like-count-bump 0.22s ease-out;
-    color: var(--g-text);
+  animation: like-count-bump 0.22s ease-out;
+  color: var(--g-text);
 }
 
 @keyframes like-count-bump {
-    0% {
-        transform: translateY(0);
-    }
-    40% {
-        transform: translateY(-2px);
-    }
-    100% {
-        transform: translateY(0);
-    }
+  0%   { transform: translateY(0); }
+  40%  { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
 }
 
-/* само сердечко / число не ломаем на мобилках */
 @media (max-width: 640px) {
-    .like-button {
-        font-size: 17px;
-    }
+  .like-button { font-size: 17px; }
 }
 
-/* === СВЁРНУТЫЙ ТЕКСТ ПОСТА === */
-
-.post-text-block {
-    margin-top: 2px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-/* комментарии: сохраняем прежние отступы и компактность */
-.comment-text-block {
-    margin-top: 0;
-    gap: 2px;
-}
-
-.post-text-wrapper {
-    position: relative;
-    transition: max-height 0.2s ease;
-}
-
-.post-text-wrapper.is-collapsed {
-    overflow: hidden;
-}
-
-/* затемнение снизу, когда пост обрезан */
-.post-text-gradient {
-    display: none;
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 48px;
-    background: linear-gradient(to bottom, rgba(2, 6, 23, 0), var(--g-surface));
-}
-
-.post-text-wrapper.is-collapsed .post-text-gradient {
-    display: block;
-}
-
-/* кнопка "Показать полностью / Свернуть" */
-.post-text-toggle {
-    align-self: flex-start;
-    border: none;
-    background: transparent;
-    color: #93c5fd;
-    cursor: pointer;
-    font-size: 13px;
-    padding: 0;
-}
-
-.post-text-toggle:hover {
-    color: #bfdbfe;
-}
-
-/* ============================
-   Upload previews (images/files)
-   ============================ */
-.file-preview{
-  display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
-  gap:.75rem;
-  margin-top:.75rem;
-}
-
-.preview-item{
-  position:relative;
-  border:1px solid rgba(15,23,42,.12);
-  background:#fff;
-  border-radius:12px;
-  overflow:hidden;
-  min-height:120px;
-}
-
-.preview-item--image{
-  padding:0;
-}
-
-.preview-img{
-  width:100%;
-  height:100%;
-  display:block;
-  object-fit:cover;
-}
-
-.preview-item--file{
-  display:flex;
-  align-items:center;
-  gap:.5rem;
-  padding:.75rem .9rem;
-  background:#f8fafc;
-}
-
-.file-preview-item{display:flex;align-items:center;gap:.5rem;min-width:0}
-.file-preview-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-.remove-file-btn{
-  position:absolute;
-  top:8px;
-  right:8px;
-  width:28px;
-  height:28px;
-  border-radius:999px;
-  border:1px solid rgba(15,23,42,.12);
-  background:rgba(255,255,255,.92);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  line-height:1;
-  color:#ef4444;
-  cursor:pointer;
-}
-.remove-file-btn:hover{background:#fff}
-
-@media (max-width: 576px){
-  .file-preview{grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));}
-}
-
-/* ==========================
-   POST EDITING (inline)
-   ========================== */
-
+/* ===== РЕДАКТИРОВАНИЕ ПОСТА (inline) ===== */
 .post-edit-block {
-    margin-top: 8px;
-    padding: 10px;
-    border: 1px solid var(--g-border);
-    border-radius: 14px;
-    background: rgba(15, 23, 42, 0.02);
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--g-border);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.02);
 }
 
 .post-edit-attachment-item.is-removed {
-    opacity: 0.55;
-    filter: grayscale(0.4);
+  opacity: 0.55;
+  filter: grayscale(0.4);
 }
 
 .post-edit-textarea {
-    resize: vertical;
-    min-height: 90px;
+  resize: vertical;
+  min-height: 90px;
 }
 
 @media (max-width: 576px) {
-    .post-edit-block { padding: 8px; }
+  .post-edit-block { padding: 8px; }
 }

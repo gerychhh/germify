@@ -1,6 +1,4 @@
-/* core/static/core/css/profile.css
-   Профиль: аккуратная светлая карточка + режим редактирования по кнопке ✏️
-*/
+/* core/static/core/css/profile.css */
 
 .profile-page{
   display:flex;
@@ -12,22 +10,26 @@
 .profile-hero{
   border:1px solid var(--g-border);
   border-radius: var(--g-radius);
-  overflow:hidden;
+  overflow: visible;
   background: var(--g-surface);
   box-shadow: var(--g-shadow-sm);
   position:relative;
+  z-index: 10;
 }
 
 .profile-hero::before{
-  content:"";
-  position:absolute;
-  left:-25%;
-  top:-40%;
-  width:160%;
-  height:260px;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(var(--g-primary-rgb), .22), rgba(14, 165, 233, .10) 45%, rgba(255,255,255,0) 70%);
-  pointer-events:none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 20% 20%,
+    rgba(var(--g-primary-rgb), .22) 0%,
+    rgba(14, 165, 233, .10) 45%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: -1;
+  border-radius: var(--g-radius);
 }
 
 .profile-hero__body{
@@ -42,7 +44,7 @@
   display:inline-block;
 }
 
-/* make profile avatar look like community avatar (ring + shadow) */
+/* Аватар как в сообществах (обводка + тень) */
 .profile-avatar-wrap .avatar{
   background: linear-gradient(135deg, rgba(226,232,240,1), rgba(248,250,252,1));
   color: #0f172a;
@@ -56,7 +58,6 @@
   font-size: 34px;
 }
 
-/* avatar upload overlay (edit mode) — same style as community */
 .profile-avatar-overlay{
   position: absolute;
   inset: 0;
@@ -112,20 +113,28 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
   align-items:center;
 }
 
-.profile-stats{
+.profile-stats-row{
   display:flex;
   gap:14px;
   flex-wrap:wrap;
   margin-top:10px;
 }
 
-.profile-stat{
+.profile-stat-link{
   display:inline-flex;
   gap:6px;
   align-items:baseline;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--g-muted);
+  transition: color .15s;
 }
 
-.profile-stat strong{ font-weight:800; }
+.profile-stat-link:hover{ color: var(--g-text); }
+
+.profile-stat-link strong{ font-weight:800; }
 
 .profile-bio-view{ margin-top:10px; }
 
@@ -146,7 +155,6 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
   border-radius: var(--g-radius-sm);
 }
 
-/* file input оставляем в DOM, чтобы label(for=id_avatar) работал стабильно */
 .profile-avatar-input{
   position:absolute;
   width:1px;
@@ -158,4 +166,16 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
 @media (max-width: 576px){
   .profile-hero__body{ flex-direction:column; }
 }
-.profile-container { max-width: 980px; }
+
+.profile-container{ max-width: 980px; }
+
+.profile-dd-menu{
+  z-index: 2000 !important;
+  position: absolute;
+  width: 280px;
+}
+
+.feed-page{
+  position: relative;
+  z-index: 1;
+}

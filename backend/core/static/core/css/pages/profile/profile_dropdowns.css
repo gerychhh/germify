@@ -1,0 +1,95 @@
+/* Profile dropdowns (followers / following / communities)
+   Uses the global .avatar component markup.
+*/
+
+/* Prevent clipping inside the profile hero card (common cause: overflow: hidden) */
+.profile-hero,
+.profile-hero__body,
+.profile-page {
+  overflow: visible !important;
+}
+
+/* Menu sizing + stacking */
+.profile-dd .dropdown-menu.profile-dd-menu {
+  padding: 0;
+  width: 360px;
+  max-width: 92vw;
+  max-height: 420px;
+  overflow: hidden;
+  z-index: 2000;
+}
+
+.profile-dd-head {
+  background: #fff;
+}
+
+.profile-dd-caption {
+  font-weight: 600;
+}
+
+.profile-dd-list {
+  max-height: 330px;
+  overflow: auto;
+  padding: 8px;
+}
+
+.profile-dd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.profile-dd-item:hover {
+  background: rgba(0,0,0,.04);
+}
+
+.profile-dd-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.profile-dd-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-dd-subtitle {
+  font-size: .875rem;
+  color: var(--bs-secondary-color, #6c757d);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-dd-menu.is-loading .profile-dd-list {
+  opacity: .6;
+  pointer-events: none;
+}
+
+.profile-dd-menu.is-loading .profile-dd-list::before {
+  content: "Загрузка…";
+  display: block;
+  padding: 10px;
+  font-size: .875rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.profile-stat-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+.profile-stat-link:hover {
+  text-decoration: underline;
+}
