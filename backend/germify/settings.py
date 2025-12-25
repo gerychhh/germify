@@ -20,25 +20,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^1!s$@qo59(9(u#pl&em7m%5^v6s0y%k*2svc^@!n*3a#l2p7p'
-
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-^1!s$@qo59(9(u#pl&em7m%5^v6s0y%k*2svc^@!n*3a#l2p7p')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = [
-    'germify.ddns.net',
-    'www.germify.ddns.net',
-    '127.0.0.1',
-    'localhost',
-    '79.170.108.189'
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://germify.ddns.net",
-    "http://germify.ddns.net",
-]
-
-
+DEBUG = os.getenv('DJANGO_DEBUG', '1') == '1'
+# Hosts
+_hosts_env = os.getenv('DJANGO_ALLOWED_HOSTS', '').strip()
+_hosts_fallback = 'germify.ddns.net,www.germify.ddns.net,127.0.0.1,localhost,79.170.108.189'
+ALLOWED_HOSTS = [h.strip() for h in (_hosts_env or _hosts_fallback).split(',') if h.strip()]
+# CSRF
+_csrf_env = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '').strip()
+_csrf_fallback = 'https://germify.ddns.net,http://germify.ddns.net'
+CSRF_TRUSTED_ORIGINS = [u.strip() for u in (_csrf_env or _csrf_fallback).split(',') if u.strip()]
 
 # Application definition
 
@@ -92,14 +84,12 @@ ASGI_APPLICATION = 'germify.asgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "germify",
-        "USER": "germify_user",
-        "PASSWORD": "mysqlmysql@@1",  # тот, что указал в MySQL
-        "HOST": "127.0.0.1",
-        "PORT": "3306",
-        "OPTIONS": {
-            "charset": "utf8mb4",
-        },
+        "NAME": os.getenv("MYSQL_DATABASE", "germify"),
+        "USER": os.getenv("MYSQL_USER", "germify_user"),
+        "PASSWORD": os.getenv("MYSQL_PASSWORD", ""),
+        "HOST": os.getenv("MYSQL_HOST", "db"),   # ВАЖНО: db, а не 127.0.0.1
+        "PORT": os.getenv("MYSQL_PORT", "3306"),
+        "OPTIONS": {"charset": "utf8mb4"},
     }
 }
 
@@ -159,6 +149,7 @@ if REDIS_URL:
 else:
     CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

@@ -5,41 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2d5614a6-939c-4f99-a314-b1c6afd6ce92" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/core/templatetags/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/core/templatetags/markdown_extras.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/germify.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/germify.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/autoRunServerPython.bat" beforeDir="false" afterPath="$PROJECT_DIR$/autoRunServerPython.bat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/autoRunServerPython.bat" beforeDir="false" afterPath="$PROJECT_DIR$/backend/autoRunServerPython.bat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/consumers.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/consumers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/context_processors.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/context_processors.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/services/messages.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/services/messages.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/signals.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/signals.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/app.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/app.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/avatar.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/avatar.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/components/avatar.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/components/avatar.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/pages/messages/messages.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/pages/messages/messages.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/posts.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/posts.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/js/messages.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/js/messages.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/js/messages_thread.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/js/messages_thread.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/messages_inbox.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/messages_inbox.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/messages_thread.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/messages_thread.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/avatar.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/avatar.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/community_members_chunk.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/community_members_chunk.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/message_item.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/message_item.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/messages_inbox_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/messages_inbox_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/messages_thread_chat.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/messages_thread_chat.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/mobile_nav.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/mobile_nav.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/navbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/navbar.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/post.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/post.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/germify/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/germify/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/backend/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,7 +40,7 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;restructure&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -80,6 +51,9 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\gerychhh_\germify\germify\backend" />
+      <recent name="C:\gerychhh_\germify\germify" />
+      <recent name="C:\gerychhh_\germify\germify\backend\core" />
       <recent name="C:\gerychhh_\germify\germify\backend\core\templatetags" />
     </key>
   </component>
@@ -136,6 +110,11 @@
       <workItem from="1765203130002" duration="57000" />
       <workItem from="1766266835521" duration="3678000" />
       <workItem from="1766343323509" duration="14967000" />
+      <workItem from="1766415599630" duration="28785000" />
+      <workItem from="1766593298541" duration="2229000" />
+      <workItem from="1766680208795" duration="604000" />
+      <workItem from="1766686074168" duration="12829000" />
+      <workItem from="1766701916870" duration="1245000" />
     </task>
     <servers />
   </component>
@@ -152,6 +131,10 @@
           <url>file://$PROJECT_DIR$/main.py</url>
           <line>8</line>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/backend/core/urls.py</url>
+          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.log
+
+# Django
+media/
+staticfiles/
+
+# Tests/cache
+.pytest_cache/
+
+# Venv
+venv/
+.venv/
+Venv*/
+
+# Git/IDE
+.git/
+.idea/
+.vscode/
+
+# OS junk
+.DS_Store
+Thumbs.db
