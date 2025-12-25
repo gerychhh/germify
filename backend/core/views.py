@@ -853,7 +853,8 @@ def _render_chat_page(request, chat: Chat, other_user=None):
 
     msgs_qs = (
         ChatMessage.objects.filter(chat=chat)
-        .select_related("sender")
+        .select_related("sender", "chat")
+        .prefetch_related("attachments")
         .order_by("created_at")
     )
     msgs = list(msgs_qs)
@@ -870,6 +871,17 @@ def _render_chat_page(request, chat: Chat, other_user=None):
     chat_title = (
         (other_user.display_name or other_user.username) if other_user is not None else (chat.title or "Группа")
     )
+
+    # Read receipts (DM only): up to which message the other participant has read.
+    other_read_upto = 0
+    if chat.kind == Chat.KIND_DM and other_user is not None:
+        other_member = (
+            ChatMember.objects.filter(chat=chat, user=other_user, is_hidden=False)
+            .only("id", "last_read_message_id")
+            .first()
+        )
+        if other_member and other_member.last_read_message_id:
+            other_read_upto = int(other_member.last_read_message_id)
 
     # Membership (only active membership matters for UI decisions)
     my_member = ChatMember.objects.filter(chat=chat, user=request.user, is_hidden=False).first()
@@ -954,6 +966,7 @@ def _render_chat_page(request, chat: Chat, other_user=None):
         "chat": chat,
         "chat_title": chat_title,
         "other_user": other_user,
+        "other_read_upto": other_read_upto,
         "members_count": members_count,
         "group_members_preview": group_members_preview,
         "group_members": group_members,
@@ -1556,6 +1569,10 @@ def messages_send(request, username):
 
     chat = get_or_create_dm_chat(request.user, other)
 
+    # For read receipts: how far the other user has read.
+    other_member = ChatMember.objects.filter(chat=chat, user=other).only("last_read_message_id").first()
+    other_read_upto = int(getattr(other_member, "last_read_message_id", 0) or 0)
+
     # Важно: создаём сообщение и вложения в одном atomic, чтобы WS-уведомление
     # (signals.py) улетало уже с готовыми вложениями.
     with transaction.atomic():
@@ -1574,7 +1591,7 @@ def messages_send(request, username):
 
     html = render_to_string(
         "core/partials/message_item.html",
-        {"message": msg},
+        {"message": msg, "chat": chat, "other_user": other, "other_read_upto": other_read_upto},
         request=request,
     )
 
@@ -1622,7 +1639,7 @@ def messages_chat_send(request, chat_id: int):
 
     html = render_to_string(
         "core/partials/message_item.html",
-        {"message": msg},
+        {"message": msg, "chat": chat, "other_read_upto": 0},
         request=request,
     )
 

@@ -16,7 +16,7 @@
         <div class="attachments message-attachments">
 
             {# КАРТИНКИ — сетка #}
-            <div class="attachment-gallery" data-count="{{ message.attachments.all|length }}">
+            <div class="attachment-gallery">
                 {% for att in message.attachments.all %}
                     {% if att.is_image %}
                         <div class="gallery-item">
@@ -133,7 +133,18 @@
             <div class="message-text">{{ message.text|md }}</div>
         {% endif %}
 
-        <div class="message-time">{{ message.created_at|localtime|date:"H:i" }}</div>
+        <div class="message-meta">
+            <span class="message-time">{{ message.created_at|localtime|date:"H:i" }}</span>
+
+            {# Read receipts (DM): show for my outgoing messages only #}
+            {% if message.sender == request.user and chat and chat.kind == 'dm' %}
+                {% if message.id <= other_read_upto %}
+                    <span class="message-receipt is-read" data-receipt="1" data-mid="{{ message.id }}">✓✓</span>
+                {% else %}
+                    <span class="message-receipt" data-receipt="1" data-mid="{{ message.id }}">✓</span>
+                {% endif %}
+            {% endif %}
+        </div>
     </div>
     {% if message.sender == request.user %}
         {% include "core/partials/avatar.html" with user_obj=message.sender size="sm" %}

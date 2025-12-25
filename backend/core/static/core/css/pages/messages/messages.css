@@ -155,22 +155,22 @@
 }
 
 .message-item {
-  display: inline-flex;
+  display: flex;              /* ВАЖНО: не inline-flex */
+  width: 100%;                /* строка на всю ширину */
   gap: 8px;
   align-items: flex-end;
-  width: fit-content;
-  max-width: 100%;
   min-width: 0;
 }
 
 .message-item.other {
-  align-self: flex-start;
+  justify-content: flex-start;
 }
 
 .message-item.me {
-  align-self: flex-end;
-  flex-direction: row-reverse;
+  justify-content: flex-end;
+  flex-direction: row;        /* пузырь -> аватар (у тебя так в HTML) */
 }
+
 
 .message-body {
   max-width: min(560px, 76%);
@@ -189,11 +189,29 @@
   border-color: rgba(var(--g-primary-rgb), 0.20);
 }
 
-.message-time {
+.message-meta {
   margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.message-time {
+  margin: 0;
   font-size: 11px;
   color: var(--g-muted);
   text-align: right;
+}
+
+.message-receipt {
+  font-size: 11px;
+  color: var(--g-muted);
+  user-select: none;
+}
+
+.message-receipt.is-read {
+  color: rgba(var(--g-primary-rgb), 0.9);
 }
 
 /* Вложения в сообщениях: не даём разъезжаться по ширине */
@@ -214,22 +232,23 @@
 
 /* Кнопка "вниз" */
 
+/* Кнопка "вниз" (внутри окна чата) */
 .scroll-bottom-btn {
-  position: fixed;
-  right: 18px;
-  bottom: 160px;
+  position: absolute;
+  right: 16px;
+  bottom: 92px; /* над полем ввода */
   border: 1px solid var(--g-border);
   border-radius: 999px;
   background: var(--g-surface);
   color: var(--g-text);
   font-size: 14px;
-  padding: 6px 10px;
+  padding: 7px 10px;
   box-shadow: var(--g-shadow-sm);
   display: inline-flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  z-index: 9998;
+  z-index: 30;
 }
 
 .scroll-bottom-btn:hover { background: var(--g-surface-2); }
@@ -248,8 +267,57 @@
   padding: 0 5px;
 }
 
+
 /* ===== FIX: убрать caret (треугольник) у кнопки ⋯ ===== */
 .dialog-menu-toggle.dropdown-toggle::after,
 .btn.dropdown-toggle.dialog-menu-toggle::after{
   display: none !important;
+}
+/* ===========================
+   FIX: медиа не должно "двигать" выравнивание сообщений
+   Причина: shrink-to-fit + gallery one (img width:auto)
+   =========================== */
+
+/* чтобы абсолютные элементы (кнопка вниз) жили в карточке */
+.messages-chat-card { position: relative; }
+
+/* пузырь пусть не растёт от внутренней ширины медиа */
+.message-body {
+  overflow: hidden;          /* на всякий — убирает случайный оверфлоу */
+}
+
+/* Вариант без правок шаблона: modern-браузеры */
+.message-body:has(.message-attachments) {
+  width: min(560px, 76%);
+}
+
+/* Вложения пусть заполняют ширину пузыря, а не задают её */
+.message-body .message-attachments,
+.message-body .message-attachments .attachment-gallery,
+.message-body .message-attachments .attachment-videos,
+.message-body .message-attachments .attachment-audios,
+.message-body .message-attachments .attachment-files {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* Самый главный фикс: "one" (одна картинка) — не width:auto в сообщениях */
+.message-body .message-attachments .attachment-gallery[data-layout="one"] .gallery-item {
+  padding: 6px;              /* оставим "рамку" как в постах */
+}
+
+.message-body .message-attachments .attachment-gallery[data-layout="one"] .gallery-img {
+  width: 100%;               /* вместо auto */
+  height: auto;
+  max-height: min(65vh, 560px);
+  object-fit: contain;
+}
+
+/* Видео/аудио/файлы гарантированно влезают */
+.message-body .message-attachments .video-wrapper,
+.message-body .message-attachments .audio-wrapper,
+.message-body .message-attachments .file-card {
+  max-width: 100%;
 }

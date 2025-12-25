@@ -6,74 +6,191 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'core/css/shared/attachments.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=13">
+
+    {# UI polish just for feed search + composer #}
+    <style>
+        /* --- Search --- */
+        .feed-search-card{
+            border-radius: 18px;
+            border: 1px solid rgba(0,0,0,.08);
+            box-shadow: 0 2px 10px rgba(0,0,0,.05);
+            overflow: hidden;
+        }
+        .feed-search-form{ width: 100%; }
+        .feed-search-pill{
+            display:flex;
+            align-items:center;
+            gap:.5rem;
+            padding:.55rem .6rem;
+            border: 1px solid rgba(0,0,0,.12);
+            border-radius: 999px;
+            background: rgba(255,255,255,.9);
+        }
+        .feed-search-pill:focus-within{
+            border-color: rgba(13,110,253,.50);
+            box-shadow: 0 0 0 .25rem rgba(13,110,253,.15);
+        }
+        .feed-search-icon{
+            opacity:.65;
+            padding-left:.25rem;
+            user-select:none;
+        }
+        .feed-search-input{
+            border: 0 !important;
+            outline: 0 !important;
+            box-shadow: none !important;
+            flex: 1 1 auto;
+            min-width: 220px;
+            background: transparent !important;
+            padding: .15rem .25rem;
+        }
+        .feed-search-btn{
+            border-radius: 999px;
+            padding: .38rem .95rem;
+            white-space: nowrap;
+        }
+        .feed-search-clear{
+            border-radius: 999px;
+            padding: .38rem .75rem;
+            text-decoration: none;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            white-space: nowrap;
+        }
+
+        /* --- Composer --- */
+        .feed-new-post-card{
+            border-radius: 18px;
+            border: 1px solid rgba(0,0,0,.08);
+            box-shadow: 0 2px 10px rgba(0,0,0,.05);
+            overflow: hidden;
+        }
+        .feed-new-post-textarea{
+            border-radius: 14px;
+            padding: .8rem .95rem;
+            resize: vertical;
+        }
+        .feed-new-post-textarea:focus{
+            border-color: rgba(13,110,253,.45);
+            box-shadow: 0 0 0 .25rem rgba(13,110,253,.15);
+        }
+        .file-info span{
+            background: rgba(0,0,0,.04);
+            border: 1px solid rgba(0,0,0,.08);
+            padding: .20rem .55rem;
+            border-radius: 999px;
+        }
+        .feed-new-post-footer .btn{
+            border-radius: 999px;
+            padding-left: .9rem;
+            padding-right: .9rem;
+        }
+
+        @media (max-width: 576px){
+            .feed-search-input{ min-width: 140px; }
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
 <div class="feed-page">
 
+    <!-- Поиск по ленте -->
+    <section class="card feed-search-card">
+        <div class="card-body p-3">
+            <form method="get" action="{% url 'feed' %}" class="feed-search-form">
+                <div class="feed-search-pill">
+                    <span class="feed-search-icon">🔎</span>
+
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ q|default:'' }}"
+                        class="form-control feed-search-input"
+                        placeholder="Поиск постов… (можно @username или имя автора)"
+                        autocomplete="off">
+
+                    <button type="submit" class="btn btn-success feed-search-btn">Найти</button>
+
+                    {% if q %}
+                        <a class="btn btn-outline-secondary feed-search-clear" href="{% url 'feed' %}" title="Сбросить">✕</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            {% if q_author %}
+                <div class="small text-muted mt-2">
+                    Фильтр по автору:
+                    <strong>@{{ q_author.username }}</strong>{% if q_author.display_name %} ({{ q_author.display_name }}){% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
     <!-- Форма нового поста -->
     <section class="card feed-new-post-card">
         <div class="card-body p-3">
-        <form method="post"
-          action="{% url 'create_post' %}"
-          class="new-post-form"
-          enctype="multipart/form-data"
-          data-authenticated="{% if user.is_authenticated %}1{% else %}0{% endif %}"
-          data-login-url="{% url 'login' %}?next={{ request.path }}">
-        {% csrf_token %}
-        <h2 class="h6 mb-2 feed-new-post-title">Чем поделишься сегодня?</h2>
+            <form method="post"
+                  action="{% url 'create_post' %}"
+                  class="new-post-form"
+                  enctype="multipart/form-data"
+                  data-authenticated="{% if user.is_authenticated %}1{% else %}0{% endif %}"
+                  data-login-url="{% url 'login' %}?next={{ request.path }}">
+                {% csrf_token %}
+                <h2 class="h6 mb-2 feed-new-post-title">Чем поделишься сегодня?</h2>
 
-        <textarea
-            name="text"
-            class="form-control feed-new-post-textarea"
-            rows="4"
-            placeholder="Напишите что-нибудь интересное.">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
+                <textarea
+                    name="text"
+                    class="form-control feed-new-post-textarea"
+                    rows="4"
+                    placeholder="Напишите что-нибудь интересное.">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
 
-        <!-- PREVIEW -->
-        <div class="file-preview mt-2" id="file-preview"></div>
+                <!-- PREVIEW -->
+                <div class="file-preview mt-2" id="file-preview"></div>
 
-        <!-- PREVIEW голосового -->
-        <audio id="voice-preview"
-               class="voice-preview hidden mt-2 w-100"
-               controls></audio>
+                <!-- PREVIEW голосового -->
+                <audio id="voice-preview"
+                       class="voice-preview hidden mt-2 w-100"
+                       controls></audio>
 
-        <!-- DRAG & DROP ZONE -->
-        <div id="drop-zone" class="drop-zone hidden mt-2 p-3 rounded text-center">
-            Перетащи файлы сюда или нажми на скрепку
-        </div>
+                <!-- DRAG & DROP ZONE -->
+                <div id="drop-zone" class="drop-zone hidden mt-2 p-3 rounded text-center">
+                    Перетащи файлы сюда или нажми на скрепку
+                </div>
 
-        <!-- INFO + PROGRESS -->
-        <div class="file-info small text-muted mt-2 d-flex gap-3 flex-wrap">
-            <span id="file-count">Файлы: 0</span>
-            <span id="file-size">Размер: 0 MB</span>
-        </div>
+                <!-- INFO + PROGRESS -->
+                <div class="file-info small text-muted mt-2 d-flex gap-2 flex-wrap">
+                    <span id="file-count">Файлы: 0</span>
+                    <span id="file-size">Размер: 0 MB</span>
+                </div>
 
-        <div class="upload-progress hidden mt-2" id="upload-progress">
-            <div class="upload-progress-bar" id="upload-progress-bar"></div>
-        </div>
+                <div class="upload-progress hidden mt-2" id="upload-progress">
+                    <div class="upload-progress-bar" id="upload-progress-bar"></div>
+                </div>
 
-        <div class="feed-new-post-footer mt-3 d-flex align-items-center gap-2 flex-wrap">
-            <!-- Голосовой ввод -->
-            <div class="voice-recorder d-flex align-items-center gap-2 me-auto">
-                <button type="button"
-                        id="voice-record-btn"
-                        class="btn btn-outline-primary btn-sm voice-record-btn">
-                    🎙 Голос
-                </button>
-                <span id="voice-record-status" class="voice-record-status small text-muted"></span>
-            </div>
+                <div class="feed-new-post-footer mt-3 d-flex align-items-center gap-2 flex-wrap">
+                    <!-- Голосовой ввод -->
+                    <div class="voice-recorder d-flex align-items-center gap-2 me-auto">
+                        <button type="button"
+                                id="voice-record-btn"
+                                class="btn btn-outline-primary btn-sm voice-record-btn">
+                            🎙 Голос
+                        </button>
+                        <span id="voice-record-status" class="voice-record-status small text-muted"></span>
+                    </div>
 
-            <label class="btn btn-outline-secondary btn-sm attach-btn mb-0" title="Прикрепить файлы">
-                📎 <span class="d-none d-sm-inline">Файлы</span>
-                <input type="file"
-                       name="attachments"
-                       multiple
-                       style="display:none;">
-            </label>
+                    <label class="btn btn-outline-secondary btn-sm attach-btn mb-0" title="Прикрепить файлы">
+                        📎 <span class="d-none d-sm-inline">Файлы</span>
+                        <input type="file"
+                               name="attachments"
+                               multiple
+                               style="display:none;">
+                    </label>
 
-            <button type="submit" class="btn btn-primary btn-sm primary-button">Опубликовать</button>
-        </div>
-    </form>
+                    <button type="submit" class="btn btn-primary btn-sm primary-button">Опубликовать</button>
+                </div>
+            </form>
         </div>
     </section>
 
@@ -85,6 +202,13 @@
         {% for post in posts %}
             {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
         {% empty %}
+            {% if q %}
+                <div class="card">
+                    <div class="card-body p-3 text-muted">
+                        Ничего не найдено по запросу <strong>“{{ q }}”</strong>.
+                    </div>
+                </div>
+            {% endif %}
         {% endfor %}
     </section>
 

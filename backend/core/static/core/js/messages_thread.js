@@ -1,11 +1,17 @@
 // static/core/js/messages_thread.js
 //
-// Thread page logic (current UI):
-// - Send message via POST
-// - Receive new messages via WebSocket push (global GermifyWS events from messages.js)
-// - No frequent polling (fallback is handled in messages.js)
+// Thread page logic:
+// - Send message via XHR (no page reload)
+// - Attachments picker + preview + remove
+// - Voice recorder -> adds voice.webm as attachment
+// - Init media widgets in messages (gallery/video/audio)
+// - Fullscreen video via Fullscreen API (no layout breaking)
+// - Scroll-to-bottom button + unread badge
+// - Read receipts updates (chat_read)
 
 (function () {
+    "use strict";
+
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== "") {
@@ -27,6 +33,8 @@
 
         const chatCard = document.getElementById("messagesChatCard") || list.closest("#messagesChatCard");
         const chatId = chatCard?.dataset?.chatId ? parseInt(chatCard.dataset.chatId, 10) : null;
+        const meId = chatCard?.dataset?.meId ? parseInt(chatCard.dataset.meId, 10) : null;
+        const chatKind = chatCard?.dataset?.kind || null;
         const otherUsername = chatCard?.dataset?.username || null;
 
         const form = document.querySelector("#messageForm");
@@ -44,20 +52,14 @@
                     credentials: "same-origin",
                     cache: "no-store",
                 });
-            } catch (e) {
-                return;
-            }
+            } catch (e) { return; }
 
             if (resp.status === 403) {
                 const data = await resp.json().catch(() => null);
-                if (data && data.redirect) {
-                    window.location.href = data.redirect;
-                } else {
-                    window.location.href = "/messages/";
-                }
+                if (data && data.redirect) window.location.href = data.redirect;
+                else window.location.href = "/messages/";
                 return;
             }
-
             if (!resp.ok) return;
 
             const html = await resp.text();
@@ -66,7 +68,6 @@
         }
 
         function bindHeaderInteractive() {
-            // Bind members filter input (idempotent)
             document.querySelectorAll("[data-members-filter]").forEach((inp) => {
                 if (inp.dataset.bound === "1") return;
                 inp.dataset.bound = "1";
@@ -80,13 +81,11 @@
                     const q = String(inp.value || "").trim().toLowerCase();
                     options.forEach((opt) => {
                         const hay = String(opt.dataset.membersName || opt.textContent || "").toLowerCase();
-                        const show = !q || hay.includes(q);
-                        opt.style.display = show ? "" : "none";
+                        opt.style.display = !q || hay.includes(q) ? "" : "none";
                     });
                 });
             });
 
-            // Bind delete/leave buttons (idempotent)
             document.querySelectorAll(".messages-delete-thread").forEach((btn) => {
                 if (btn.dataset.bound === "1") return;
                 btn.dataset.bound = "1";
@@ -108,20 +107,14 @@
                             },
                             credentials: "same-origin",
                         });
-
-                        if (resp2.ok) {
-                            window.location.href = "/messages/";
-                        } else {
-                            console.warn("messages delete/leave bad status:", resp2.status);
-                        }
+                        if (resp2.ok) window.location.href = "/messages/";
                     } catch (e) {
-                        console.error("Ошибка при удалении/выходе из чата:", e);
+                        console.error("Ошибка при удалении/выходе:", e);
                     }
                 });
             });
         }
 
-        // Initial header bindings
         bindHeaderInteractive();
 
         const input = form.querySelector("textarea[name='text']");
@@ -130,19 +123,146 @@
         const selectedWrap = document.getElementById("messages-selected-files");
         const progWrap = document.getElementById("message-upload-progress");
         const progBar = document.getElementById("message-upload-progress-bar");
+        const submitBtn = form.querySelector("button[type='submit']");
 
         const voiceBtn = document.getElementById("chat-voice-record-btn");
         const voiceStatus = document.getElementById("chat-voice-record-status");
         const voicePreview = document.getElementById("chat-voice-preview");
+
         const sendUrl = form.dataset.sendUrl || null;
+
+        // ------------------------------
+        // Scroll helpers + button
+        // ------------------------------
+        function recalcIsAtBottom() {
+            const threshold = 6;
+            const distance = list.scrollHeight - (list.scrollTop + list.clientHeight);
+            return distance <= threshold;
+        }
+
+        function scrollToBottom(options = { smooth: false }) {
+            const behavior = options.smooth ? "smooth" : "auto";
+            list.scrollTo({ top: list.scrollHeight, behavior });
+        }
+
+        const scrollBtn = document.getElementById("scroll-bottom-btn");
+        const unreadBadge = document.getElementById("scroll-bottom-unread");
+        let localNewCount = 0;
+
+        function setLocalNewCount(n) {
+            localNewCount = Math.max(0, (n | 0));
+            if (!unreadBadge) return;
+
+            if (localNewCount > 0) {
+                unreadBadge.textContent = String(localNewCount);
+                unreadBadge.classList.remove("hidden");
+            } else {
+                unreadBadge.textContent = "0";
+                unreadBadge.classList.add("hidden");
+            }
+        }
+
+        function updateScrollBtn() {
+            if (!scrollBtn) return;
+            if (recalcIsAtBottom()) {
+                scrollBtn.classList.add("hidden");
+                setLocalNewCount(0);
+            } else {
+                scrollBtn.classList.remove("hidden");
+            }
+        }
+
+        if (scrollBtn && !scrollBtn.dataset.bound) {
+            scrollBtn.dataset.bound = "1";
+            scrollBtn.addEventListener("click", () => {
+                scrollToBottom({ smooth: true });
+                setLocalNewCount(0);
+                updateScrollBtn();
+                // при клике вниз — считаем что прочитали всё видимое
+                sendMarkReadReliable(getCurrentLastId());
+            });
+        }
+
+        if (!list.dataset.scrollBound) {
+            list.dataset.scrollBound = "1";
+            list.addEventListener("scroll", () => {
+                if (recalcIsAtBottom()) setLocalNewCount(0);
+                updateScrollBtn();
+
+                // если пользователь докрутил вниз — можно безопасно ставить read
+                if (recalcIsAtBottom()) {
+                    sendMarkReadReliable(getCurrentLastId());
+                }
+            }, { passive: true });
+        }
+
+        function getCurrentLastId() {
+            return parseInt(list.dataset.lastId || "0", 10) || 0;
+        }
+
+        // ------------------------------
+        // WS helpers: reliable mark_read on open
+        // ------------------------------
+        function wsIsOpen() {
+            return typeof window.GermifyWS?.isOpen === "function" && window.GermifyWS.isOpen();
+        }
+
+        function wsSend(payload) {
+            if (!wsIsOpen()) return false;
+            return !!window.GermifyWS.send(payload);
+        }
+
+        // КЛЮЧЕВО: когда ты открыл чат, WS мог ещё не успеть подключиться.
+        // Поэтому шлём mark_read с ретраями.
+        let lastReadSent = 0;
+
+        function sendMarkReadReliable(lastId) {
+            if (!chatId) return;
+            const lid = parseInt(lastId || 0, 10) || 0;
+            if (!lid) return;
+
+            // не спамим одинаковым last_id
+            if (lid <= lastReadSent) return;
+
+            const payload = { type: "mark_read", chat_id: chatId, last_id: lid };
+
+            if (wsSend(payload)) {
+                lastReadSent = lid;
+                return;
+            }
+
+            // ретраи, пока WS не откроется
+            let tries = 0;
+            const timer = setInterval(() => {
+                tries += 1;
+                if (wsSend(payload)) {
+                    lastReadSent = lid;
+                    clearInterval(timer);
+                } else if (tries >= 24) { // ~6 секунд
+                    clearInterval(timer);
+                }
+            }, 250);
+        }
+
+        function triggerGlobalUnreadUpdate() {
+            if (typeof window.germifyUpdateUnread === "function") {
+                window.germifyUpdateUnread();
+            }
+        }
+
+        // init on open
+        scrollToBottom({ smooth: false });
+        updateScrollBtn();
+        setLocalNewCount(0);
+
+        // СРАЗУ ставим прочитано при входе (с ретраями)
+        sendMarkReadReliable(getCurrentLastId());
 
         // ------------------------------
         // Attachments state
         // ------------------------------
         let selectedFiles = []; // Array<File>
-
-        // Лимит файлов берём из body[data-attach-max] (как в постах)
-        const MAX_FILE_COUNT = parseInt(document.body?.dataset?.attachMax || '10', 10);
+        const MAX_FILE_COUNT = parseInt(document.body?.dataset?.attachMax || "10", 10);
 
         function bytesToHuman(bytes) {
             const b = Number(bytes || 0);
@@ -203,12 +323,10 @@
                 rm.textContent = "✖";
                 rm.title = "Удалить";
                 rm.addEventListener("click", () => {
-                    // Revoke preview URL if used
                     if (left && left.tagName === "IMG") {
                         try { URL.revokeObjectURL(left.src); } catch (e) {}
                     }
                     selectedFiles.splice(idx, 1);
-                    // Если это был voice — уберём превью
                     if (file && file.name === "voice.webm") {
                         if (voicePreview) {
                             voicePreview.classList.add("hidden");
@@ -229,8 +347,7 @@
             if (!filesList || !filesList.length) return;
 
             const arr = Array.from(filesList);
-            const current = selectedFiles.length;
-            if (current + arr.length > MAX_FILE_COUNT) {
+            if (selectedFiles.length + arr.length > MAX_FILE_COUNT) {
                 alert("Максимум файлов в одном сообщении: " + MAX_FILE_COUNT);
                 return;
             }
@@ -240,10 +357,14 @@
         }
 
         if (attachBtn && fileInput) {
-            attachBtn.addEventListener("click", () => fileInput.click());
+            attachBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.click();
+            });
+
             fileInput.addEventListener("change", () => {
                 addFiles(fileInput.files);
-                // очищаем input, чтобы повторный выбор того же файла сработал
                 fileInput.value = "";
             });
         }
@@ -256,24 +377,41 @@
         let recorderChunks = [];
         let recording = false;
 
+        let stopPromiseResolve = null;
+        function waitRecorderStopOnce() {
+            return new Promise((resolve) => { stopPromiseResolve = resolve; });
+        }
+
         async function startRecording() {
             if (recording) return;
+
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 alert("Ваш браузер не поддерживает запись аудио.");
                 return;
             }
+
             try {
                 recorderStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 recorderChunks = [];
-                recorder = new MediaRecorder(recorderStream, { mimeType: "audio/webm" });
+
+                let opts = {};
+                const prefer = "audio/webm;codecs=opus";
+                if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(prefer)) {
+                    opts = { mimeType: prefer };
+                } else if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported("audio/webm")) {
+                    opts = { mimeType: "audio/webm" };
+                }
+
+                recorder = new MediaRecorder(recorderStream, opts);
+
                 recorder.ondataavailable = (ev) => {
                     if (ev.data && ev.data.size > 0) recorderChunks.push(ev.data);
                 };
+
                 recorder.onstop = () => {
-                    const blob = new Blob(recorderChunks, { type: "audio/webm" });
+                    const blob = new Blob(recorderChunks, { type: (recorder?.mimeType || "audio/webm") });
                     const file = new File([blob], "voice.webm", { type: "audio/webm" });
 
-                    // Если раньше уже было voice.webm — заменим
                     selectedFiles = selectedFiles.filter((f) => f.name !== "voice.webm");
                     selectedFiles.push(file);
 
@@ -281,47 +419,52 @@
                         voicePreview.src = URL.createObjectURL(blob);
                         voicePreview.classList.remove("hidden");
                     }
+
                     renderSelectedFiles();
+
+                    if (typeof stopPromiseResolve === "function") {
+                        stopPromiseResolve();
+                        stopPromiseResolve = null;
+                    }
                 };
+
                 recorder.start();
                 recording = true;
+
                 if (voiceStatus) voiceStatus.textContent = "Запись… нажмите ещё раз чтобы остановить";
                 if (voiceBtn) voiceBtn.classList.add("btn-outline-danger");
             } catch (e) {
                 console.error("voice record error", e);
-                alert("Не удалось получить доступ к микрофону.");
+                alert("Не удалось получить доступ к микрофону. (Нужен HTTPS или localhost)");
             }
         }
 
         function stopRecording() {
             if (!recording) return;
-            try {
-                recorder.stop();
-            } catch (e) {}
 
-            try {
-                recorderStream.getTracks().forEach((t) => t.stop());
-            } catch (e) {}
+            try { recorder.stop(); } catch (e) {}
+            try { recorderStream?.getTracks()?.forEach((t) => t.stop()); } catch (e) {}
 
             recorder = null;
             recorderStream = null;
             recording = false;
+
             if (voiceStatus) voiceStatus.textContent = "";
             if (voiceBtn) voiceBtn.classList.remove("btn-outline-danger");
         }
 
         if (voiceBtn) {
-            voiceBtn.addEventListener("click", () => {
+            voiceBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 if (recording) stopRecording();
                 else startRecording();
             });
         }
 
         // ------------------------------
-        // Media init for dynamic messages
+        // Media init for messages
         // ------------------------------
-
-        // --- Smart galleries (copied from posts.js, to keep identical layouts) ---
         function _imgShape(img) {
             const w = img.naturalWidth || 0;
             const h = img.naturalHeight || 0;
@@ -342,13 +485,9 @@
                 if (s1 === "land" && s2 === "land") return "two-land";
                 return "two-mixed";
             }
-            if (count === 3) {
-                return firstShape === "port" ? "three-vk" : "three-top";
-            }
+            if (count === 3) return firstShape === "port" ? "three-vk" : "three-top";
             if (count === 4) return "four";
-            if (count === 5) {
-                return firstShape === "port" ? "five-left" : "five-top";
-            }
+            if (count === 5) return firstShape === "port" ? "five-left" : "five-top";
             return "grid-3";
         }
 
@@ -371,7 +510,6 @@
                     else item.classList.remove("gallery-hidden");
                 });
 
-                // +N badge
                 gallery.querySelectorAll(".gallery-more-badge").forEach((n) => n.remove());
                 if (imgs.length > maxVisible) {
                     const lastVisibleImg = imgs[maxVisible - 1];
@@ -402,10 +540,24 @@
             });
         }
 
-        // --- Video players (copied from posts.js) ---
+        function toggleFullscreenFor(wrapper, video) {
+            const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+            const isFull = fsEl === wrapper;
+
+            if (!isFull) {
+                const req = wrapper.requestFullscreen || wrapper.webkitRequestFullscreen;
+                if (req) { try { req.call(wrapper); } catch (e) {} }
+                else if (video && video.webkitEnterFullscreen) { try { video.webkitEnterFullscreen(); } catch (e) {} }
+            } else {
+                const exit = document.exitFullscreen || document.webkitExitFullscreen;
+                if (exit) { try { exit.call(document); } catch (e) {} }
+            }
+        }
+
         function initVideoPlayers(root = document) {
             if (!root.querySelectorAll) return;
             const wrappers = root.querySelectorAll(".video-wrapper");
+
             wrappers.forEach((wrapper) => {
                 if (wrapper.dataset.inited === "1") return;
                 wrapper.dataset.inited = "1";
@@ -420,9 +572,7 @@
                 const currentEl   = wrapper.querySelector(".video-current");
                 const durationEl  = wrapper.querySelector(".video-duration");
 
-                if (!video || !playBtn || !bar || !progressEl || !bufferEl || !currentEl || !durationEl) {
-                    return;
-                }
+                if (!video || !playBtn || !bar || !progressEl || !bufferEl || !currentEl || !durationEl) return;
 
                 let isScrubbing = false;
 
@@ -436,44 +586,24 @@
                 function updateBuffer() {
                     if (!video.duration || isNaN(video.duration)) return;
                     let end = 0;
-                    try {
-                        if (video.buffered.length) {
-                            end = video.buffered.end(video.buffered.length - 1);
-                        }
-                    } catch (e) {}
-                    const percent = (end / video.duration) * 100;
-                    bufferEl.style.width = percent + "%";
+                    try { if (video.buffered.length) end = video.buffered.end(video.buffered.length - 1); } catch (e) {}
+                    bufferEl.style.width = ((end / video.duration) * 100) + "%";
                 }
 
                 video.addEventListener("loadedmetadata", () => {
                     durationEl.textContent = vFormat(video.duration);
                     updateBuffer();
-
-                    if (video.videoWidth && video.videoHeight) {
-                        const r = video.videoWidth / video.videoHeight;
-                        let shape = "square";
-                        if (r >= 1.25) shape = "land";
-                        else if (r <= 0.85) shape = "port";
-                        wrapper.dataset.shape = shape;
-                    }
                 });
 
                 video.addEventListener("loadeddata", updateBuffer);
                 video.addEventListener("progress", updateBuffer);
 
                 playBtn.addEventListener("click", () => {
-                    if (video.paused) {
-                        video.play();
-                        playBtn.textContent = "⏸";
-                    } else {
-                        video.pause();
-                        playBtn.textContent = "▶";
-                    }
+                    if (video.paused) { video.play(); playBtn.textContent = "⏸"; }
+                    else { video.pause(); playBtn.textContent = "▶"; }
                 });
 
-                video.addEventListener("click", () => {
-                    playBtn.click();
-                });
+                video.addEventListener("click", () => playBtn.click());
 
                 if (muteBtn) {
                     muteBtn.addEventListener("click", () => {
@@ -499,52 +629,27 @@
                     if (!video.duration || isNaN(video.duration)) return;
                     const rect = bar.getBoundingClientRect();
                     const x = Math.min(Math.max(clientX - rect.left, 0), rect.width);
-                    const pct = x / rect.width;
-                    video.currentTime = pct * video.duration;
+                    video.currentTime = (x / rect.width) * video.duration;
                 }
 
-                bar.addEventListener("mousedown", (e) => {
-                    isScrubbing = true;
-                    seekByClientX(e.clientX);
-                });
+                bar.addEventListener("mousedown", (e) => { isScrubbing = true; seekByClientX(e.clientX); });
+                document.addEventListener("mousemove", (e) => { if (isScrubbing) seekByClientX(e.clientX); });
+                document.addEventListener("mouseup", () => { isScrubbing = false; });
 
-                document.addEventListener("mousemove", (e) => {
-                    if (!isScrubbing) return;
-                    seekByClientX(e.clientX);
-                });
-
-                document.addEventListener("mouseup", () => {
-                    isScrubbing = false;
-                });
-
-                bar.addEventListener("touchstart", (e) => {
-                    isScrubbing = true;
-                    seekByClientX(e.touches[0].clientX);
-                });
-
-                bar.addEventListener("touchmove", (e) => {
-                    if (!isScrubbing) return;
-                    seekByClientX(e.touches[0].clientX);
-                });
-
-                bar.addEventListener("touchend", () => {
-                    isScrubbing = false;
-                });
+                bar.addEventListener("touchstart", (e) => { isScrubbing = true; seekByClientX(e.touches[0].clientX); });
+                bar.addEventListener("touchmove", (e) => { if (isScrubbing) seekByClientX(e.touches[0].clientX); });
+                bar.addEventListener("touchend", () => { isScrubbing = false; });
 
                 if (fsBtn) {
-                    fsBtn.addEventListener("click", () => {
-                        wrapper.classList.toggle("video-fullscreen");
-                        if (wrapper.classList.contains("video-fullscreen")) {
-                            document.documentElement.style.overflow = "hidden";
-                        } else {
-                            document.documentElement.style.overflow = "";
-                        }
+                    fsBtn.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleFullscreenFor(wrapper, video);
                     });
                 }
             });
         }
 
-        // --- Audio players (copied from posts.js) ---
         function initAudioPlayers(root = document) {
             if (!root.querySelectorAll) return;
 
@@ -562,9 +667,7 @@
                 const currentEl     = wrapper.querySelector(".audio-current");
                 const durationEl    = wrapper.querySelector(".audio-duration");
 
-                if (!audio || !playButton || !progressBar || !bufferEl || !progressEl || !slider || !currentEl || !durationEl) {
-                    return;
-                }
+                if (!audio || !playButton || !progressBar || !bufferEl || !progressEl || !slider || !currentEl || !durationEl) return;
 
                 function aFormat(sec) {
                     if (!sec || isNaN(sec)) return "0:00";
@@ -576,13 +679,8 @@
                 function updateBuffer() {
                     if (!audio.duration || isNaN(audio.duration)) return;
                     let end = 0;
-                    try {
-                        if (audio.buffered.length) {
-                            end = audio.buffered.end(audio.buffered.length - 1);
-                        }
-                    } catch (e) {}
-                    const percent = (end / audio.duration) * 100;
-                    bufferEl.style.width = percent + "%";
+                    try { if (audio.buffered.length) end = audio.buffered.end(audio.buffered.length - 1); } catch (e) {}
+                    bufferEl.style.width = ((end / audio.duration) * 100) + "%";
                 }
 
                 audio.addEventListener("loadedmetadata", () => {
@@ -594,13 +692,8 @@
                 audio.addEventListener("loadeddata", updateBuffer);
 
                 playButton.addEventListener("click", () => {
-                    if (audio.paused) {
-                        audio.play();
-                        playButton.textContent = "⏸";
-                    } else {
-                        audio.pause();
-                        playButton.textContent = "▶";
-                    }
+                    if (audio.paused) { audio.play(); playButton.textContent = "⏸"; }
+                    else { audio.pause(); playButton.textContent = "▶"; }
                 });
 
                 audio.addEventListener("timeupdate", () => {
@@ -620,8 +713,7 @@
 
                 slider.addEventListener("input", () => {
                     if (!audio.duration || isNaN(audio.duration)) return;
-                    const pct = (parseFloat(slider.value) || 0) / 100;
-                    audio.currentTime = pct * audio.duration;
+                    audio.currentTime = ((parseFloat(slider.value) || 0) / 100) * audio.duration;
                 });
             });
         }
@@ -632,106 +724,43 @@
             initAudioPlayers(rootEl);
         }
 
-        // --- Fullscreen image viewer (same behavior as posts) ---
-        // Bind once per page.
-        if (!document.body.dataset.msgViewerBound) {
-            document.body.dataset.msgViewerBound = "1";
+        initMessageMedia(document);
 
-            function openViewer(urls, index) {
-                let current = index;
-                const overlay = document.createElement("div");
-                overlay.className = "image-viewer";
-                overlay.innerHTML = `
-                    <img class="viewer-img" src="${urls[current]}">
-                    <div class="viewer-arrow prev">◀</div>
-                    <div class="viewer-arrow next">▶</div>
-                    <div class="viewer-close">✖</div>
-                `;
-                document.body.appendChild(overlay);
+        // ------------------------------
+        // Read receipts updates (chat_read)
+        // ------------------------------
+        function updateReceipts(uptoId) {
+            const n = Number(uptoId) || 0;
+            if (!n) return;
+            if (chatKind !== "dm") return;
 
-                const viewerImg = overlay.querySelector(".viewer-img");
-                const btnPrev = overlay.querySelector(".prev");
-                const btnNext = overlay.querySelector(".next");
-                const btnClose = overlay.querySelector(".viewer-close");
+            list.querySelectorAll(".message-item.me").forEach((it) => {
+                const mid = parseInt(it.dataset.id || "0", 10) || 0;
+                if (!mid || mid > n) return;
 
-                function show(i) {
-                    current = i;
-                    viewerImg.src = urls[current];
-                }
-
-                btnPrev.onclick = () => {
-                    if (current === 0) show(urls.length - 1);
-                    else show(current - 1);
-                };
-
-                btnNext.onclick = () => {
-                    if (current === urls.length - 1) show(0);
-                    else show(current + 1);
-                };
-
-                btnClose.onclick = () => overlay.remove();
-
-                overlay.addEventListener("click", (ev) => {
-                    if (ev.target === overlay) overlay.remove();
-                });
-
-                function escHandler(ev) {
-                    if (ev.key === "Escape") {
-                        overlay.remove();
-                        document.removeEventListener("keydown", escHandler);
-                    }
-                }
-                document.addEventListener("keydown", escHandler);
-
-                let touchStartX = 0;
-                overlay.addEventListener("touchstart", (ev) => {
-                    touchStartX = ev.changedTouches[0].screenX;
-                });
-                overlay.addEventListener("touchend", (ev) => {
-                    const diff = ev.changedTouches[0].screenX - touchStartX;
-                    if (Math.abs(diff) > 50) {
-                        if (diff > 0) btnPrev.click();
-                        else btnNext.click();
-                    }
-                });
-            }
-
-            document.addEventListener("click", (e) => {
-                const img = e.target.closest(".gallery-img");
-                if (!img) return;
-                const wrap = img.closest(".attachments");
-                if (!wrap) return;
-                const images = [...wrap.querySelectorAll(".gallery-img")];
-                const urls = images.map((i) => i.dataset.full || i.src);
-                const index = images.indexOf(img);
-                openViewer(urls, Math.max(0, index));
+                const r = it.querySelector(".message-receipt[data-receipt='1']");
+                if (!r) return;
+                r.classList.add("is-read");
+                r.textContent = "✓✓";
             });
         }
 
-        function recalcIsAtBottom() {
-            const threshold = 4;
-            const distance = list.scrollHeight - (list.scrollTop + list.clientHeight);
-            return distance <= threshold;
+        function handleChatRead(detail) {
+            if (!detail || detail.type !== "chat_read") return;
+            if (!chatId || !detail.chat_id || Number(detail.chat_id) !== chatId) return;
+
+            // не реагируем на “прочитал я сам”
+            if (meId && detail.reader_id && Number(detail.reader_id) === meId) return;
+
+            updateReceipts(detail.last_read_id);
         }
 
-        function scrollToBottom(options = { smooth: false }) {
-            const behavior = options.smooth ? "smooth" : "auto";
-            list.scrollTo({ top: list.scrollHeight, behavior });
-        }
+        const readHandler = (ev) => handleChatRead(ev.detail);
+        document.addEventListener("germify:chat_read", readHandler);
 
-        function triggerGlobalUnreadUpdate() {
-            if (typeof window.germifyUpdateUnread === "function") {
-                window.germifyUpdateUnread();
-            }
-        }
-
-        // --- Init scroll state ---
-        scrollToBottom({ smooth: false });
-
-        // Init media for already rendered messages
-        initMessageMedia(document);
-
-        // --- Send message ---
+        // ------------------------------
+        // Sending (XHR)
+        // ------------------------------
         function showUploadProgress(pct) {
             if (!progWrap || !progBar) return;
             progWrap.classList.remove("hidden");
@@ -745,15 +774,13 @@
         }
 
         function sendMessage(text) {
-            if (!sendUrl) return Promise.resolve();
+            if (!sendUrl) return Promise.resolve(false);
 
-            const formData = new FormData(form);
+            const formData = new FormData();
             formData.set("text", text || "");
+            formData.append("csrfmiddlewaretoken", getCookie("csrftoken") || "");
 
-            // Добавляем выбранные файлы вручную (fileInput очищаем при выборе)
-            selectedFiles.forEach((f) => {
-                formData.append("attachments", f, f.name);
-            });
+            selectedFiles.forEach((f) => formData.append("attachments", f, f.name));
 
             showUploadProgress(0);
 
@@ -764,8 +791,7 @@
 
                 xhr.upload.onprogress = (evt) => {
                     if (!evt.lengthComputable) return;
-                    const pct = (evt.loaded / evt.total) * 100;
-                    showUploadProgress(pct);
+                    showUploadProgress((evt.loaded / evt.total) * 100);
                 };
 
                 xhr.onreadystatechange = () => {
@@ -777,33 +803,42 @@
                         let data403 = null;
                         try { data403 = JSON.parse(xhr.responseText); } catch (e) {}
                         window.location.href = (data403 && data403.redirect) ? data403.redirect : "/messages/";
-                        resolve();
+                        resolve(false);
                         return;
                     }
 
                     if (xhr.status < 200 || xhr.status >= 300) {
-                        console.warn("messages_send bad status:", xhr.status);
-                        resolve();
+                        let dataErr = null;
+                        try { dataErr = JSON.parse(xhr.responseText); } catch (e) {}
+                        const msg = (dataErr && (dataErr.error || dataErr.detail)) ? (dataErr.error || dataErr.detail) : "Не удалось отправить сообщение.";
+                        alert(msg);
+                        resolve(false);
                         return;
                     }
 
                     let data = null;
                     try { data = JSON.parse(xhr.responseText); } catch (e) {}
+
                     if (data && data.html && data.id) {
                         const already = list.querySelector(`.message-item[data-id="${data.id}"]`);
-                        if (!already) {
-                            list.insertAdjacentHTML("beforeend", data.html);
-                        }
+                        if (!already) list.insertAdjacentHTML("beforeend", data.html);
 
                         const newEl = list.querySelector(`.message-item[data-id="${data.id}"]`);
                         if (newEl) initMessageMedia(newEl);
 
                         list.dataset.lastId = String(data.id);
+
                         scrollToBottom({ smooth: true });
+                        setLocalNewCount(0);
+                        updateScrollBtn();
+
+                        // своё сообщение → мы точно внизу и всё прочитано
+                        sendMarkReadReliable(getCurrentLastId());
+
                         triggerGlobalUnreadUpdate();
                     }
 
-                    resolve();
+                    resolve(true);
                 };
 
                 xhr.send(formData);
@@ -812,24 +847,27 @@
 
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
+            e.stopPropagation();
+
             if (!input) return;
 
             const text = (input.value || "").trim();
             if (!text && !selectedFiles.length) return;
 
-            // Если пользователь ещё пишет голосовое — остановим, чтобы файл появился
-            if (recording) stopRecording();
+            // если идёт запись — остановим и дождёмся появления voice.webm
+            if (recording) {
+                const waitStop = waitRecorderStopOnce();
+                stopRecording();
+                await waitStop;
+            }
+
+            if (submitBtn) submitBtn.disabled = true;
+            const ok = await sendMessage(text);
+            if (submitBtn) submitBtn.disabled = false;
+
+            if (!ok) return;
 
             input.value = "";
-            await sendMessage(text);
-
-            // Очистка выбранных файлов/голосового после успешной попытки (даже если сервер
-            // вернул ошибку — пользователь может повторить, но чаще нужно очистить)
-            selectedFiles.forEach((f) => {
-                if (f.type && f.type.startsWith("image/") && selectedWrap) {
-                    // objectURL revocation делаем в render remove, тут уже нечего
-                }
-            });
             selectedFiles = [];
             renderSelectedFiles();
             if (voicePreview) { voicePreview.classList.add("hidden"); voicePreview.src = ""; }
@@ -844,13 +882,7 @@
             });
         }
 
-        // --- Mark current chat as read on open (WS side keeps header counters in sync) ---
-        const lastId = list.dataset.lastId ? parseInt(list.dataset.lastId, 10) : null;
-        if (chatId && lastId && typeof window.GermifyWS?.send === "function") {
-            window.GermifyWS.send({ type: "mark_read", chat_id: chatId, last_id: lastId });
-        }
-
-        // --- WS push handler ---
+        // WS push: new messages
         function handleMessageNew(detail) {
             if (!detail || detail.type !== "message_new") return;
             if (!detail.html) return;
@@ -858,39 +890,38 @@
             const sameChat =
                 (chatId && detail.chat_id && Number(detail.chat_id) === chatId) ||
                 (!chatId && otherUsername && detail.other_username && detail.other_username === otherUsername);
+
             if (!sameChat) return;
 
             if (detail.message_id) {
                 const existing = list.querySelector(`.message-item[data-id="${detail.message_id}"]`);
-                if (existing) {
-                    triggerGlobalUnreadUpdate();
-                    return;
-                }
+                if (existing) return;
             }
 
             const wasAtBottom = recalcIsAtBottom();
             list.insertAdjacentHTML("beforeend", detail.html);
 
-            if (detail.message_id) {
-                list.dataset.lastId = String(detail.message_id);
-            }
+            if (detail.message_id) list.dataset.lastId = String(detail.message_id);
 
             if (wasAtBottom) {
                 scrollToBottom({ smooth: true });
-            }
+                setLocalNewCount(0);
+                updateScrollBtn();
 
-            // If this is an incoming message and we are currently viewing this chat, mark it read immediately.
-            if (detail.incoming === true && typeof window.GermifyWS?.send === "function") {
-                if (chatId && detail.message_id) {
-                    window.GermifyWS.send({ type: "mark_read", chat_id: chatId, last_id: detail.message_id });
-                } else if (detail.message_id) {
-                    window.GermifyWS.send({ type: "mark_read", ids: [detail.message_id] });
+                // если пришло входящее и мы внизу — ставим прочитано (с ретраями)
+                if (detail.incoming === true) {
+                    sendMarkReadReliable(getCurrentLastId());
                 }
+            } else {
+                // если мы не внизу — показываем кнопку и +1 только для входящих
+                if (detail.incoming === true) {
+                    setLocalNewCount(localNewCount + 1);
+                }
+                updateScrollBtn();
             }
 
             triggerGlobalUnreadUpdate();
         }
-
 
         function handleChatEvent(detail) {
             if (!detail || !detail.type) return;
@@ -898,27 +929,20 @@
             if (!sameChat) return;
 
             if (detail.type === "chat_access_revoked") {
-                const url = detail.redirect_url || "/messages/";
-                window.location.href = url;
+                window.location.href = detail.redirect_url || "/messages/";
                 return;
             }
-
             if (detail.type === "chat_renamed") {
-                // Update title quickly, then refresh header for full sync
                 const titleEl = document.getElementById("messagesChatTitle");
                 if (titleEl && detail.title) titleEl.textContent = detail.title;
                 refreshHeader();
                 return;
             }
-
             if (detail.type === "chat_member_removed" || detail.type === "chat_member_added") {
                 refreshHeader();
                 return;
             }
-
-            if (detail.refresh_header === true) {
-                refreshHeader();
-            }
+            if (detail.refresh_header === true) refreshHeader();
         }
 
         const handler = (ev) => handleMessageNew(ev.detail);
@@ -930,6 +954,7 @@
         window.addEventListener("beforeunload", () => {
             document.removeEventListener("germify:message_new", handler);
             document.removeEventListener("germify:chat_event", chatHandler);
+            document.removeEventListener("germify:chat_read", readHandler);
         });
     }
 

@@ -158,18 +158,23 @@
             if (!data || typeof data !== "object") return;
 
             // Unread updates
+            // NOTE: do NOT return early here — some payloads may also carry inbox_html.
             if (data.type === "unread_total") {
                 const count = Number(data.count) || 0;
                 lastGlobalCount = count;
                 setBadge(badgeDesktop, count);
                 setBadge(badgeMobile, count);
-                return;
             }
             if (typeof data.unread_total === "number") {
                 const count = Number(data.unread_total) || 0;
                 lastGlobalCount = count;
                 setBadge(badgeDesktop, count);
                 setBadge(badgeMobile, count);
+            }
+
+            // “mark_read” server response: update inbox immediately
+            if (data.type === "inbox_update") {
+                // handled by blocks above + inbox_html below
             }
 
             // Inbox re-render
@@ -183,6 +188,12 @@
             if (data.type === "message_new") {
                 window.dispatchEvent(new CustomEvent("germify:message_new", { detail: data }));
                 document.dispatchEvent(new CustomEvent("germify:message_new", { detail: data }));
+            }
+
+            // Read receipts / read pointers
+            if (data.type === "chat_read") {
+                window.dispatchEvent(new CustomEvent("germify:chat_read", { detail: data }));
+                document.dispatchEvent(new CustomEvent("germify:chat_read", { detail: data }));
             }
 
             // Group chat meta updates (rename / members / kick)

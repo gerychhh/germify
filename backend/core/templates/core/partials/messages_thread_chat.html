@@ -3,6 +3,7 @@
 <div id="messagesChatCard"
      class="card messages-chat-card messages-chat d-flex flex-column"
      data-chat-id="{{ chat.id }}"
+     data-me-id="{{ request.user.id }}"
      data-username="{% if other_user %}{{ other_user.username }}{% endif %}"
      data-kind="{{ chat.kind }}"
      data-header-url="{% url 'messages_chat_header' chat.id %}">
@@ -19,8 +20,16 @@
         {% for message in messages %}
             {% include "core/partials/message_item.html" with message=message %}
         {% endfor %}
-
     </div>
+
+    <button type="button"
+            id="scroll-bottom-btn"
+            class="scroll-bottom-btn hidden"
+            aria-label="Прокрутить вниз"
+            title="Вниз">
+        ⬇
+        <span id="scroll-bottom-unread" class="scroll-bottom-unread hidden">0</span>
+    </button>
 
     <div class="card-footer">
         <form id="messageForm"

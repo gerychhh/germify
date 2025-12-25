@@ -5,8 +5,15 @@ from typing import Any, Dict, List, Optional
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.db.models import Max, Sum
+from django.template.loader import render_to_string
+from django.test.client import RequestFactory
 
 from core.models import ChatMember, ChatMessage
+from core.models import User
+from core.services.messages import build_threads_for_user
+
+
+_rf = RequestFactory()
 
 
 def user_group_name(user_id: int) -> str:
@@ -60,14 +67,37 @@ class NotificationsConsumer(AsyncJsonWebsocketConsumer):
                 except (TypeError, ValueError):
                     last_id_int = None
                 updated = await self._mark_read_by_chat(self.user_id, chat_id, last_id_int)
+
+                # Render refreshed inbox for the current user so the left dialogs list
+                # immediately clears unread badges (no waiting for next message/poll).
+                inbox_html = await self._render_inbox_html(self.user_id)
+
+                # Get the effective last_read_message_id (max'ed by server) and notify
+                # other chat members so they can update “прочитано” indicators.
+                reader_last_read = await self._get_last_read_id(self.user_id, chat_id)
+                if reader_last_read:
+                    await self._broadcast_chat_read(chat_id, self.user_id, int(reader_last_read))
             else:
                 if not isinstance(ids, list):
                     ids = []
                 # legacy path: mark read by message ids
                 updated = await self._mark_read_by_ids(self.user_id, ids)
 
+                inbox_html = await self._render_inbox_html(self.user_id)
+
             count = await self._get_unread_total(self.user_id)
-            await self.send_json({"type": "unread_total", "count": count, "updated": updated})
+
+            # IMPORTANT: do not use type="unread_total" here, because messages.js
+            # returns early for that type and would ignore inbox_html.
+            await self.send_json(
+                {
+                    "type": "inbox_update",
+                    "unread_total": count,
+                    "updated": updated,
+                    "inbox_html": inbox_html,
+                    "chat_id": chat_id,
+                }
+            )
             return
 
         if msg_type == "get_unread":
@@ -131,3 +161,51 @@ class NotificationsConsumer(AsyncJsonWebsocketConsumer):
                 )
 
         return updated
+
+    @database_sync_to_async
+    def _get_last_read_id(self, user_id: int, chat_id: int) -> Optional[int]:
+        m = (
+            ChatMember.objects.filter(user_id=user_id, chat_id=chat_id)
+            .only("id", "last_read_message_id")
+            .first()
+        )
+        if not m:
+            return None
+        return int(m.last_read_message_id) if m.last_read_message_id else None
+
+    @database_sync_to_async
+    def _get_chat_member_ids(self, chat_id: int) -> List[int]:
+        return list(ChatMember.objects.filter(chat_id=chat_id, is_hidden=False).values_list("user_id", flat=True))
+
+    @database_sync_to_async
+    def _render_inbox_html(self, user_id: int) -> str:
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return ""
+        req = _rf.get("/messages/_ws_inbox/")
+        req.user = user
+        threads = build_threads_for_user(user)
+        return render_to_string("core/partials/messages_inbox_list.html", {"threads": threads}, request=req)
+
+    async def _broadcast_chat_read(self, chat_id: int, reader_id: int, last_read_id: int) -> None:
+        # Notify everyone except the reader.
+        try:
+            member_ids = await self._get_chat_member_ids(int(chat_id))
+        except Exception:
+            member_ids = []
+
+        for uid in member_ids:
+            if int(uid) == int(reader_id):
+                continue
+            await self.channel_layer.group_send(
+                user_group_name(int(uid)),
+                {
+                    "type": "notify",
+                    "payload": {
+                        "type": "chat_read",
+                        "chat_id": int(chat_id),
+                        "reader_id": int(reader_id),
+                        "last_read_id": int(last_read_id),
+                    },
+                },
+            )

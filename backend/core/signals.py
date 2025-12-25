@@ -82,10 +82,20 @@ def chat_message_created_notify(sender, instance: ChatMessage, created: bool, **
             user = member.user
             other_user = get_other_user_for_dm(chat, user)
 
+            # Read receipts are shown only for DM chats (for messages sent by the viewer).
+            other_read_upto = 0
+            if chat.kind == Chat.KIND_DM and other_user is not None:
+                o_m = (
+                    ChatMember.objects.filter(chat_id=chat.id, user_id=other_user.id)
+                    .only("id", "last_read_message_id")
+                    .first()
+                )
+                other_read_upto = int(getattr(o_m, "last_read_message_id", 0) or 0)
+
             html = _render_for_user(
                 user,
                 "core/partials/message_item.html",
-                {"message": msg, "chat": chat, "other_user": other_user},
+                {"message": msg, "chat": chat, "other_user": other_user, "other_read_upto": other_read_upto},
             )
 
             threads = build_threads_for_user(user)
