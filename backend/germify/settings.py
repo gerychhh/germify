@@ -20,10 +20,10 @@ except Exception:
     pass
 
 
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-^1!s$@qo59(9(u#pl&em7m%5^v6s0y%k*2svc^@!n*3a#l2p7p"
-)
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+
+if not SECRET_KEY:
+    raise RuntimeError("DJANGO_SECRET_KEY is not set (put it in .env)")
 
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
 
@@ -36,6 +36,10 @@ ALLOWED_HOSTS = [h.strip() for h in (_hosts_env or _hosts_fallback).split(",") i
 _csrf_env = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").strip()
 _csrf_fallback = "https://germify.ddns.net,http://germify.ddns.net,http://127.0.0.1,http://localhost"
 CSRF_TRUSTED_ORIGINS = [u.strip() for u in (_csrf_env or _csrf_fallback).split(",") if u.strip()]
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
 
 
 INSTALLED_APPS = [
@@ -87,17 +91,22 @@ ASGI_APPLICATION = "germify.asgi.application"
 # - Outside Docker: default host should be 127.0.0.1
 # - Inside Docker: docker-compose sets MYSQL_HOST=db
 # ------------------------------------------------------------
+# Database
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": os.getenv("MYSQL_DATABASE", "germify"),
         "USER": os.getenv("MYSQL_USER", "germify_user"),
-        "PASSWORD": os.getenv("MYSQL_PASSWORD", "mysqlmysql@@1"),
-        "HOST": os.getenv("MYSQL_HOST", "127.0.0.1"),
+        "PASSWORD": os.getenv("MYSQL_PASSWORD", ""),
+        # В Docker база по имени сервиса: db
+        "HOST": os.getenv("MYSQL_HOST", "db"),
         "PORT": os.getenv("MYSQL_PORT", "3306"),
-        "OPTIONS": {"charset": "utf8mb4"},
+        "OPTIONS": {
+            "charset": "utf8mb4",
+        },
     }
 }
+
 
 
 AUTH_PASSWORD_VALIDATORS = [

@@ -1,10 +1,21 @@
 @echo off
+setlocal
 
-REM Активируем виртуальное окружение
-call C:\gerychhh_\germify\germify\VenvMain\venv\Scripts\activate.bat
+REM Перейти в папку проекта (где docker-compose.yml)
+cd /d C:\gerychhh_\germify\germify
 
-REM Запускаем
-uvicorn germify.asgi:application --host 127.0.0.1 --port 8001
+REM Поднять/пересобрать контейнеры
+docker compose up -d --build
 
-REM Чтобы окно не закрылось сразу
+REM Показать статус
+docker compose ps
+
+REM (опционально) применить миграции и собрать статику
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py collectstatic --noinput
+
+REM Открыть логи (закрыть Ctrl+C)
+docker compose logs -f --tail=200 web
+
 pause
+endlocal
