@@ -11,6 +11,10 @@
   line-height: 1.6;
   text-align: left;
 }
+.post-author-username{
+  font-size: small;
+  text-decoration: none;
+}
 
 .comment-text {
   margin-top: 2px;

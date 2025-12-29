@@ -1,0 +1,39 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Пользователи — GERMiFY{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+  <h3 class="m-0">Пользователи</h3>
+
+  <div class="w-100" style="max-width: 520px;">
+    <input id="usersSearch"
+           type="search"
+           class="form-control"
+           placeholder="Поиск по имени или @username..."
+           value="{{ q|default:'' }}">
+  </div>
+</div>
+
+<div id="usersList" class="vstack gap-2">
+  {% for u in users %}
+    {% include "core/partials/user_card.html" %}
+  {% endfor %}
+</div>
+
+{% if has_next %}
+  <div id="usersSpinner" class="text-center mt-3" style="display:none;">
+    <div class="spinner-border" role="status"></div>
+  </div>
+  <div id="usersSentinel" class="py-2"></div>
+{% endif %}
+
+<script>
+  window.__usersNextPage = {{ next_page|default:"null" }};
+  window.__usersHasNext = {{ has_next|yesno:"true,false" }};
+  window.__usersInitialQ = {{ q|default:"''"|safe }};
+</script>
+
+<script src="{% static 'core/js/users.js' %}?v=1" defer></script>
+{% endblock %}

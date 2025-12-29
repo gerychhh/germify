@@ -28,6 +28,12 @@
     }
 
     function initThread() {
+        // If this chat UI was previously initialized (e.g. chat pane swapped via AJAX),
+        // remove old global listeners to avoid duplicates.
+        if (typeof window.germifyDestroyThread === "function") {
+            try { window.germifyDestroyThread(); } catch (e) {}
+        }
+
         const list = document.querySelector("#messagesList");
         if (!list) return;
 
@@ -224,6 +230,7 @@
             // не спамим одинаковым last_id
             if (lid <= lastReadSent) return;
 
+            // Server-side NotificationsConsumer expects `last_id` (not `message_id`).
             const payload = { type: "mark_read", chat_id: chatId, last_id: lid };
 
             if (wsSend(payload)) {
@@ -755,8 +762,9 @@
             updateReceipts(detail.last_read_id);
         }
 
-        const readHandler = (ev) => handleChatRead(ev.detail);
-        document.addEventListener("germify:chat_read", readHandler);
+		const readHandler = (ev) => handleChatRead(ev.detail);
+		// `core/static/core/js/messages.js` dispatches CustomEvent on `window`
+		window.addEventListener("germify:chat_read", readHandler);
 
         // ------------------------------
         // Sending (XHR)
@@ -945,17 +953,26 @@
             if (detail.refresh_header === true) refreshHeader();
         }
 
-        const handler = (ev) => handleMessageNew(ev.detail);
-        document.addEventListener("germify:message_new", handler);
+		const handler = (ev) => handleMessageNew(ev.detail);
+		window.addEventListener("germify:message_new", handler);
 
-        const chatHandler = (ev) => handleChatEvent(ev.detail);
-        document.addEventListener("germify:chat_event", chatHandler);
+		const chatHandler = (ev) => handleChatEvent(ev.detail);
+		window.addEventListener("germify:chat_event", chatHandler);
 
-        window.addEventListener("beforeunload", () => {
-            document.removeEventListener("germify:message_new", handler);
-            document.removeEventListener("germify:chat_event", chatHandler);
-            document.removeEventListener("germify:chat_read", readHandler);
-        });
+		// Expose cleanup so inbox/thread pages can swap chat pane without reloading.
+		window.germifyDestroyThread = function () {
+			try { window.removeEventListener("germify:message_new", handler); } catch (e) {}
+			try { window.removeEventListener("germify:chat_event", chatHandler); } catch (e) {}
+			try { window.removeEventListener("germify:chat_read", readHandler); } catch (e) {}
+			// Stop recorder if still active
+			try { if (recording) stopRecording(); } catch (e) {}
+		};
+
+		window.addEventListener("beforeunload", () => {
+			if (typeof window.germifyDestroyThread === "function") {
+				try { window.germifyDestroyThread(); } catch (e) {}
+			}
+		});
     }
 
     window.germifyInitThread = initThread;

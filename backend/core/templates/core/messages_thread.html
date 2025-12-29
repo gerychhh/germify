@@ -35,8 +35,17 @@
     </div>
 
     <div class="col-12 col-lg-8">
-        {% include "core/partials/messages_thread_chat.html" %}
+        {# Right pane is replaced via AJAX when user clicks another dialog #}
+        <div id="messages-chat-pane">
+            {% include "core/partials/messages_thread_chat.html" %}
+        </div>
     </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  {# Realtime updates for opened chat (new messages + read receipts) #}
+  <script src="{% static 'core/js/messages_thread.js' %}?v=1" defer></script>
 {% endblock %}

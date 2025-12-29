@@ -57,7 +57,8 @@ class NotificationsConsumer(AsyncJsonWebsocketConsumer):
 
         if msg_type == "mark_read":
             chat_id = content.get("chat_id")
-            last_id = content.get("last_id")
+            # Backward compatible: older clients used `message_id`.
+            last_id = content.get("last_id") or content.get("message_id")
             ids = content.get("ids") or []
 
             updated = 0

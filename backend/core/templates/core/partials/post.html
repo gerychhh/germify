@@ -36,8 +36,11 @@
                  class="post-author-name text-decoration-none">
                 {{ post.author.display_name|default:post.author.username }}
               </a>
-              <div class="post-author-username">
-                @{{ post.author.username }}
+              <div>
+                <a href="{% url 'user_profile' post.author.username %}"
+                   class="post-author-username">
+                  @{{ post.author.username }}
+                </a>
               </div>
 
               {% if post.community %}

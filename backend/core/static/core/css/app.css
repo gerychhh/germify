@@ -782,13 +782,11 @@ body {
   --sb-thumb-hover: rgba(148,163,184,.55);
 }
 
-/* Firefox (страница + внутренние скроллы) */
 html, body, *{
   scrollbar-width: thin;
   scrollbar-color: var(--sb-thumb) var(--sb-track);
 }
 
-/* Chromium/Safari (страница + внутренние скроллы) */
 *::-webkit-scrollbar{
   width: var(--sb-size);
   height: var(--sb-size);
@@ -798,7 +796,6 @@ html, body, *{
   background: var(--sb-track);
 }
 
-/* “тоньше” визуально за счёт прозрачной рамки */
 *::-webkit-scrollbar-thumb{
   background-color: var(--sb-thumb);
   border-radius: 999px;

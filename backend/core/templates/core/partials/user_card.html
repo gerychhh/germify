@@ -1,0 +1,36 @@
+{% load list_utils %}
+
+<div class="card g-card">
+  <div class="card-body d-flex align-items-center justify-content-between gap-3">
+    <div class="d-flex align-items-center gap-3 min-w-0">
+      {% include "core/partials/avatar.html" with user_obj=u size="md" %}
+      <div class="min-w-0">
+        <a class="fw-semibold text-decoration-none" href="{% url 'user_profile' u.username %}">
+          {{ u.display_name|default:u.username }}
+        </a>
+        <div class="text-muted small text-truncate">@{{ u.username }}</div>
+        {% if u.bio %}
+          <div class="text-muted small text-truncate">{{ u.bio }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if user.is_authenticated and user.id != u.id %}
+      {% with is_following=u.id|in_list:following_ids %}
+        <form
+            method="post"
+            class="m-0 follow-form"
+            data-follow-url="{% url 'follow_user' u.username %}"
+            data-unfollow-url="{% url 'unfollow_user' u.username %}"
+            action="{% if is_following %}{% url 'unfollow_user' u.username %}{% else %}{% url 'follow_user' u.username %}{% endif %}">
+            {% csrf_token %}
+            {% if is_following %}
+              <button type="submit" class="btn btn-outline-secondary btn-sm follow-btn" data-follow-url="{% url 'follow_user' u.username %}" data-unfollow-url="{% url 'unfollow_user' u.username %}" data-following="1" style="position: relative; z-index: 2;">Отписаться</button>
+            {% else %}
+              <button type="submit" class="btn btn-primary btn-sm follow-btn" data-follow-url="{% url 'follow_user' u.username %}" data-unfollow-url="{% url 'unfollow_user' u.username %}" data-following="0" style="position: relative; z-index: 2;">Подписаться</button>
+            {% endif %}
+        </form>
+      {% endwith %}
+    {% endif %}
+  </div>
+</div>

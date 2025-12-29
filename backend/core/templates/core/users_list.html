@@ -1,0 +1,40 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Пользователи — GERMiFY{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">Пользователи</h1>
+  </div>
+
+  <div class="mb-3">
+    <input
+      type="search"
+      class="form-control"
+      id="usersSearchInput"
+      placeholder="Поиск пользователей…"
+      value="{{ q|default:'' }}"
+      autocomplete="off"
+    />
+    <div class="form-text">Прокручивай вниз — подгрузятся ещё пользователи.</div>
+  </div>
+
+  <div id="usersList" class="vstack gap-2">
+    {% include "core/partials/user_cards.html" with users=users following_ids=following_ids %}
+  </div>
+
+  <div class="py-3 text-center text-muted" id="usersLoading" hidden>Загрузка…</div>
+
+  <div
+    id="usersSentinel"
+    data-poll-url="{% url 'users_poll' %}"
+    data-limit="{{ limit }}"
+    data-next-offset="{{ next_offset }}"
+    data-has-more="{{ has_more|yesno:'1,0' }}"
+  ></div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'core/js/users.js' %}?v=1" defer></script>
+{% endblock %}

@@ -1,0 +1,120 @@
+/* Feed page – v2 styling (works with theme.css + ui_v2.css)
+   Keep selectors scoped to the feed page so we don't break older pages.
+*/
+
+.feed-shell {
+  --feed-gap: 14px;
+}
+
+.feed-shell .g-panel {
+  padding: 16px;
+}
+
+.feed-h1 {
+  font-size: 1.35rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.feed-subtitle {
+  color: var(--g-muted);
+  font-size: 0.95rem;
+}
+
+/* Search */
+.feed-search__form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.feed-search__inputwrap {
+  position: relative;
+  flex: 1;
+}
+
+.feed-search__icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.feed-search__input {
+  padding-left: 38px;
+}
+
+.feed-search__meta {
+  margin-top: 10px;
+}
+
+/* Composer */
+.feed-compose__title {
+  font-weight: 650;
+  letter-spacing: -0.005em;
+}
+
+.feed-compose__hint {
+  color: var(--g-muted);
+  font-size: 0.9rem;
+}
+
+.feed-dropzone {
+  border: 1px dashed var(--g-border);
+  border-radius: 14px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.02));
+}
+
+html[data-theme="dark"] .feed-dropzone {
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.10));
+}
+
+.feed-dropzone__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.feed-dropzone__label {
+  color: var(--g-muted);
+  font-size: 0.95rem;
+}
+
+.feed-dropzone__meta {
+  margin-top: 6px;
+}
+
+/* Empty state */
+.feed-empty {
+  padding: 22px;
+}
+
+/* Aside */
+.feed-aside .btn {
+  border-radius: 14px;
+}
+
+.feed-kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--g-border);
+  background: var(--g-soft);
+  color: var(--g-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85em;
+}
+
+/* Responsive tweaks */
+@media (max-width: 575.98px) {
+  .feed-shell .g-panel { padding: 14px; }
+  .feed-search__form { flex-direction: column; align-items: stretch; }
+  .feed-search__form .btn { width: 100%; }
+  .feed-dropzone__row { flex-direction: column; align-items: stretch; }
+  .feed-dropzone__row .btn { width: 100%; }
+}

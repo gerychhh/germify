@@ -1,0 +1,5 @@
+{% for u in users %}
+  {% include "core/partials/user_card.html" with u=u following_ids=following_ids %}
+{% empty %}
+  <div class="text-muted py-3 text-center">Ничего не найдено.</div>
+{% endfor %}

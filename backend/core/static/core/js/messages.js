@@ -34,6 +34,9 @@
 
         let lastGlobalCount = null;
 
+        // If present, right-side chat pane can be replaced via AJAX (no full page reload)
+        const chatPane = document.getElementById("messages-chat-pane");
+
         function setBadge(el, count) {
             if (!el) return;
 
@@ -59,6 +62,103 @@
                 const haystack = (item.dataset.search || "").toLowerCase();
                 item.style.display = !q || haystack.includes(q) ? "" : "none";
             });
+        }
+
+        // -------------------------
+        // AJAX chat navigation (no full page reload)
+        // -------------------------
+        function isModifiedClick(e) {
+            return !!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1);
+        }
+
+        function setActiveDialogByUrl(url) {
+            if (!dialogsWrapper) return;
+            const u = String(url || "");
+            dialogsWrapper.querySelectorAll(".dialog-item").forEach((it) => it.classList.remove("is-active"));
+
+            const link = dialogsWrapper.querySelector(`a.dialog-main-link[href="${CSS.escape(u)}"]`);
+            const item = link ? link.closest(".dialog-item") : null;
+            if (item) item.classList.add("is-active");
+        }
+
+        async function loadChatIntoPane(url, { push = true } = {}) {
+            if (!chatPane || !url) return;
+
+            try {
+                const resp = await fetch(url, {
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                    credentials: "same-origin",
+                    cache: "no-store",
+                });
+
+                if (resp.status === 403) {
+                    // Server returns JSON redirect for revoked access
+                    const data403 = await resp.json().catch(() => null);
+                    window.location.href = (data403 && data403.redirect) ? data403.redirect : "/messages/";
+                    return;
+                }
+
+                if (!resp.ok) {
+                    // fallback to normal navigation
+                    window.location.href = url;
+                    return;
+                }
+
+                const html = await resp.text();
+                // Cleanup previous thread listeners (window events)
+                if (typeof window.germifyDestroyThread === "function") {
+                    try { window.germifyDestroyThread(); } catch (e) {}
+                }
+                chatPane.innerHTML = html;
+
+                // init thread logic for newly inserted DOM
+                if (typeof window.germifyInitThread === "function") {
+                    window.germifyInitThread();
+                }
+
+                if (push) {
+                    try { window.history.pushState({ germify_chat_url: url }, "", url); } catch (e) {}
+                }
+
+                setActiveDialogByUrl(url);
+            } catch (e) {
+                // If fetch failed, just navigate normally
+                window.location.href = url;
+            }
+        }
+
+        function initAjaxChatNav() {
+            if (!dialogsWrapper || !chatPane) return;
+
+            // mark active on first load
+            setActiveDialogByUrl(window.location.pathname);
+
+            if (!dialogsWrapper.dataset.ajaxNavBound) {
+                dialogsWrapper.dataset.ajaxNavBound = "1";
+                dialogsWrapper.addEventListener("click", (e) => {
+                    const a = e.target && e.target.closest ? e.target.closest("a.dialog-main-link") : null;
+                    if (!a) return;
+                    if (isModifiedClick(e)) return;
+                    if (a.getAttribute("target") === "_blank") return;
+
+                    // do not intercept clicks from dropdown/menu button
+                    if (e.target && e.target.closest && e.target.closest(".dialog-menu-wrapper")) return;
+
+                    e.preventDefault();
+                    e.stopPropagation();
+                    loadChatIntoPane(a.href, { push: true });
+                });
+            }
+
+            if (!window.__germifyPopstateBound) {
+                window.__germifyPopstateBound = true;
+                window.addEventListener("popstate", (ev) => {
+                    const st = ev.state || {};
+                    const url = st.germify_chat_url || window.location.pathname;
+                    // popstate should not push again
+                    loadChatIntoPane(url, { push: false });
+                });
+            }
         }
 
         // -------------------------
@@ -141,6 +241,9 @@
             dialogsSearchInput.addEventListener("input", applyDialogSearchFilter);
         }
 
+        // Enable SPA-like chat switching when both sidebar and right pane exist
+        initAjaxChatNav();
+
         // -------------------------
         // WebSocket primary channel
         // -------------------------
@@ -201,6 +304,105 @@
                 window.dispatchEvent(new CustomEvent("germify:chat_event", { detail: data }));
                 document.dispatchEvent(new CustomEvent("germify:chat_event", { detail: data }));
             }
+        }
+
+        // -------------------------
+        // AJAX navigation between chats (no full page reload)
+        // -------------------------
+        function setActiveDialogByHref(href) {
+            if (!dialogsWrapper) return;
+            const links = dialogsWrapper.querySelectorAll("a.dialog-main-link");
+            links.forEach((a) => {
+                const item = a.closest(".dialog-item");
+                if (!item) return;
+                const same = a.getAttribute("href") === href;
+                item.classList.toggle("is-active", same);
+            });
+        }
+
+        async function loadChatIntoPane(url, { push = true } = {}) {
+            if (!chatPane || !url) return;
+
+            // Cleanup previous thread listeners (important: window event listeners)
+            try {
+                if (typeof window.germifyDestroyThread === "function") {
+                    window.germifyDestroyThread();
+                }
+            } catch (e) {}
+
+            let resp;
+            try {
+                resp = await fetch(url, {
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                    credentials: "same-origin",
+                    cache: "no-store",
+                });
+            } catch (e) {
+                // network error -> fallback to full navigation
+                window.location.href = url;
+                return;
+            }
+
+            if (resp.status === 403) {
+                // server may return redirect JSON
+                const data403 = await resp.json().catch(() => null);
+                window.location.href = (data403 && data403.redirect) ? data403.redirect : "/messages/";
+                return;
+            }
+
+            if (!resp.ok) {
+                window.location.href = url;
+                return;
+            }
+
+            const html = await resp.text();
+            chatPane.innerHTML = html;
+
+            // Mark active item
+            setActiveDialogByHref(url);
+
+            // Update browser URL
+            if (push && window.history && history.pushState) {
+                history.pushState({ germifyChatUrl: url }, "", url);
+            }
+
+            // Init thread logic inside injected HTML
+            if (typeof window.germifyInitThread === "function") {
+                try { window.germifyInitThread(); } catch (e) {}
+            }
+        }
+
+        function bindAjaxChatNavigation() {
+            if (!dialogsWrapper || !chatPane) return;
+            if (dialogsWrapper.dataset.ajaxNavBound === "1") return;
+            dialogsWrapper.dataset.ajaxNavBound = "1";
+
+            dialogsWrapper.addEventListener("click", (ev) => {
+                const a = ev.target && ev.target.closest ? ev.target.closest("a.dialog-main-link") : null;
+                if (!a) return;
+
+                // ignore modified clicks
+                if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+
+                const href = a.getAttribute("href");
+                if (!href) return;
+
+                ev.preventDefault();
+                ev.stopPropagation();
+                loadChatIntoPane(href, { push: true });
+            });
+
+            // Back/forward support
+            window.addEventListener("popstate", (ev) => {
+                const st = ev.state;
+                const url = (st && st.germifyChatUrl) ? st.germifyChatUrl : window.location.pathname;
+                // Only handle when we are on messages pages
+                if (!String(url || "").startsWith("/messages")) return;
+                loadChatIntoPane(url, { push: false });
+            });
+
+            // If we landed on a thread URL, ensure active highlight
+            setActiveDialogByHref(window.location.pathname);
         }
 
         function scheduleReconnect() {

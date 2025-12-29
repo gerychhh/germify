@@ -1,0 +1,175 @@
+/* ==========================================================================
+   GERMiFY UI v2 (Frost / Liquid Glass + modernized bootstrap look)
+   Подключается ПОСЛЕ старого app.css, поэтому может постепенно “переехать” весь UI.
+   ========================================================================== */
+
+/* Base */
+html, body{
+  height: 100%;
+}
+
+body{
+  font-family: var(--g-font-family);
+  font-size: var(--g-font-size);
+  line-height: var(--g-line-height);
+  background:
+    radial-gradient(1200px 700px at 15% 0%, rgba(37,99,235,.12), transparent 60%),
+    radial-gradient(900px 600px at 85% 20%, rgba(96,165,250,.10), transparent 55%),
+    radial-gradient(900px 700px at 50% 110%, rgba(124,58,237,.10), transparent 60%),
+    var(--g-bg);
+  color: var(--g-text);
+}
+
+a{ text-decoration: none; }
+a:hover{ text-decoration: underline; }
+
+/* Scrollbar (Chromium/Edge) */
+*::-webkit-scrollbar{ width: var(--sb-size); height: var(--sb-size); }
+*::-webkit-scrollbar-track{ background: var(--sb-track); }
+*::-webkit-scrollbar-thumb{ background: var(--sb-thumb); border-radius: 999px; }
+*::-webkit-scrollbar-thumb:hover{ background: var(--sb-thumb-hover); }
+
+/* Focus ring */
+:focus-visible{
+  outline: 3px solid color-mix(in srgb, var(--g-primary) 35%, transparent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* Frost glass block */
+.g-glass{
+  background: var(--g-surface);
+  border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
+  box-shadow: var(--g-shadow-md);
+  backdrop-filter: blur(var(--g-blur));
+  -webkit-backdrop-filter: blur(var(--g-blur));
+}
+
+html[data-glass="off"] .g-glass{
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Small icon button */
+.g-icon-btn{
+  width: 38px;
+  height: 34px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
+/* Bootstrap components modernization */
+.navbar{
+  background: var(--g-surface) !important;
+  border-bottom: 1px solid var(--g-border) !important;
+  box-shadow: var(--g-shadow-sm) !important;
+  backdrop-filter: blur(var(--g-blur));
+  -webkit-backdrop-filter: blur(var(--g-blur));
+}
+
+html[data-glass="off"] .navbar{
+  background: var(--g-surface-solid) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.card{
+  border-radius: var(--g-radius-lg);
+  border: 1px solid var(--g-border);
+  background: var(--g-surface);
+  box-shadow: var(--g-shadow-sm);
+}
+
+html[data-glass="off"] .card{
+  background: var(--g-surface-solid);
+}
+
+.card .card-header{
+  background: transparent;
+  border-bottom: 1px solid var(--g-border);
+}
+
+.dropdown-menu{
+  border-radius: var(--g-radius-lg);
+  border: 1px solid var(--g-border);
+  background: var(--g-surface);
+  box-shadow: var(--g-shadow-md);
+  backdrop-filter: blur(var(--g-blur));
+  -webkit-backdrop-filter: blur(var(--g-blur));
+}
+
+html[data-glass="off"] .dropdown-menu{
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--g-surface-solid);
+}
+
+.form-control, .form-select{
+  border-radius: var(--g-radius-md);
+  border: 1px solid var(--g-border);
+  background: var(--g-surface-2);
+  color: var(--g-text);
+}
+
+.form-control::placeholder{
+  color: color-mix(in srgb, var(--g-text) 45%, transparent);
+}
+
+.form-control:focus, .form-select:focus{
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--g-primary) 22%, transparent);
+  background: var(--g-surface);
+  color: var(--g-text);
+}
+
+.btn{
+  border-radius: var(--g-radius-md);
+  font-weight: 600;
+  transition: transform .06s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease;
+}
+
+.btn:active{
+  transform: translateY(1px);
+}
+
+.btn-primary{
+  border-color: transparent !important;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--g-primary) 85%, #ffffff) 0%, var(--g-primary) 55%, color-mix(in srgb, var(--g-primary) 70%, #000000) 100%);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--g-primary) 22%, transparent);
+}
+
+.btn-primary:hover{
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--g-primary) 26%, transparent);
+}
+
+.btn-outline-secondary{
+  border-color: var(--g-border) !important;
+}
+
+.badge{ border-radius: 999px; }
+
+/* Offcanvas */
+.g-offcanvas{
+  background: var(--g-surface);
+  border-left: 1px solid var(--g-border);
+  backdrop-filter: blur(var(--g-blur));
+  -webkit-backdrop-filter: blur(var(--g-blur));
+}
+
+html[data-glass="off"] .g-offcanvas{
+  background: var(--g-surface-solid);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Helpers */
+.g-panel{ border-radius: var(--g-radius-lg); }
+.g-panel.g-glass{ padding: 16px; }
+.g-soft-text{ color: var(--g-muted); }
+
+/* Make existing “shadow-sm/bg-white” less harsh on new background */
+.bg-white{ background-color: var(--g-surface) !important; }
+.shadow-sm{ box-shadow: var(--g-shadow-sm) !important; }

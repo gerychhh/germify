@@ -17,7 +17,7 @@
          data-last-id="{{ last_id }}"
          data-poll-url="{% if other_user %}{% url 'messages_poll' other_user.username %}{% else %}{% url 'messages_chat_poll' chat.id %}{% endif %}">
 
-        {% for message in messages %}
+        {% for message in chat_messages %}
             {% include "core/partials/message_item.html" with message=message %}
         {% endfor %}
     </div>

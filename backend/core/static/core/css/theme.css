@@ -1,63 +1,133 @@
-/* core/static/core/css/theme.css
-   Светлая тема + токены.
-   Меняй значения в :root (g-*) — весь сайт перекрасится.
-*/
+/* ==========================================================================
+   GERMiFY UI Tokens (single source of truth)
+   Меняешь здесь: шрифт/размеры/цвета/радиусы/эффекты — меняется везде.
+   Управляется через <html data-theme data-scale data-font data-accent data-glass>
+   ========================================================================== */
 
-:root {
-  /* ===== Brand tokens (easy to change) ===== */
-  --g-primary: #2563eb;
-  --g-primary-rgb: 37, 99, 235;
-  --g-accent:  #0ea5e9;
+:root{
+  /* ---- layout ---- */
+  --g-page-w: 1200px;
+  --g-navbar-h: 64px;
+  --g-aside-w: 320px;
+  --g-bottomnav-h: 62px;
+
+  /* ---- fonts ---- */
+  --g-font-system: system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Times New Roman";
+  --g-font-inter: "Inter", var(--g-font-system);
+  --g-font-serif: ui-serif, Georgia, "Times New Roman", Times, serif;
+  --g-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --g-font-family: var(--g-font-system);
+  --g-font-size: 16px;
+  --g-line-height: 1.5;
+
+  /* ---- radii ---- */
+  --g-radius-sm: 10px;
+  --g-radius-md: 14px;
+  --g-radius-lg: 18px;
+
+  /* ---- spacing ---- */
+  --g-space-1: 4px;
+  --g-space-2: 8px;
+  --g-space-3: 12px;
+  --g-space-4: 16px;
+  --g-space-5: 20px;
+  --g-space-6: 24px;
+
+  /* ---- effects ---- */
+  --g-blur: 18px;
+  --g-shadow-sm: 0 1px 2px rgba(15,23,42,.08);
+  --g-shadow-md: 0 10px 30px rgba(15,23,42,.10);
+  --g-shadow-lg: 0 24px 60px rgba(15,23,42,.14);
+
+  /* ---- base palette (light) ---- */
+  --g-bg: #f6f8fc;
+  --g-surface-solid: #ffffff;
+  --g-surface-glass: rgba(255,255,255,.70);
+  --g-surface: var(--g-surface-glass);
+  --g-surface-2: rgba(255,255,255,.55);
+
+  --g-text: #0f172a;
+  --g-muted: #64748b;
+  --g-border: rgba(15,23,42,.12);
+  --g-glass-border: rgba(255,255,255,.35);
+
+  /* ---- accents (overridden by data-accent) ---- */
+  --g-primary: #2563eb;   /* blue-600 */
+  --g-primary-2: #60a5fa; /* blue-400 */
+  --g-danger: #e11d48;
   --g-success: #16a34a;
   --g-warning: #f59e0b;
-  --g-danger:  #ef4444;
 
-  /* ===== Surfaces ===== */
-  --g-bg:        #f8fafc;
-  --g-surface:   #ffffff;
-  --g-surface-2: #f1f5f9;
-  --g-border:    #e2e8f0;
-
-  /* ===== Typography ===== */
-  --g-text:    #0f172a;
-  --g-muted:   #475569;
-  --g-muted-2: #64748b;
-
-  /* ===== Shape & shadow ===== */
-  --g-radius:    1rem;
-  --g-radius-sm: .75rem;
-  --g-shadow:    0 1.25rem 2.5rem rgba(2, 6, 23, 0.08);
-  --g-shadow-sm: 0 .5rem 1.25rem rgba(2, 6, 23, 0.08);
-
-  /* ===== Layout ===== */
-  --g-navbar-h:    64px;
-  --g-bottomnav-h: 56px;
+  /* ---- scrollbar ---- */
+  --sb-size: 10px;
+  --sb-track: rgba(15,23,42,.08);
+  --sb-thumb: rgba(15,23,42,.28);
+  --sb-thumb-hover: rgba(15,23,42,.38);
 }
 
-/* Map tokens to Bootstrap CSS variables */
-:root,
-[data-bs-theme="light"] {
+/* ---- scale presets ---- */
+html[data-scale="sm"]{ --g-font-size: 14px; --g-radius-sm: 9px; --g-radius-md: 12px; --g-radius-lg: 16px; }
+html[data-scale="md"]{ --g-font-size: 16px; }
+html[data-scale="lg"]{ --g-font-size: 18px; --g-radius-sm: 11px; --g-radius-md: 16px; --g-radius-lg: 20px; }
+html[data-scale="xl"]{ --g-font-size: 20px; --g-radius-sm: 12px; --g-radius-md: 18px; --g-radius-lg: 22px; }
+
+/* ---- font presets ---- */
+html[data-font="system"]{ --g-font-family: var(--g-font-system); }
+html[data-font="inter"]{ --g-font-family: var(--g-font-inter); }
+html[data-font="serif"]{ --g-font-family: var(--g-font-serif); }
+
+/* ---- accents ---- */
+html[data-accent="blue"]  { --g-primary: #2563eb; --g-primary-2: #60a5fa; }
+html[data-accent="purple"]{ --g-primary: #7c3aed; --g-primary-2: #a78bfa; }
+html[data-accent="green"] { --g-primary: #16a34a; --g-primary-2: #4ade80; }
+html[data-accent="orange"]{ --g-primary: #f97316; --g-primary-2: #fdba74; }
+html[data-accent="rose"]  { --g-primary: #e11d48; --g-primary-2: #fb7185; }
+
+/* ---- glass toggle ---- */
+html[data-glass="off"]{
+  --g-surface: var(--g-surface-solid);
+  --g-surface-2: var(--g-surface-solid);
+}
+
+/* ---- dark theme ---- */
+html[data-theme="dark"]{
+  --g-bg: #0b1220;
+  --g-surface-solid: #0f172a;
+  --g-surface-glass: rgba(15,23,42,.62);
+  --g-surface: var(--g-surface-glass);
+  --g-surface-2: rgba(15,23,42,.45);
+
+  --g-text: #e5e7eb;
+  --g-muted: rgba(229,231,235,.75);
+  --g-border: rgba(229,231,235,.14);
+  --g-glass-border: rgba(255,255,255,.10);
+
+  --g-shadow-sm: 0 1px 2px rgba(0,0,0,.25);
+  --g-shadow-md: 0 12px 34px rgba(0,0,0,.35);
+  --g-shadow-lg: 0 26px 70px rgba(0,0,0,.45);
+
+  --sb-track: rgba(255,255,255,.07);
+  --sb-thumb: rgba(255,255,255,.22);
+  --sb-thumb-hover: rgba(255,255,255,.30);
+}
+
+/* ==========================================================================
+   Bootstrap compatibility (existing pages look better immediately)
+   ========================================================================== */
+:root{
+  --bs-body-font-family: var(--g-font-family);
+  --bs-body-font-size: var(--g-font-size);
+  --bs-body-line-height: var(--g-line-height);
   --bs-body-bg: var(--g-bg);
   --bs-body-color: var(--g-text);
-  --bs-emphasis-color: var(--g-text);
-
-  --bs-primary: var(--g-primary);
-  --bs-primary-rgb: var(--g-primary-rgb);
-  --bs-success: var(--g-success);
-  --bs-warning: var(--g-warning);
-  --bs-danger: var(--g-danger);
 
   --bs-border-color: var(--g-border);
-  --bs-border-radius: var(--g-radius);
+  --bs-border-radius: var(--g-radius-md);
   --bs-border-radius-sm: var(--g-radius-sm);
+  --bs-border-radius-lg: var(--g-radius-lg);
 
+  --bs-primary: var(--g-primary);
   --bs-link-color: var(--g-primary);
-  --bs-link-hover-color: #1d4ed8;
-
-  /* Better contrast than default muted on white */
-  --bs-secondary-color: var(--g-muted);
-  --bs-tertiary-color: var(--g-muted-2);
-
-  --bs-secondary-bg: var(--g-surface-2);
-  --bs-tertiary-bg: var(--g-surface-2);
+  --bs-link-hover-color: var(--g-primary);
 }
