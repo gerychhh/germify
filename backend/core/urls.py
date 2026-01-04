@@ -72,6 +72,13 @@ urlpatterns = [
         views.community_join_request_action,
         name="community_join_request_action",
     ),
+    path("communities/<slug:slug>/moderator-request/", views.community_moderator_request, name="community_moderator_request"),
+    path("communities/<slug:slug>/moderator-requests/", views.community_moderator_requests, name="community_moderator_requests"),
+    path(
+        "communities/<slug:slug>/moderator-requests/<int:request_id>/<str:action>/",
+        views.community_moderator_request_action,
+        name="community_moderator_request_action",
+    ),
 
     # Users (list + realtime search + infinite scroll)
     path("users/", users_view, name="users"),

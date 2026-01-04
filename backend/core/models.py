@@ -238,6 +238,38 @@ class CommunityJoinRequest(models.Model):
         return f"JoinRequest({self.user} -> {self.community}, {self.status})"
 
 
+class CommunityModeratorRequest(models.Model):
+    community = models.ForeignKey(
+        Community,
+        on_delete=models.CASCADE,
+        related_name="moderator_requests",
+        verbose_name="Сообщество",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="community_moderator_requests",
+        verbose_name="Пользователь",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=12,
+        choices=(
+            ("pending", "В ожидании"),
+            ("approved", "Принята"),
+            ("denied", "Отклонена"),
+        ),
+        default="pending",
+    )
+
+    class Meta:
+        unique_together = ("community", "user")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"ModRequest({self.user} -> {self.community}, {self.status})"
+
+
 class User(AbstractUser):
     # @userid — это username (унаследован от AbstractUser) — НЕ МЕНЯЕМ
     display_name = models.CharField("Отображаемое имя", max_length=150, blank=True)

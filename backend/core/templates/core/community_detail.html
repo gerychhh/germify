@@ -6,7 +6,7 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=27">
-  <link rel="stylesheet" href="{% static 'core/css/pages/community_detail/community_detail.css' %}?v=8">
+  <link rel="stylesheet" href="{% static 'core/css/pages/community_detail/community_detail.css' %}?v=9">
 {% endblock %}
 
 {% block content %}
@@ -16,7 +16,10 @@
      data-join-url="{% url 'community_join' community.slug %}"
      data-leave-url="{% url 'community_leave' community.slug %}"
      data-settings-url="{% url 'community_settings_api' community.slug %}"
-     data-join-requests-url="{% url 'community_join_requests' community.slug %}">
+     data-join-requests-url="{% url 'community_join_requests' community.slug %}"
+     data-moderator-request-url="{% url 'community_moderator_request' community.slug %}"
+     data-moderator-requests-url="{% url 'community_moderator_requests' community.slug %}"
+     data-moderator-action-url="{% url 'community_moderator_request_action' community.slug 0 'approve' %}">
 
   <div class="community-hero g-glass card border-0 shadow-sm overflow-hidden">
     <div class="community-cover" style="{% if community.cover %}background-image:url('{{ community.cover.url }}');{% endif %}"></div>
@@ -50,6 +53,14 @@
         <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#participantsModal">Участники</button></li>
         {% if is_admin %}
           <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#communitySettingsModal">Управление</button></li>
+        {% elif membership %}
+          {% if moderator_request and moderator_request.status == 'pending' %}
+            <li><span class="dropdown-item disabled">Заявка в модераторы отправлена</span></li>
+          {% elif moderator_request and moderator_request.status == 'denied' %}
+            <li><span class="dropdown-item disabled text-danger">Заявка отклонена</span></li>
+          {% else %}
+            <li><button type="button" class="dropdown-item" data-moderator-request>Стать модератором</button></li>
+          {% endif %}
         {% endif %}
         <li><button type="button" class="dropdown-item" data-share-trigger>Поделиться</button></li>
       </ul>
@@ -74,9 +85,6 @@
               {% endif %}
               {% if join_request and join_request.status == 'pending' %}
                 <span class="badge text-bg-warning-subtle border">Запрос отправлен</span>
-              {% endif %}
-              {% if community.accent_color %}
-                <span class="badge" style="background: {{ community.accent_color }};">Цвет</span>
               {% endif %}
             </div>
             <div class="text-body-secondary small mt-1 d-flex flex-wrap gap-2 align-items-center">
@@ -275,42 +283,52 @@
         {% if is_admin %}
           <form id="communitySettingsForm" enctype="multipart/form-data">
             {% csrf_token %}
-            <div class="settings-block appearance-builder mb-3">
-              <div class="row g-3 align-items-start">
-                  <div class="col-12 col-lg-6">
-                    <div class="appearance-preview" id="communityAppearancePreview" style="--accent-color: {{ community.accent_color|default:'#3366ff' }};">
-                      <input type="file" id="communityCoverInput" name="cover" accept="image/*" class="visually-hidden" data-preview-type="cover">
-                      <input type="file" id="communityIconInput" name="icon" accept="image/*" class="visually-hidden" data-preview-type="icon">
-                      <div class="appearance-preview__cover" id="appearanceCover" style="{% if community.cover %}background-image:url('{{ community.cover.url }}');{% endif %}">
-                        <button type="button" class="appearance-upload appearance-upload--cover" data-file-trigger="communityCoverInput">
-                          <img src="{% static 'core/icons/camera.svg' %}" alt="" class="icon icon--16">
-                          <span>Сменить обложку</span>
-                        </button>
-                      </div>
-                      <div class="appearance-preview__content">
-                        <div class="appearance-preview__avatar" id="appearanceAvatar">
-                          <div class="appearance-preview__avatar-visual">
-                            {% if community.icon %}
-                              <img src="{{ community.icon.url }}" alt="{{ community.name }}">
-                            {% else %}
-                              <span>{{ community.name|default:community.slug|slice:":1"|upper }}</span>
-                            {% endif %}
-                          </div>
-                          <button type="button" class="appearance-upload appearance-upload--avatar" data-file-trigger="communityIconInput">
-                            <img src="{% static 'core/icons/camera.svg' %}" alt="" class="icon icon--14">
+              <div class="settings-block appearance-builder mb-3">
+                <div class="row g-3 align-items-start">
+                    <div class="col-12 col-lg-6">
+                      <div class="appearance-preview" id="communityAppearancePreview" data-theme-preview style="--accent-color: {{ community.accent_color|default:'#3366ff' }};">
+                        <input type="file" id="communityCoverInput" name="cover" accept="image/*" class="visually-hidden" data-preview-type="cover">
+                        <input type="file" id="communityIconInput" name="icon" accept="image/*" class="visually-hidden" data-preview-type="icon">
+                        <div class="appearance-preview__cover" id="appearanceCover" style="{% if community.cover %}background-image:url('{{ community.cover.url }}');{% endif %}">
+                          <button type="button" class="appearance-upload appearance-upload--cover" data-file-trigger="communityCoverInput">
+                            <img src="{% static 'core/icons/camera.svg' %}" alt="" class="icon icon--16">
+                            <span>Сменить обложку</span>
                           </button>
                         </div>
-                        <div class="appearance-preview__text">
-                          <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="fw-semibold" data-preview-name>{{ community.name }}</span>
-                            <span class="badge text-bg-light border">#{{ community.slug }}</span>
+                        <div class="appearance-preview__body">
+                          <div class="appearance-preview__avatar" id="appearanceAvatar">
+                            <div class="appearance-preview__avatar-visual">
+                              {% if community.icon %}
+                                <img src="{{ community.icon.url }}" alt="{{ community.name }}">
+                              {% else %}
+                                <span>{{ community.name|default:community.slug|slice:":1"|upper }}</span>
+                              {% endif %}
+                            </div>
+                            <button type="button" class="appearance-upload appearance-upload--avatar" data-file-trigger="communityIconInput">
+                              <img src="{% static 'core/icons/camera.svg' %}" alt="" class="icon icon--14">
+                            </button>
                           </div>
-                          <div class="text-body-secondary small mt-1" data-preview-description>{{ community.description|default:"Добавьте описание" }}</div>
-                          <div class="appearance-preview__accent mt-2"></div>
+                          <div class="appearance-preview__text">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                              <span class="fw-semibold" data-preview-name>{{ community.name }}</span>
+                              <span class="badge text-bg-light border">#{{ community.slug }}</span>
+                            </div>
+                            <div class="text-body-secondary small d-flex flex-wrap gap-2 align-items-center mt-1">
+                              <span class="badge text-bg-light border">{{ community.get_visibility_display }}</span>
+                              <span class="badge text-bg-light border" data-preview-members>{{ members_total|default:community.members_count }} участников</span>
+                            </div>
+                            <div class="appearance-preview__description mt-2" data-preview-description>{{ community.description|default:"Добавьте описание" }}</div>
+                            <div class="appearance-preview__accent mt-2"></div>
+                          </div>
+                          <div class="appearance-preview__actions">
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill d-inline-flex align-items-center gap-1" disabled>
+                              <span class="icon icon--16" aria-hidden="true">👥</span>
+                              <span data-preview-members-count>{{ members_total|default:community.members_count }}</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
                 <div class="col-12 col-lg-6">
                   <h6 class="mb-1">Шапка и оформление</h6>
                   <p class="text-body-secondary small mb-2">Редактируйте обложку, иконку и описание с живым предпросмотром.</p>
@@ -423,6 +441,12 @@
                     <div id="joinRequestsList" class="d-flex flex-column gap-2" data-approve-url="{% url 'community_join_request_action' community.slug 0 'approve' %}" data-deny-url="{% url 'community_join_request_action' community.slug 0 'deny' %}"></div>
                     <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="loadJoinRequests">Обновить заявки</button>
                   </div>
+                  <div class="mt-3">
+                    <label class="form-label">Заявки в модераторы</label>
+                    <div id="moderatorRequestsList" class="d-flex flex-column gap-2"
+                         data-action-url="{% url 'community_moderator_request_action' community.slug 0 'approve' %}"></div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="loadModeratorRequests">Обновить заявки</button>
+                  </div>
                 </div>
                 <div class="settings-block mt-3">
                   <h6 class="text-danger mb-1">Danger Zone</h6>
@@ -453,5 +477,5 @@
   </div>
 </div>
 
-  <script src="{% static 'core/js/community_detail.js' %}?v=7"></script>
+  <script src="{% static 'core/js/community_detail.js' %}?v=8"></script>
 {% endblock %}

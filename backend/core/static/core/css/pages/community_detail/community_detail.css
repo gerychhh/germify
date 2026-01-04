@@ -14,18 +14,21 @@
 .community-actions-toggle { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; }
 .members-count-trigger { border-color: rgba(15, 23, 42, .08); background: rgba(255,255,255,.8); }
 
-.appearance-builder { border: 1px dashed rgba(15, 23, 42, .08); border-radius: 14px; padding: 12px; background: #f8fafc; }
-.appearance-preview { border: 1px solid rgba(15, 23, 42, .08); background: #fff; border-radius: 14px; overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,.7); transition: border-color .2s ease; }
-.appearance-preview__cover { height: 110px; background: linear-gradient(120deg, rgba(72, 119, 255, .18), rgba(25, 135, 84, .12)); background-size: cover; background-position: center; }
-.appearance-preview__content { padding: 12px; display: flex; align-items: center; gap: 12px; }
-.appearance-preview__avatar { position: relative; width: 64px; height: 64px; border-radius: 18px; background: #fff; display: grid; place-items: center; font-weight: 700; font-size: 20px; border: 3px solid #fff; box-shadow: 0 10px 20px rgba(15,23,42,.08); overflow: hidden; }
-.appearance-preview__avatar-visual { width: 100%; height: 100%; display: grid; place-items: center; }
+.appearance-builder { border: 1px dashed color-mix(in srgb, var(--g-border) 80%, transparent); border-radius: 14px; padding: 12px; background: color-mix(in srgb, var(--g-surface) 94%, transparent); }
+.appearance-preview { border: 1px solid color-mix(in srgb, var(--g-border) 80%, transparent); background: var(--g-surface); border-radius: 14px; overflow: hidden; box-shadow: var(--g-shadow-sm); transition: border-color .2s ease, box-shadow .2s ease; color: var(--g-text); }
+.appearance-preview[data-theme-preview] { background: color-mix(in srgb, var(--g-surface) 96%, transparent); }
+.appearance-preview__cover { height: 130px; background: linear-gradient(125deg, color-mix(in srgb, var(--accent-color, #3366ff) 28%, var(--g-primary-2, #4f46e5) 12%), color-mix(in srgb, var(--g-surface) 70%, var(--g-primary) 18%)); background-size: cover; background-position: center; position: relative; }
+.appearance-preview__body { padding: 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.appearance-preview__avatar { position: relative; width: 72px; height: 72px; border-radius: 20px; background: var(--g-surface); display: grid; place-items: center; font-weight: 700; font-size: 22px; border: 3px solid var(--g-surface); box-shadow: var(--g-shadow-sm); overflow: hidden; }
+.appearance-preview__avatar-visual { width: 100%; height: 100%; display: grid; place-items: center; color: var(--g-text); background: color-mix(in srgb, var(--g-primary) 6%, var(--g-surface) 90%); }
 .appearance-preview__avatar img { width: 100%; height: 100%; object-fit: cover; }
-.appearance-preview__accent { height: 6px; width: 100%; background: var(--accent-color, #3366ff); border-radius: 999px; }
-.appearance-preview__text { flex: 1 1 auto; min-width: 0; }
+.appearance-preview__accent { height: 6px; width: 100%; background: var(--accent-color, #3366ff); border-radius: 999px; box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 60%, transparent); }
+.appearance-preview__text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.appearance-preview__description { color: var(--g-text); font-size: 14px; line-height: 1.5; opacity: .86; }
+.appearance-preview__actions { display: flex; align-items: center; }
 
-.appearance-upload { position: absolute; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; background: rgba(15, 23, 42, .55); color: #fff; opacity: 1; pointer-events: auto; transition: opacity .2s ease, transform .2s ease; padding: 0 10px; font-weight: 600; }
-.appearance-upload--cover { inset: auto 10px 10px auto; height: 36px; border-radius: 10px; backdrop-filter: blur(4px); }
+.appearance-upload { position: absolute; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; background: color-mix(in srgb, #000 62%, var(--g-surface) 25%); color: #fff; opacity: .95; pointer-events: auto; transition: opacity .2s ease, transform .2s ease; padding: 0 10px; font-weight: 600; box-shadow: var(--g-shadow-sm); }
+.appearance-upload--cover { inset: auto 10px 10px auto; height: 36px; border-radius: 10px; backdrop-filter: blur(6px); }
 .appearance-upload--avatar { inset: auto 6px 6px auto; width: 34px; height: 34px; border-radius: 12px; padding: 0; }
 .appearance-preview__cover { position: relative; }
 .appearance-preview__cover:hover .appearance-upload--cover,

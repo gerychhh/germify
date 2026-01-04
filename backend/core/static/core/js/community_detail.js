@@ -54,6 +54,26 @@
     </div>`;
   }
 
+  function renderModeratorRequest(item, actionUrl) {
+    const avatarLetter = (item.display_name || item.username || '?')[0].toUpperCase();
+    const avatar = item.avatar_url
+      ? `<span class="avatar avatar--sm"><img src="${item.avatar_url}" alt="${item.display_name}"></span>`
+      : `<span class="avatar avatar--sm"><span class="avatar-initial">${avatarLetter}</span></span>`;
+    const approveUrl = actionUrl.replace('/0/', '/' + item.id + '/');
+    const denyUrl = approveUrl.replace('/approve/', '/deny/');
+    return `<div class="d-flex align-items-center gap-2" data-mod-request-id="${item.id}">
+      ${avatar}
+      <div class="flex-grow-1 min-w-0">
+        <div class="fw-semibold text-truncate">${item.display_name || item.username}</div>
+        <div class="small text-secondary">@${item.username}</div>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-success btn-sm" data-mod-approve="${approveUrl}">Назначить</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-mod-deny="${denyUrl}">Отклонить</button>
+      </div>
+    </div>`;
+  }
+
   domReady(function () {
     const page = document.getElementById('communityPage');
     if (!page) return;
@@ -63,8 +83,12 @@
     const leaveUrl = page.dataset.leaveUrl;
     const settingsUrl = page.dataset.settingsUrl;
     const joinRequestsUrl = page.dataset.joinRequestsUrl;
+    const moderatorRequestUrl = page.dataset.moderatorRequestUrl;
+    const moderatorRequestsUrl = page.dataset.moderatorRequestsUrl;
+    const moderatorActionUrl = page.dataset.moderatorActionUrl;
     const membersCountEl = document.getElementById('communityMembersCount');
     const shareButtons = document.querySelectorAll('[data-share-trigger]');
+    const moderatorRequestBtn = document.querySelector('[data-moderator-request]');
 
     shareButtons.forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -89,10 +113,39 @@
       });
     });
 
+    if (moderatorRequestBtn && moderatorRequestUrl) {
+      moderatorRequestBtn.addEventListener('click', async () => {
+        moderatorRequestBtn.disabled = true;
+        try {
+          const resp = await fetch(moderatorRequestUrl, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken'),
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (resp.ok && data.status === 'pending') {
+            moderatorRequestBtn.textContent = 'Заявка отправлена';
+          } else {
+            moderatorRequestBtn.disabled = false;
+          }
+        } catch (err) {
+          moderatorRequestBtn.disabled = false;
+        }
+      });
+    }
+
     function updateCounts(count) {
       if (membersCountEl) membersCountEl.textContent = count;
       const totalEl = document.getElementById('participantsTotal');
       if (totalEl) totalEl.textContent = count;
+      document.querySelectorAll('[data-preview-members]').forEach((el) => {
+        el.textContent = `${count} участников`;
+      });
+      document.querySelectorAll('[data-preview-members-count]').forEach((el) => {
+        el.textContent = count;
+      });
     }
 
     // Membership (join/leave) fetch
@@ -216,7 +269,7 @@
       const descTarget = appearancePreview.querySelector('[data-preview-description]');
       const initialAvatar = avatarVisual?.querySelector('img')?.src || '';
       const initialCover = cover?.style.backgroundImage || '';
-      const fallbackLetter = (page.dataset.communitySlug || '?')[0].toUpperCase();
+      const fallbackLetter = (nameInput?.value?.trim() || page.dataset.communitySlug || '?')[0].toUpperCase();
 
       const setAvatar = (src) => {
         if (!avatarVisual) return;
@@ -377,6 +430,8 @@
     // Join requests
     const joinRequestsList = document.getElementById('joinRequestsList');
     const loadJoinRequestsBtn = document.getElementById('loadJoinRequests');
+    const moderatorRequestsList = document.getElementById('moderatorRequestsList');
+    const loadModeratorRequestsBtn = document.getElementById('loadModeratorRequests');
     function attachJoinActions() {
       if (!joinRequestsList) return;
       joinRequestsList.querySelectorAll('button[data-approve],button[data-deny]').forEach((btn) => {
@@ -422,6 +477,56 @@
 
     if (loadJoinRequestsBtn) {
       loadJoinRequestsBtn.addEventListener('click', loadJoinRequests);
+    }
+
+    function attachModeratorActions() {
+      if (!moderatorRequestsList) return;
+      moderatorRequestsList.querySelectorAll('button[data-mod-approve],button[data-mod-deny]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const url = btn.dataset.modApprove || btn.dataset.modDeny;
+          if (!url) return;
+          btn.disabled = true;
+          try {
+            const resp = await fetch(url, {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest',
+              },
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (resp.ok) {
+              btn.closest('[data-mod-request-id]')?.remove();
+              if (typeof data.members === 'number') updateCounts(data.members);
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      });
+    }
+
+    async function loadModeratorRequests() {
+      if (!moderatorRequestsUrl || !moderatorRequestsList) return;
+      moderatorRequestsList.innerHTML = '<div class="text-body-secondary">Загрузка...</div>';
+      try {
+        const resp = await fetch(moderatorRequestsUrl);
+        if (!resp.ok) throw new Error('fail');
+        const data = await resp.json();
+        if (!data.results || !data.results.length) {
+          moderatorRequestsList.innerHTML = '<div class="text-body-secondary">Нет активных заявок</div>';
+          return;
+        }
+        const baseAction = moderatorRequestsList.dataset.actionUrl || '';
+        moderatorRequestsList.innerHTML = data.results.map((item) => renderModeratorRequest(item, baseAction)).join('');
+        attachModeratorActions();
+      } catch (err) {
+        moderatorRequestsList.innerHTML = '<div class="text-danger">Не удалось загрузить заявки</div>';
+      }
+    }
+
+    if (loadModeratorRequestsBtn) {
+      loadModeratorRequestsBtn.addEventListener('click', loadModeratorRequests);
     }
 
     // Delete community (owner only)
