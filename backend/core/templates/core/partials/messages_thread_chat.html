@@ -32,7 +32,7 @@
         <span id="scroll-bottom-unread" class="scroll-bottom-unread hidden">0</span>
     </button>
 
-    <div class="card-footer">
+    <div class="card-footer messages-composer">
         <form id="messageForm"
               class="messages-form"
               method="post"
@@ -40,7 +40,7 @@
               data-send-url="{% if other_user %}{% url 'messages_send' other_user.username %}{% else %}{% url 'messages_chat_send' chat.id %}{% endif %}">
             {% csrf_token %}
 
-            <div class="d-flex gap-2 align-items-center">
+            <div class="d-flex gap-2 align-items-center messages-composer-row">
                 <button type="button"
                         class="btn btn-light border messages-attach-btn"
                         id="messages-attach-btn"

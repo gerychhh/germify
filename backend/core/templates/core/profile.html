@@ -5,7 +5,7 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=27">
-  <link rel="stylesheet" href="{% static 'core/css/pages/profile/profile.css' %}?v=16">
+  <link rel="stylesheet" href="{% static 'core/css/pages/profile/profile.css' %}?v=17">
 {% endblock %}
 
 {% block content %}
@@ -54,9 +54,9 @@
 
             <div class="profile-actions">
               {# ЧУЖОЙ ПРОФИЛЬ: Подписаться + Сообщение #}
-              {% if user.is_authenticated and user.username != profile_user.username %}
+                {% if user.is_authenticated and user.username != profile_user.username %}
                 <button type="button"
-                        class="btn btn-sm {% if is_following %}btn-outline-secondary{% else %}btn-success{% endif %} follow-btn"
+                        class="btn btn-sm {% if is_following %}btn-outline-secondary{% else %}btn-primary{% endif %} follow-btn"
                         data-username="{{ profile_user.username }}"
                         data-follow-url="{% url 'follow_user' profile_user.username %}"
                         data-unfollow-url="{% url 'unfollow_user' profile_user.username %}"
@@ -130,24 +130,26 @@
     </section>
 
     {# ====== POSTS ====== #}
-    <div class="feed-page">
-      <section class="card">
-        <div class="card-header bg-white">
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="fw-semibold">Посты</div>
-            <span class="badge text-bg-light">{{ posts|length }}</span>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="posts-list d-flex flex-column gap-3">
-            {% for post in posts %}
-              {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
-            {% empty %}
-              <div class="text-body-secondary">У пользователя пока нет постов.</div>
-            {% endfor %}
-          </div>
-        </div>
+    <div class="feed-page profile-posts">
+      <div class="profile-posts__header">
+        <div class="fw-semibold">Посты</div>
+        <span class="badge text-bg-light">{{ posts_count }}</span>
+      </div>
+
+      <section class="posts-list d-flex flex-column gap-3"
+               id="posts-list"
+               data-next-page="{% if has_next %}{{ next_page }}{% else %}0{% endif %}"
+               data-has-next="{% if has_next %}1{% else %}0{% endif %}">
+        {% for post in posts %}
+          {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
+        {% empty %}
+          <div class="text-body-secondary">У пользователя пока нет постов.</div>
+        {% endfor %}
       </section>
+
+      <div class="feed-loading" id="feed-loading" style="display:none;">
+        Загрузка ещё постов...
+      </div>
     </div>
 
   </div>

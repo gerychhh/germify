@@ -2406,13 +2406,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     followBtn.dataset.following = following ? "1" : "0";
                     followBtn.textContent = following ? "Вы подписаны" : "Подписаться";
 
-                    if (following) {
-                        followBtn.style.background = "#1f2937";
-                        followBtn.style.color = "#e5e7eb";
-                    } else {
-                        followBtn.style.background = "";
-                        followBtn.style.color = "";
-                    }
+                    followBtn.classList.toggle("btn-outline-secondary", following);
+                    followBtn.classList.toggle("btn-primary", !following);
 
                     if (typeof data.followers_count !== "undefined") {
                         const counterEl = document.querySelector(".profile-followers-count");

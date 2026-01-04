@@ -178,6 +178,20 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
   z-index: 1;
 }
 
+.profile-posts{
+  gap: 10px;
+}
+
+.profile-posts__header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid var(--g-border);
+  border-radius: var(--g-radius);
+  background: var(--g-surface);
+}
+
 /* ===== Lists overlay (followers / following) ===== */
 .profile-list-modal{
   border-radius: var(--g-radius);

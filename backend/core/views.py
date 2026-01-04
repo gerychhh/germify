@@ -545,7 +545,7 @@ def profile_view(request):
 def user_profile(request, username):
     profile_user = get_object_or_404(User, username=username)
 
-    posts = (
+    posts_qs = (
         Post.objects.filter(author=profile_user)
         .prefetch_related(
             "likes",
@@ -561,6 +561,33 @@ def user_profile(request, username):
         .order_by("-created_at")
     )
 
+    paginator = Paginator(posts_qs, 7)
+
+    page_param = request.GET.get("page")
+    try:
+        page_number = int(page_param)
+        if page_number < 1:
+            page_number = 1
+    except (TypeError, ValueError):
+        page_number = 1
+
+    page_obj = paginator.get_page(page_number)
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        posts_html = "".join(
+            render_post_html(post, request) for post in page_obj.object_list
+        )
+        return JsonResponse(
+            {
+                "success": True,
+                "html": posts_html,
+                "has_next": page_obj.has_next(),
+                "next_page": page_obj.next_page_number()
+                if page_obj.has_next()
+                else None,
+            }
+        )
+
     is_owner = request.user.is_authenticated and request.user == profile_user
 
     is_following = False
@@ -570,23 +597,7 @@ def user_profile(request, username):
             following=profile_user,
         ).exists()
 
-    liked_posts_ids = []
-    liked_comment_ids = []
-    following_ids = []
-
-    if request.user.is_authenticated:
-        liked_posts_ids = list(
-            Like.objects.filter(user=request.user)
-            .values_list("post_id", flat=True)
-        )
-        liked_comment_ids = list(
-            CommentLike.objects.filter(user=request.user)
-            .values_list("comment_id", flat=True)
-        )
-        following_ids = list(
-            Follow.objects.filter(follower=request.user)
-            .values_list("following_id", flat=True)
-        )
+    state = get_user_state(request.user)
 
     form = None
     if is_owner:
@@ -613,15 +624,18 @@ def user_profile(request, username):
         "core/profile.html",
         {
             "profile_user": profile_user,
-            "posts": posts,
+            "posts": page_obj.object_list,
             "is_owner": is_owner,
             "is_following": is_following,
             "form": form,
-            "liked_posts_ids": liked_posts_ids,
-            "liked_comment_ids": liked_comment_ids,
-            "following_ids": following_ids,
+            "liked_posts_ids": state.get("liked_posts_ids", []),
+            "liked_comment_ids": state.get("liked_comment_ids", []),
+            "following_ids": state.get("following_ids", []),
             "communities_admin_count": communities_admin_count,
             "communities_joined_count": communities_joined_count,
+            "has_next": page_obj.has_next(),
+            "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+            "posts_count": paginator.count,
         },
     )
 
@@ -1709,7 +1723,10 @@ def messages_group_create(request):
                     for u in users:
                         ChatMember.objects.get_or_create(chat=chat, user=u, defaults={"role": ChatMember.ROLE_MEMBER})
 
-                return redirect("messages_chat", chat_id=chat.id)
+                chat_url = reverse("messages_chat", kwargs={"chat_id": chat.id})
+                if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                    return JsonResponse({"ok": True, "redirect": chat_url})
+                return redirect(chat_url)
     else:
         form = GroupChatCreateForm()
 
