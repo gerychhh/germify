@@ -125,6 +125,20 @@ body {
   width: 100%;
   height: 100%;
   display: block;
+  filter: var(--g-icon-filter, none);
+  transition: filter 0.16s ease;
+}
+
+/* Для иконок на статичном фоне отключаем перекраску */
+.icon--static img,
+img[data-icon-static] {
+  filter: none !important;
+}
+
+/* Общая перекраска SVG-иконок при смене темы */
+img[src*="/core/icons/"] {
+  filter: var(--g-icon-filter, none);
+  transition: filter 0.16s ease;
 }
 
 /* Лёгкий фон для дроп-зоны */

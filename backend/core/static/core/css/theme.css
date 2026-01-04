@@ -103,6 +103,9 @@
   --g-accent-purple: #a78bfa;
   --g-accent-success-soft: #86efac;
 
+  /* ---- icon treatment ---- */
+  --g-icon-filter: none;
+
   /* ---- gradients ---- */
   --g-gradient-hero: radial-gradient(circle at 30% 30%, #4f46e5, var(--g-primary-4));
   --g-gradient-success: linear-gradient(135deg, var(--g-success-strong), var(--g-success));
@@ -197,6 +200,8 @@ html[data-theme="dark"]{
   --sb-track: rgba(255,255,255,.07);
   --sb-thumb: rgba(255,255,255,.22);
   --sb-thumb-hover: rgba(255,255,255,.30);
+
+  --g-icon-filter: brightness(0) invert(1);
 }
 
 /* ==========================================================================
