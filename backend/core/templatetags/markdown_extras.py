@@ -1,5 +1,6 @@
 # core/templatetags/markdown_extras.py
 from django import template
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 import re
@@ -24,15 +25,16 @@ _MD_CONFIG = {
     }
 }
 
-# Экранируем # только когда это "хэштег" (#питон), но НЕ трогаем заголовки "# Заголовок"
+# Оборачиваем хэштеги #python в кликабельные ссылки, но НЕ трогаем заголовки "# Заголовок"
 # и не лезем внутрь fenced-code блоков ```...``` и inline-code `...`
-_HASHTAG_IN_TEXT_RE = re.compile(r"(?<!\\)#(?=[\w-])", re.UNICODE)
+_HASHTAG_LINK_RE = re.compile(r"(?<!\\)(?<![\w-])#(?P<tag>[\w-]+)", re.UNICODE)
 
 
-def _escape_hashtags_for_markdown(text: str) -> str:
+def _linkify_hashtags(text: str) -> str:
     if not text:
         return ""
 
+    feed_url = reverse("feed")
     out_lines = []
     in_fence = False
 
@@ -52,7 +54,13 @@ def _escape_hashtags_for_markdown(text: str) -> str:
         # вне fenced: не трогаем inline code между `...`
         parts = line.split("`")
         for i in range(0, len(parts), 2):  # только не-кодовые сегменты
-            parts[i] = _HASHTAG_IN_TEXT_RE.sub(r"\#", parts[i])
+            parts[i] = _HASHTAG_LINK_RE.sub(
+                lambda m: (
+                    f"<a class=\"post-hashtag\" href=\"{feed_url}?q=%23{m.group('tag')}\" "
+                    f"data-hashtag=\"{m.group('tag')}\">#{m.group('tag')}</a>"
+                ),
+                parts[i],
+            )
         out_lines.append("`".join(parts))
 
     return "".join(out_lines)
@@ -61,7 +69,7 @@ def _escape_hashtags_for_markdown(text: str) -> str:
 @register.filter(name="md")
 def md_filter(text):
     text = text or ""
-    text = _escape_hashtags_for_markdown(text)
+    text = _linkify_hashtags(text)
 
     html = md.markdown(
         text,

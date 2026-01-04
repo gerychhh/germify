@@ -129,9 +129,11 @@
 <div class="d-flex gap-2">
     {% if other_user %}
         <button type="button"
-                class="btn btn-sm btn-outline-danger messages-delete-thread"
-                data-delete-url="{% url 'messages_delete_thread' other_user.username %}">
-            Удалить чат
+                class="btn btn-sm btn-outline-danger messages-delete-thread d-flex align-items-center justify-content-center gap-1"
+                data-delete-url="{% url 'messages_delete_thread' other_user.username %}"
+                title="Удалить чат">
+            <img src="{% static 'core/icons/comment-delete.svg' %}" alt="" class="icon icon--16">
+            <span class="visually-hidden">Удалить чат</span>
         </button>
     {% else %}
         <a href="{% url 'messages_chat_manage' chat.id %}"
@@ -139,15 +141,19 @@
             {% if can_manage %}Настройки{% else %}Участники{% endif %}
         </a>
         <button type="button"
-                class="btn btn-sm btn-outline-secondary messages-delete-thread"
-                data-delete-url="{% url 'messages_chat_leave' chat.id %}">
-            Выйти
+                class="btn btn-sm btn-outline-secondary messages-delete-thread d-flex align-items-center justify-content-center gap-1"
+                data-delete-url="{% url 'messages_chat_leave' chat.id %}"
+                title="Выйти">
+            <img src="{% static 'core/icons/close.svg' %}" alt="" class="icon icon--16">
+            <span class="visually-hidden">Выйти</span>
         </button>
         {% if can_delete %}
             <button type="button"
-                    class="btn btn-sm btn-outline-danger messages-delete-thread"
-                    data-delete-url="{% url 'messages_chat_delete' chat.id %}">
-                Удалить
+                    class="btn btn-sm btn-outline-danger messages-delete-thread d-flex align-items-center justify-content-center gap-1"
+                    data-delete-url="{% url 'messages_chat_delete' chat.id %}"
+                    title="Удалить">
+                <img src="{% static 'core/icons/comment-delete.svg' %}" alt="" class="icon icon--16">
+                <span class="visually-hidden">Удалить чат</span>
             </button>
         {% endif %}
     {% endif %}

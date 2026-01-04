@@ -2433,6 +2433,34 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // ================================
+    // Хэштег → поиск
+    // ================================
+    (function initHashtagSearch() {
+        const searchInput = document.querySelector(".feed-search__input");
+        const searchForm = searchInput?.closest("form");
+        if (!searchForm) return;
+
+        document.body.addEventListener("click", (event) => {
+            const link = event.target.closest(".post-hashtag");
+            if (!link) return;
+
+            const rawTag = (link.dataset.hashtag || link.textContent || "").trim();
+            const tag = rawTag.replace(/^#/, "");
+            if (!tag) return;
+
+            event.preventDefault();
+            const query = `#${tag}`;
+            searchInput.value = query;
+
+            if (typeof searchForm.requestSubmit === "function") {
+                searchForm.requestSubmit();
+            } else {
+                searchForm.submit();
+            }
+        });
+    })();
+
+    // ================================
     // Бесконечная подгрузка постов
     // ================================
     (function initInfiniteScroll() {

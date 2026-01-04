@@ -28,6 +28,41 @@
   color: var(--g-text);
 }
 
+/* ===== ХЭШТЕГИ ===== */
+.post-text .post-hashtag,
+.comment-text .post-hashtag,
+.reply-text .post-hashtag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  margin: 2px 4px 2px 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--g-primary) 8%, var(--g-surface-2));
+  border: 1px solid color-mix(in srgb, var(--g-primary) 35%, var(--g-border));
+  color: color-mix(in srgb, var(--g-primary) 70%, var(--g-text));
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1.2;
+  transition: transform 0.12s ease-out, background 0.16s ease-out, border-color 0.16s ease-out;
+}
+
+.post-text .post-hashtag:hover,
+.comment-text .post-hashtag:hover,
+.reply-text .post-hashtag:hover {
+  background: color-mix(in srgb, var(--g-primary) 16%, var(--g-surface));
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+  color: var(--g-primary);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.post-text .post-hashtag:active,
+.comment-text .post-hashtag:active,
+.reply-text .post-hashtag:active {
+  transform: translateY(0);
+}
+
 /* перенос длинных слов */
 .post-text,
 .comment-text,
@@ -475,8 +510,9 @@
 
 .vk-modal-right-composer .comment-input{
   resize: none;
-  min-height: 36px;
-  max-height: 120px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
 }
 
 /* ===== VK composer row (кнопка отправки справа) ===== */
@@ -491,6 +527,9 @@
   flex: 1 1 auto;
   order: 1;
   margin: 0 !important;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
 }
 
 .vk-compose-row .vk-send-btn{
@@ -515,6 +554,14 @@
 
 /* чтобы карточка поста в модалке занимала всю ширину колонки */
 .vk-modal-left .post-card{ width: 100%; }
+
+/* Replies: align input height with send button */
+.reply-form .reply-input{
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  resize: none;
+}
 
 /* ===================== VK modal scroll (fix) =====================
    Разметка модалки сейчас:

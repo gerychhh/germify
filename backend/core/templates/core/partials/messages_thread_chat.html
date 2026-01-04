@@ -53,7 +53,6 @@
                         id="chat-voice-record-btn"
                         title="Записать голосовое">
                     <img src="{% static 'core/icons/mic.svg' %}" alt="" class="icon icon--16">
-                    Голос
                 </button>
 
                 <div class="flex-grow-1">
@@ -74,7 +73,10 @@
 
                 <input type="file" id="message-attachments-input" name="attachments" multiple class="d-none" />
 
-                <button type="submit" class="btn btn-primary">Отправить</button>
+                <button type="submit" class="btn btn-primary messages-send-btn" title="Отправить">
+                    <img src="{% static 'core/icons/send.svg' %}" alt="" class="icon icon--16">
+                    <span class="visually-hidden">Отправить</span>
+                </button>
             </div>
         </form>
     </div>
