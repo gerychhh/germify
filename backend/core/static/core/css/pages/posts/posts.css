@@ -70,7 +70,7 @@
 }
 
 .post-menu-item:hover { background: var(--g-border); }
-.post-menu-delete-btn { color: #fecaca; }
+.post-menu-delete-btn { color: var(--g-danger-soft); }
 
 /* ===== ЛАЙКИ ===== */
 .post-actions{
@@ -633,7 +633,7 @@ body.vk-modal-open{
   display: block;
 }
 .comment-icon-btn.is-danger:hover{
-  background: color-mix(in srgb, var(--g-danger, #dc3545) 14%, transparent);
+  background: color-mix(in srgb, var(--g-danger) 14%, transparent);
 }
 
 /* ===================== Small typography tweaks ===================== */

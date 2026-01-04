@@ -137,7 +137,7 @@ html[data-glass="off"] .dropdown-menu{
 .btn-primary{
   border-color: transparent !important;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--g-primary) 85%, #ffffff) 0%, var(--g-primary) 55%, color-mix(in srgb, var(--g-primary) 70%, #000000) 100%);
+    linear-gradient(135deg, color-mix(in srgb, var(--g-primary) 85%, var(--g-white)fff) 0%, var(--g-primary) 55%, color-mix(in srgb, var(--g-primary) 70%, var(--g-black)000) 100%);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--g-primary) 22%, transparent);
 }
 
