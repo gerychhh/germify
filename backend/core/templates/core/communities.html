@@ -17,31 +17,27 @@
 <div class="g-page">
   <div class="d-flex flex-column gap-3">
 
-    <div class="card">
-      <form method="get" action="{% url 'communities' %}" id="communities-search-form" class="g-search">
-        <div class="g-search__field g-input-icon g-search__pill">
-          <span class="g-input-icon__icon" aria-hidden="true">
-            <img src="{% static 'core/icons/search.svg' %}" alt="" class="icon icon--16">
-          </span>
-          <input type="text" id="communities-search-input" name="q" value="{{ q|default:'' }}" placeholder="Поиск сообществ…"
-                 autocomplete="off" class="form-control g-search__input">
-        </div>
-
-        <div class="g-search__actions">
-          <button type="submit" class="btn btn-primary" id="communities-search-btn">Найти</button>
-
-          {% if q %}
-            <a href="{% url 'communities' %}" class="btn btn-outline-secondary">Сбросить</a>
-          {% endif %}
-        </div>
-      </form>
-    </div>
-
-    {% if user.is_authenticated %}
-      <div class="d-flex justify-content-end">
-        <a href="{% url 'community_create' %}" class="btn btn-primary">Создать сообщество</a>
+    <form method="get" action="{% url 'communities' %}" id="communities-search-form" class="g-search">
+      <div class="g-search__field g-input-icon g-search__pill">
+        <span class="g-input-icon__icon" aria-hidden="true">
+          <img src="{% static 'core/icons/search.svg' %}" alt="" class="icon icon--16">
+        </span>
+        <input type="text" id="communities-search-input" name="q" value="{{ q|default:'' }}" placeholder="Поиск сообществ…"
+               autocomplete="off" class="form-control g-search__input">
       </div>
-    {% endif %}
+
+      <div class="g-search__actions">
+        {% if user.is_authenticated %}
+          <a href="{% url 'community_create' %}" class="btn btn-primary g-icon-btn" aria-label="Создать сообщество">
+            <img src="{% static 'core/icons/plus.svg' %}" alt="" class="icon icon--16">
+          </a>
+        {% endif %}
+
+        {% if q %}
+          <a href="{% url 'communities' %}" class="btn btn-outline-secondary">Сбросить</a>
+        {% endif %}
+      </div>
+    </form>
 
     <div id="communities-list" class="d-flex flex-column gap-3">
     {% for c in communities %}
@@ -67,7 +63,6 @@
   const form = document.getElementById("communities-search-form");
   const input = document.getElementById("communities-search-input");
   const list = document.getElementById("communities-list");
-  const btn = document.getElementById("communities-search-btn");
   const moreBtn = document.getElementById("communities-load-more");
   const sentinel = document.getElementById("communities-sentinel");
   if(!form || !input || !list || !sentinel) return;
@@ -77,12 +72,6 @@
   let hasNext = {{ has_next|yesno:"true,false" }};
   let nextPage = {{ next_page|default:"null" }};
   let abortCtrl = null;
-
-  function setBtnLoading(on){
-    if(!btn) return;
-    if(!btn.dataset.oldText) btn.dataset.oldText = btn.textContent || "Найти";
-    btn.textContent = on ? "Ищем..." : btn.dataset.oldText;
-  }
 
   function setMoreVisible(){
     if(!moreBtn) return;
@@ -103,7 +92,6 @@
     if(abortCtrl) abortCtrl.abort();
     abortCtrl = new AbortController();
 
-    if(mode === "replace") setBtnLoading(true);
     if(mode === "append" && moreBtn){
       moreBtn.disabled = true;
       moreBtn.textContent = "Загрузка...";
@@ -134,7 +122,6 @@
       window.history.replaceState({}, "", cleanUrl.pathname + cleanUrl.search);
     }catch(e){
     }finally{
-      if(mode === "replace") setBtnLoading(false);
       loading = false;
       if(mode === "append" && moreBtn){
         moreBtn.disabled = false;
