@@ -475,8 +475,8 @@
 
 .vk-modal-right-composer .comment-input{
   resize: none;
-  min-height: 44px;
-  max-height: 140px;
+  min-height: 36px;
+  max-height: 120px;
 }
 
 /* ===== VK composer row (кнопка отправки справа) ===== */
