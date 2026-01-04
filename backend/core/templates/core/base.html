@@ -138,7 +138,7 @@
             </a>
         </li>
         <li>
-            <a class="g-bottom-nav__item {% if request.resolver_match.url_name in ['messages_inbox', 'messages_thread'] %}is-active{% endif %}"
+            <a class="g-bottom-nav__item {% if request.resolver_match.url_name == 'messages_inbox' or request.resolver_match.url_name == 'messages_thread' %}is-active{% endif %}"
                href="{% url 'messages_inbox' %}">
                 <img src="{% static 'core/icons/chat.svg' %}" alt="" class="g-bottom-nav__icon" aria-hidden="true">
                 {% if unread_messages_count %}
@@ -148,7 +148,7 @@
             </a>
         </li>
         <li>
-            <a class="g-bottom-nav__item {% if request.resolver_match.url_name in ['communities_list', 'communities', 'community_detail'] %}is-active{% endif %}"
+            <a class="g-bottom-nav__item {% if request.resolver_match.url_name == 'communities_list' or request.resolver_match.url_name == 'communities' or request.resolver_match.url_name == 'community_detail' %}is-active{% endif %}"
                href="{% url 'communities' %}">
                 <img src="{% static 'core/icons/users.svg' %}" alt="" class="g-bottom-nav__icon" aria-hidden="true">
                 <span class="visually-hidden">Сообщества</span>
