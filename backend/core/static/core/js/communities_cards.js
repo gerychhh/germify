@@ -56,7 +56,7 @@
         form.remove();
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'btn btn-outline-success btn-sm';
+        b.className = 'btn btn-outline-secondary btn-sm';
         b.disabled = true;
         b.textContent = 'Вы подписаны';
         actions && actions.appendChild(b);

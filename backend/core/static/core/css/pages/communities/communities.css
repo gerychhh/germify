@@ -15,6 +15,21 @@
   box-shadow: 0 .5rem 1.25rem rgba(0,0,0,.08);
 }
 
+.community-card .card-body {
+  padding: 12px 14px;
+}
+
+.community-card .community-title {
+  color: var(--g-text);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.community-card .community-title:hover {
+  color: var(--g-text);
+  text-decoration: none;
+}
+
 .community-card .community-actions {
   position: relative;
   z-index: 2; /* above card-click layer */

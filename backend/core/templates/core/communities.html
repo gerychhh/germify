@@ -4,7 +4,7 @@
 {% block title %}Сообщества — Germify{% endblock %}
 
 {% block extra_css %}
-  <link rel="stylesheet" href="{% static 'core/css/pages/communities/communities.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'core/css/pages/communities/communities.css' %}?v=2">
 {% endblock %}
 
 {% block extra_head %}
@@ -37,7 +37,7 @@
 
     {% if user.is_authenticated %}
       <div class="d-flex justify-content-end">
-        <a href="{% url 'community_create' %}" class="btn btn-success">Создать сообщество</a>
+        <a href="{% url 'community_create' %}" class="btn btn-primary">Создать сообщество</a>
       </div>
     {% endif %}
 
