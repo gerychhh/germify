@@ -148,6 +148,19 @@ input[type="search"].form-control-sm { padding-left: 34px; }
   --btn-shadow: var(--g-btn-shadow);
 }
 
+.btn-primary svg,
+.btn-primary img,
+.btn-primary .icon,
+.btn-primary .feed-ic{
+  color: var(--g-text-contrast-strong);
+  filter: brightness(0) invert(1);
+}
+
+.btn-primary svg{
+  fill: currentColor;
+  stroke: currentColor;
+}
+
 .btn-success {
   --btn-bg: var(--g-gradient-success);
   --btn-bg-hover: linear-gradient(135deg, color-mix(in srgb, var(--g-success-strong) 90%, var(--g-white)) 0%, var(--g-success) 60%);

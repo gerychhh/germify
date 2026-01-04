@@ -20,6 +20,14 @@ body {
   color: var(--g-text);
 }
 
+/* Единая ширина для ленты постов и карточек пользователей */
+.posts-list,
+#usersList {
+  width: min(var(--g-posts-width, 700px), calc(100vw - 24px));
+  margin-left: auto;
+  margin-right: auto;
+}
+
 @media (max-width: 991.98px) {
   /* чтобы fixed-bottom меню не перекрывало контент на мобилках */
   body {
