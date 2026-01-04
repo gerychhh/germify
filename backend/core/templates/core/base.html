@@ -128,6 +128,49 @@
     {% block content %}{% endblock %}
 </main>
 
+<nav class="g-bottom-nav d-lg-none" aria-label="Основная навигация">
+    <ul class="g-bottom-nav__list">
+        <li>
+            <a class="g-bottom-nav__item {% if request.resolver_match.url_name == 'feed' %}is-active{% endif %}"
+               href="{% url 'feed' %}">
+                <img src="{% static 'core/icons/home.svg' %}" alt="" class="g-bottom-nav__icon" aria-hidden="true">
+                <span class="visually-hidden">Лента</span>
+            </a>
+        </li>
+        <li>
+            <a class="g-bottom-nav__item {% if request.resolver_match.url_name in ['messages_inbox', 'messages_thread'] %}is-active{% endif %}"
+               href="{% url 'messages_inbox' %}">
+                <img src="{% static 'core/icons/chat.svg' %}" alt="" class="g-bottom-nav__icon" aria-hidden="true">
+                {% if unread_messages_count %}
+                    <span class="g-bottom-nav__badge">{{ unread_messages_count }}</span>
+                {% endif %}
+                <span class="visually-hidden">Сообщения</span>
+            </a>
+        </li>
+        <li>
+            <a class="g-bottom-nav__item {% if request.resolver_match.url_name in ['communities_list', 'communities', 'community_detail'] %}is-active{% endif %}"
+               href="{% url 'communities' %}">
+                <img src="{% static 'core/icons/users.svg' %}" alt="" class="g-bottom-nav__icon" aria-hidden="true">
+                <span class="visually-hidden">Сообщества</span>
+            </a>
+        </li>
+        <li>
+            <a class="g-bottom-nav__item {% if request.resolver_match.url_name == 'users' %}is-active{% endif %}"
+               href="{% url 'users' %}">
+                <img src="{% static 'core/icons/search.svg' %}" alt="" class="g-bottom-nav__icon" aria-hidden="true">
+                <span class="visually-hidden">Пользователи</span>
+            </a>
+        </li>
+        <li>
+            <a class="g-bottom-nav__item {% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}"
+               href="{% url 'profile' %}">
+                <img src="{% static 'core/icons/user.svg' %}" alt="" class="g-bottom-nav__icon" aria-hidden="true">
+                <span class="visually-hidden">Профиль</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
 <!-- UI Settings (Bootstrap Offcanvas) -->
 <div class="offcanvas offcanvas-end g-offcanvas" tabindex="-1" id="uiSettings" aria-labelledby="uiSettingsLabel">
     <div class="offcanvas-header">
