@@ -51,7 +51,10 @@
                     <span class="badge text-bg-light border">#{{ community.slug }}</span>
                   {% endif %}
 
-                  <span class="badge text-bg-light border">👥 {{ members_total|default:community.members_count }}</span>
+                  <span class="badge text-bg-light border d-inline-flex align-items-center gap-1">
+                    <img src="{% static 'core/icons/users.svg' %}" alt="" class="icon icon--16">
+                    {{ members_total|default:community.members_count }}
+                  </span>
 
                   {% if is_admin %}
                     <span class="badge text-bg-success">Админ</span>
@@ -183,8 +186,15 @@
         {% empty %}
           <div class="card">
             <div class="card-body text-center text-body-secondary py-5">
-              <div style="font-size:36px;">📝</div>
-              <div class="mt-2">Пока нет постов. Будьте первым 🙂</div>
+              <div class="d-flex justify-content-center">
+                <span class="icon icon--32 text-muted" aria-hidden="true">
+                  <img src="{% static 'core/icons/note.svg' %}" alt="" class="icon icon--32">
+                </span>
+              </div>
+              <div class="mt-2 d-flex justify-content-center align-items-center gap-2">
+                <img src="{% static 'core/icons/smile.svg' %}" alt="" class="icon icon--20 text-muted">
+                <span>Пока нет постов. Будьте первым</span>
+              </div>
             </div>
           </div>
         {% endfor %}

@@ -628,7 +628,19 @@
 }
 
 .file-icon {
-    font-size: 24px;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--g-muted);
+}
+
+.file-icon img {
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
 .file-name {
