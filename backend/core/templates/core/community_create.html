@@ -1,34 +1,94 @@
 {% extends "core/base.html" %}
+{% load static %}
 
 {% block title %}Создать сообщество — Germify{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/css/pages/community_create.css' %}?v=1">
+{% endblock %}
+
 {% block content %}
-<div class="card" style="max-width:640px; margin:0 auto;">
-    <h1 class="h4" style="margin-top:0;">Создать сообщество</h1>
-    <div class="text-secondary mb-3">После создания вы автоматически станете администратором.</div>
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-7 col-xl-6">
+        <div class="card g-glass community-create">
+            <div class="card-body p-4 p-md-5">
+                <form method="post" enctype="multipart/form-data" class="vstack gap-4">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
 
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
+                    <input type="file"
+                           name="icon"
+                           id="communityIconInput"
+                           accept="image/*"
+                           class="visually-hidden community-avatar-input">
 
-        <div class="mb-3">
-            <label class="form-label text-secondary">Название</label>
-            {{ form.name }}
+                    <label for="communityIconInput" class="community-avatar-picker">
+                        <div class="community-avatar-visual" id="communityAvatarVisual">
+                            <img src="{% static 'core/icons/plus.svg' %}"
+                                 alt=""
+                                 class="community-avatar-plus"
+                                 id="communityAvatarPlaceholder">
+                            <img src=""
+                                 alt=""
+                                 class="community-avatar-preview"
+                                 id="communityAvatarPreview">
+                        </div>
+                        <div class="community-avatar-hint">Добавить иконку сообщества</div>
+                    </label>
+                    {% if form.icon.errors %}
+                        <div class="invalid-feedback d-block">{{ form.icon.errors }}</div>
+                    {% endif %}
+
+                    <div class="vstack gap-3">
+                        <div class="vstack gap-2">
+                            <label class="form-label" for="{{ form.name.id_for_label }}">Название</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="vstack gap-2">
+                            <label class="form-label" for="{{ form.description.id_for_label }}">Описание</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">{{ form.description.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-end flex-wrap">
+                        <a href="{% url 'communities' %}" class="btn btn-ghost">Отмена</a>
+                        <button type="submit" class="btn btn-primary">Создать</button>
+                    </div>
+                </form>
+            </div>
         </div>
-
-        <div class="mb-3">
-            <label class="form-label text-secondary">Описание</label>
-            {{ form.description }}
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label text-secondary">Иконка (необязательно)</label>
-            {{ form.icon }}
-        </div>
-
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-success">Создать</button>
-            <a href="{% url 'communities' %}" class="btn btn-outline-secondary">Отмена</a>
-        </div>
-    </form>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (() => {
+    const input = document.getElementById('communityIconInput');
+    const preview = document.getElementById('communityAvatarPreview');
+    const placeholder = document.getElementById('communityAvatarPlaceholder');
+    if (!input || !preview || !placeholder) return;
+
+    input.addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        preview.src = url;
+        preview.classList.add('is-visible');
+        placeholder.classList.add('is-hidden');
+      } else {
+        preview.src = '';
+        preview.classList.remove('is-visible');
+        placeholder.classList.remove('is-hidden');
+      }
+    });
+  })();
+</script>
 {% endblock %}
