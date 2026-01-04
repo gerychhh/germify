@@ -46,15 +46,15 @@
   --g-shadow-lg: 0 24px 60px rgba(15,23,42,.14);
 
   /* ---- base palette (light) ---- */
-  --g-bg: #f6f8fc;
+  --g-bg: #eef2f8;
   --g-surface-solid: #ffffff;
-  --g-surface-glass: rgba(255,255,255,.70);
+  --g-surface-glass: rgba(255,255,255,.86);
   --g-surface: var(--g-surface-glass);
-  --g-surface-2: rgba(255,255,255,.55);
-  --g-bg-soft: #f3f4f6;
+  --g-surface-2: rgba(255,255,255,.70);
+  --g-bg-soft: #f3f4f9;
 
-  --g-text: #0f172a;
-  --g-muted: #64748b;
+  --g-text: #0b1220;
+  --g-muted: #4b5563;
   --g-border: rgba(15,23,42,.12);
   --g-glass-border: rgba(255,255,255,.35);
 
@@ -142,17 +142,17 @@ html[data-glass="off"]{
 
 /* ---- dark theme ---- */
 html[data-theme="dark"]{
-  --g-bg: #0b1220;
-  --g-bg-soft: #0c1220;
+  --g-bg: #0a101c;
+  --g-bg-soft: #0c1323;
   --g-surface-solid: #0f172a;
-  --g-surface-glass: rgba(15,23,42,.62);
+  --g-surface-glass: rgba(18,26,42,.76);
   --g-surface: var(--g-surface-glass);
-  --g-surface-2: rgba(15,23,42,.45);
+  --g-surface-2: rgba(18,26,42,.62);
 
-  --g-text: #e5e7eb;
-  --g-muted: rgba(229,231,235,.75);
-  --g-border: rgba(229,231,235,.14);
-  --g-glass-border: rgba(255,255,255,.10);
+  --g-text: #e8edf5;
+  --g-muted: rgba(226,232,240,.78);
+  --g-border: rgba(232,238,248,.18);
+  --g-glass-border: rgba(255,255,255,.14);
 
   --g-surface-strong: #0b1120;
   --g-surface-stronger: #020617;
