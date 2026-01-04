@@ -26,8 +26,22 @@
 .staff-permission-option { background: rgba(15, 23, 42, .04); padding: 6px 10px; border-radius: 999px; }
 .staff-permission-option .form-check-input { margin-top: 0; margin-left: 0; }
 
-.community-member { padding: 10px 0; border-bottom: 1px solid rgba(15, 23, 42, .06); }
-.community-member:last-child { border-bottom: 0; }
+.community-member {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  background: rgba(255,255,255,.82);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .community-member {
+    background: rgba(15, 23, 42, .35);
+    border-color: rgba(255, 255, 255, .08);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .32);
+  }
+}
 
 .settings-block { padding: 12px; border: 1px solid rgba(15, 23, 42, .08); border-radius: 12px; background: var(--g-surface, #fff); }
 
