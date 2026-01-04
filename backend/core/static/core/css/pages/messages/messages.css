@@ -20,8 +20,9 @@
   min-height: var(--messages-input-size);
   max-height: var(--messages-input-size);
   resize: none;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  line-height: 1.35;
 }
 
 .messages-form .messages-send-btn,
@@ -33,6 +34,27 @@
   align-items: center;
   justify-content: center;
   padding: 0;
+}
+
+/* Иконки: обеспечить контраст на тёмной теме */
+.messages-chat-card {
+  --messages-icon-filter: none;
+}
+
+.messages-chat-card .icon img {
+  filter: var(--messages-icon-filter, none);
+  transition: filter 0.12s ease;
+}
+
+html[data-theme="dark"] .messages-chat-card {
+  --messages-icon-filter: brightness(0) invert(1);
+}
+
+html[data-theme="dark"] .messages-chat-card .btn-light .icon img,
+html[data-theme="dark"] .messages-chat-card .btn-light:active .icon img,
+html[data-theme="dark"] .messages-chat-card .btn-light:focus .icon img,
+html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
+  filter: none;
 }
 
 @media (max-width: 991.98px) {
