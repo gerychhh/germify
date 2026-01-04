@@ -25,6 +25,13 @@
   }
 
   function buildAvatar(item) {
+    if (item.avatar_html) {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = item.avatar_html;
+      const avatarEl = tmp.firstElementChild;
+      if (avatarEl) return avatarEl;
+    }
+
     const wrap = document.createElement("div");
     wrap.className = "avatar avatar--sm";
 
@@ -104,29 +111,43 @@
     const titleEl = document.getElementById("profileListTitle");
     const countEl = document.getElementById("profileListCount");
     const itemsEl = document.getElementById("profileListItems");
+    const loadingEl = document.getElementById("profileListLoading");
+    const sentinelEl = document.getElementById("profileListSentinel");
     const emptyEl = document.getElementById("profileListEmpty");
     const searchEl = document.getElementById("profileListSearch");
     const searchForm = document.querySelector(".profile-list-search");
 
-    if (!modal || !modalEl || !itemsEl) return;
+    if (!modal || !modalEl || !itemsEl || !sentinelEl) return;
 
     let abortCtrl = null;
     let activeBtn = null;
     let lastQuery = "";
+    let offset = 0;
+    let hasMore = true;
+    let inFlight = false;
 
     function setEmptyVisible(show) {
       if (!emptyEl) return;
       emptyEl.classList.toggle("d-none", !show);
     }
 
-    function renderItems(items) {
-      itemsEl.innerHTML = "";
-      const arr = Array.isArray(items) ? items : [];
-      if (!arr.length) {
-        setEmptyVisible(true);
-        return;
+    function setLoading(show) {
+      if (!loadingEl) return;
+      loadingEl.classList.toggle("d-none", !show);
+    }
+
+    function renderItems(items, { reset = false } = {}) {
+      if (reset) {
+        itemsEl.innerHTML = "";
       }
-      setEmptyVisible(false);
+
+      const arr = Array.isArray(items) ? items : [];
+      if (reset && !arr.length) {
+        setEmptyVisible(true);
+      } else {
+        setEmptyVisible(false);
+      }
+
       arr.forEach(it => itemsEl.appendChild(buildItem(it)));
     }
 
@@ -138,28 +159,49 @@
       countEl.textContent = value ? `${caption}: ${value}` : caption;
     }
 
-    async function loadList(query) {
+    async function loadList(query, { reset = false } = {}) {
       if (!activeBtn) return;
+      if (inFlight) return;
+      if (!hasMore && !reset) return;
+
       const baseUrl = activeBtn.dataset.url;
       if (!baseUrl) return;
 
       const url = new URL(baseUrl, window.location.origin);
       if (query) url.searchParams.set("q", query);
+      url.searchParams.set("offset", reset ? "0" : String(offset));
+      url.searchParams.set("limit", "20");
 
       if (abortCtrl) abortCtrl.abort();
       abortCtrl = new AbortController();
 
       try {
+        inFlight = true;
+        setLoading(true);
+
         const data = await fetchJson(url.toString(), abortCtrl.signal);
         if (!isSuccess(data)) {
-          renderItems([]);
+          if (reset) renderItems([], { reset: true });
           return;
         }
 
-        renderItems(data.items);
+        const items = Array.isArray(data.items) ? data.items : [];
+
+        if (reset) offset = 0;
+        renderItems(items, { reset });
+
+        offset = data.next_offset ?? offset + items.length;
+        hasMore = !!data.has_more;
+
+        if (!itemsEl.children.length) {
+          setEmptyVisible(true);
+        }
       } catch (e) {
         if (e?.name === "AbortError") return;
-        renderItems([]);
+        if (reset) renderItems([], { reset: true });
+      } finally {
+        setLoading(false);
+        inFlight = false;
       }
     }
 
@@ -167,7 +209,9 @@
       const q = (searchEl && searchEl.value || "").trim();
       if (q === lastQuery) return;
       lastQuery = q;
-      loadList(q);
+      hasMore = true;
+      offset = 0;
+      loadList(q, { reset: true });
     }, 220);
 
     if (searchEl) {
@@ -187,11 +231,26 @@
         if (titleEl) titleEl.textContent = btn.dataset.caption || "";
         setCountFromButton(btn);
         if (searchEl) searchEl.value = "";
-        renderItems([]);
+        renderItems([], { reset: true });
         modal.show();
-        loadList("");
+        offset = 0;
+        hasMore = true;
+        loadList("", { reset: true });
       });
     });
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            loadList((searchEl && searchEl.value) || "");
+          }
+        });
+      },
+      { root: modalEl.querySelector(".modal-body"), rootMargin: "400px 0px", threshold: 0.01 }
+    );
+
+    io.observe(sentinelEl);
 
     modalEl.addEventListener("shown.bs.modal", () => {
       if (searchEl) searchEl.focus();
@@ -201,6 +260,8 @@
       if (abortCtrl) abortCtrl.abort();
       activeBtn = null;
       lastQuery = "";
+      offset = 0;
+      hasMore = true;
     });
 
     initCounts();

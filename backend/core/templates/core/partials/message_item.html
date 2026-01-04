@@ -142,15 +142,15 @@
                             <a class="file-card" href="{{ att.file.url }}" download>
                                 <div class="file-icon">
                                     {% if ".pdf" in name %}
-                                        📄
+                                        <img src="{% static 'core/icons/file-doc.svg' %}" alt="" class="icon icon--20">
                                     {% elif ".zip" in name %}
-                                        🗜️
+                                        <img src="{% static 'core/icons/file-zip.svg' %}" alt="" class="icon icon--20">
                                     {% elif ".txt" in name %}
-                                        📄
+                                        <img src="{% static 'core/icons/file-doc.svg' %}" alt="" class="icon icon--20">
                                     {% elif ".doc" in name or ".docx" in name %}
-                                        📝
+                                        <img src="{% static 'core/icons/file-doc.svg' %}" alt="" class="icon icon--20">
                                     {% else %}
-                                        📁
+                                        <img src="{% static 'core/icons/file-generic.svg' %}" alt="" class="icon icon--20">
                                     {% endif %}
                                 </div>
                                 <div class="file-name">{{ att.original_name }}</div>
