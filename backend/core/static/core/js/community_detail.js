@@ -62,11 +62,33 @@
     const settingsUrl = page.dataset.settingsUrl;
     const joinRequestsUrl = page.dataset.joinRequestsUrl;
     const membersCountEl = document.getElementById('communityMembersCount');
-    const membersBadge = document.getElementById('membersCountBadge');
+    const shareButtons = document.querySelectorAll('[data-share-trigger]');
+
+    shareButtons.forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const payload = { url: window.location.href, title: document.title };
+        if (navigator.share) {
+          try {
+            await navigator.share(payload);
+          } catch (err) {
+            // ignore
+          }
+          return;
+        }
+        if (navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(window.location.href);
+            btn.textContent = 'Ссылка скопирована';
+            setTimeout(() => (btn.textContent = 'Поделиться'), 2000);
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      });
+    });
 
     function updateCounts(count) {
       if (membersCountEl) membersCountEl.textContent = count;
-      if (membersBadge) membersBadge.textContent = count;
       const totalEl = document.getElementById('participantsTotal');
       if (totalEl) totalEl.textContent = count;
     }
@@ -117,9 +139,6 @@
     const participantsLoadMore = document.getElementById('participantsLoadMore');
     const participantsEmpty = document.getElementById('participantsEmpty');
     const participantsError = document.getElementById('participantsError');
-    const sidebarList = document.getElementById('community-members-list');
-    const sidebarSearch = document.getElementById('community-members-search');
-    const sidebarMore = document.getElementById('community-members-more');
 
     let membersPage = 1;
     let membersQuery = '';
@@ -183,50 +202,70 @@
       });
     }
 
-    // Sidebar filtering (client-side) and lazy load
-    function filterSidebar() {
-      if (!sidebarList || !sidebarSearch) return;
-      const q = sidebarSearch.value.trim().toLowerCase();
-      const items = sidebarList.querySelectorAll('[data-member-item]');
-      let visible = 0;
-      items.forEach((el) => {
-        const text = (el.dataset.search || '').toLowerCase();
-        const match = !q || text.includes(q);
-        el.style.display = match ? '' : 'none';
-        if (match) visible += 1;
-      });
-      const empty = document.getElementById('community-members-empty');
-      if (empty) empty.style.display = visible ? 'none' : '';
-    }
+    // Appearance live preview
+    const appearancePreview = document.getElementById('communityAppearancePreview');
+    if (appearancePreview) {
+      const nameInput = document.getElementById('communityNameInput');
+      const descriptionInput = document.getElementById('communityDescriptionInput');
+      const accentInput = document.getElementById('communityAccentInput');
+      const avatar = document.getElementById('appearanceAvatar');
+      const cover = document.getElementById('appearanceCover');
+      const nameTarget = appearancePreview.querySelector('[data-preview-name]');
+      const descTarget = appearancePreview.querySelector('[data-preview-description]');
+      const initialAvatar = avatar?.querySelector('img')?.src || '';
+      const initialCover = cover?.style.backgroundImage || '';
+      const fallbackLetter = (page.dataset.communitySlug || '?')[0].toUpperCase();
 
-    if (sidebarSearch) {
-      sidebarSearch.addEventListener('input', filterSidebar);
-    }
-
-    if (sidebarMore) {
-      sidebarMore.addEventListener('click', async () => {
-        const url = sidebarMore.dataset.url;
-        if (!url || !sidebarList) return;
-        const offset = Number(sidebarList.dataset.offset || '0');
-        const params = new URLSearchParams({ offset: String(offset) });
-        sidebarMore.disabled = true;
-        try {
-          const resp = await fetch(`${url}?${params.toString()}`);
-          if (!resp.ok) throw new Error('fail');
-          const data = await resp.json();
-          sidebarList.insertAdjacentHTML('beforeend', data.html);
-          sidebarList.dataset.offset = data.next_offset;
-          if (!data.has_more) sidebarMore.remove();
-          filterSidebar();
-          if (typeof data.total === 'number') updateCounts(data.total);
-        } catch (err) {
-          console.error(err);
-          sidebarMore.disabled = false;
+      const setAvatar = (src) => {
+        if (!avatar) return;
+        if (src) {
+          avatar.innerHTML = `<img src="${src}" alt="">`;
+        } else {
+          avatar.innerHTML = `<span>${fallbackLetter}</span>`;
         }
-      });
-    }
+      };
 
-    filterSidebar();
+      const setCover = (src) => {
+        if (!cover) return;
+        cover.style.backgroundImage = src ? `url('${src}')` : initialCover;
+      };
+
+      const updateText = () => {
+        if (nameTarget && nameInput) nameTarget.textContent = nameInput.value || 'Сообщество';
+        if (descTarget && descriptionInput) descTarget.textContent = descriptionInput.value.trim() || 'Добавьте описание';
+      };
+
+      const updateAccent = () => {
+        if (!appearancePreview || !accentInput) return;
+        appearancePreview.style.setProperty('--accent-color', accentInput.value || '#3366ff');
+      };
+
+      const handleFilePreview = (input) => {
+        if (!input?.files?.length) {
+          const type = input?.dataset.previewType;
+          if (type === 'icon') setAvatar(initialAvatar);
+          if (type === 'cover') setCover(initialCover.replace(/^url\(['"]?(.+?)['"]?\)$/i, '$1'));
+          return;
+        }
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const result = ev.target?.result;
+          if (input.dataset.previewType === 'icon') setAvatar(String(result));
+          if (input.dataset.previewType === 'cover') setCover(String(result));
+        };
+        reader.readAsDataURL(file);
+      };
+
+      nameInput?.addEventListener('input', updateText);
+      descriptionInput?.addEventListener('input', updateText);
+      accentInput?.addEventListener('input', updateAccent);
+      document.querySelectorAll('input[data-preview-type]').forEach((input) => {
+        input.addEventListener('change', () => handleFilePreview(input));
+      });
+      updateText();
+      updateAccent();
+    }
 
     // Settings form
     const settingsForm = document.getElementById('communitySettingsForm');
@@ -251,33 +290,50 @@
       });
     }
 
-    // Staff role updates
+    // Staff role updates and permissions
     const staffList = document.getElementById('staffList');
+    const collectPermissions = (item) => {
+      const perms = {};
+      item.querySelectorAll('.staff-permission').forEach((input) => {
+        perms[input.value] = input.checked;
+      });
+      return perms;
+    };
+
+    const updateStaff = async (item, trigger) => {
+      if (!staffList) return;
+      const userId = item?.dataset.userId;
+      const baseUrl = staffList.dataset.roleUrl;
+      if (!userId || !baseUrl) return;
+      const url = baseUrl.replace('/0/', '/' + userId + '/');
+      trigger && (trigger.disabled = true);
+      const roleSelect = item.querySelector('.staff-role-select');
+      const body = new URLSearchParams();
+      if (roleSelect) body.append('role', roleSelect.value);
+      body.append('permissions', JSON.stringify(collectPermissions(item)));
+      try {
+        await fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body,
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        trigger && (trigger.disabled = false);
+      }
+    };
+
     if (staffList) {
-      staffList.addEventListener('change', async (e) => {
-        const select = e.target.closest('.staff-role-select');
+      staffList.addEventListener('change', (e) => {
+        const select = e.target.closest('.staff-role-select, .staff-permission');
         if (!select) return;
         const item = select.closest('.staff-item');
         if (!item) return;
-        const userId = item.dataset.userId;
-        const baseUrl = staffList.dataset.roleUrl;
-        if (!userId || !baseUrl) return;
-        const url = baseUrl.replace('/0/', '/' + userId + '/');
-        select.disabled = true;
-        try {
-          await fetch(url, {
-            method: 'POST',
-            headers: {
-              'X-CSRFToken': getCookie('csrftoken'),
-              'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: new URLSearchParams({ role: select.value }),
-          });
-        } catch (err) {
-          console.error(err);
-        } finally {
-          select.disabled = false;
-        }
+        updateStaff(item, select);
       });
 
       staffList.addEventListener('click', async (e) => {

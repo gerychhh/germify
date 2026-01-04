@@ -155,6 +155,7 @@ class CommunityMembership(models.Model):
     )
 
     role = models.CharField("Роль", max_length=16, choices=ROLE_CHOICES, default="member")
+    permissions = models.JSONField("Права модератора", default=dict, blank=True)
     is_admin = models.BooleanField("Администратор", default=False)
     joined_at = models.DateTimeField("Вступил", auto_now_add=True)
 
@@ -166,11 +167,34 @@ class CommunityMembership(models.Model):
         role = self.role or ("admin" if self.is_admin else "member")
         return f"{self.user} in {self.community} ({role})"
 
+    @staticmethod
+    def default_permissions():
+        return {
+            "manage_posts": True,
+            "manage_members": True,
+            "edit_appearance": False,
+        }
+
+    @property
+    def moderator_permissions(self):
+        base = self.default_permissions()
+        incoming = self.permissions or {}
+        for key in base:
+            if key in incoming:
+                base[key] = bool(incoming[key])
+        return base
+
     def save(self, *args, **kwargs):
         if self.role in {"owner", "admin", "moderator"}:
             self.is_admin = True
         elif self.role == "guest":
             self.is_admin = False
+        if not self.permissions:
+            self.permissions = self.default_permissions()
+        else:
+            normalized = self.default_permissions()
+            normalized.update({k: bool(v) for k, v in (self.permissions or {}).items() if k in normalized})
+            self.permissions = normalized
         super().save(*args, **kwargs)
 
     @property

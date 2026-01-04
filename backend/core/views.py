@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from difflib import SequenceMatcher
+import json
 
 from typing import Any, List, TypedDict
 
@@ -2176,6 +2177,7 @@ def community_members_api(request, slug):
             "avatar_url": u.avatar.url if u.avatar else "",
             "role": m.role,
             "role_label": m.role_label,
+            "permissions": m.moderator_permissions,
         })
 
     return JsonResponse({
@@ -2235,8 +2237,25 @@ def community_member_role(request, slug, user_id):
         return JsonResponse({"error": "insufficient"}, status=403)
 
     membership.role = new_role
+    permissions_raw = request.POST.get("permissions")
+    if permissions_raw:
+        try:
+            incoming = json.loads(permissions_raw)
+        except Exception:
+            incoming = {}
+        allowed = membership.default_permissions()
+        normalized = membership.default_permissions()
+        for key in allowed:
+            if key in incoming:
+                normalized[key] = bool(incoming[key])
+        membership.permissions = normalized
     membership.save()
-    return JsonResponse({"success": True, "role": membership.role, "role_label": membership.role_label})
+    return JsonResponse({
+        "success": True,
+        "role": membership.role,
+        "role_label": membership.role_label,
+        "permissions": membership.moderator_permissions,
+    })
 
 
 @login_required
