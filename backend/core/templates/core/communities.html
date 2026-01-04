@@ -20,7 +20,9 @@
     <div class="card">
       <form method="get" action="{% url 'communities' %}" id="communities-search-form" class="g-search">
         <div class="g-search__field g-input-icon g-search__pill">
-          <span class="g-input-icon__icon" aria-hidden="true">🔍</span>
+          <span class="g-input-icon__icon" aria-hidden="true">
+            <img src="{% static 'core/icons/search.svg' %}" alt="" class="icon icon--16">
+          </span>
           <input type="text" id="communities-search-input" name="q" value="{{ q|default:'' }}" placeholder="Поиск сообществ…"
                  autocomplete="off" class="form-control g-search__input">
         </div>

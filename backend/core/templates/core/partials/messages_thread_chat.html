@@ -1,3 +1,4 @@
+{% load static %}
 {# core/partials/messages_thread_chat.html #}
 
 <div id="messagesChatCard"
@@ -27,7 +28,7 @@
             class="scroll-bottom-btn hidden"
             aria-label="Прокрутить вниз"
             title="Вниз">
-        ⬇
+        <img src="{% static 'core/icons/arrow-down.svg' %}" alt="" class="icon icon--16" aria-hidden="true">
         <span id="scroll-bottom-unread" class="scroll-bottom-unread hidden">0</span>
     </button>
 
@@ -43,12 +44,17 @@
                 <button type="button"
                         class="btn btn-light border messages-attach-btn"
                         id="messages-attach-btn"
-                        title="Прикрепить файлы">📎</button>
+                        title="Прикрепить файлы">
+                    <img src="{% static 'core/icons/paperclip.svg' %}" alt="" class="icon icon--16">
+                </button>
 
                 <button type="button"
                         class="btn btn-light border voice-record-btn"
                         id="chat-voice-record-btn"
-                        title="Записать голосовое">🎙 Голос</button>
+                        title="Записать голосовое">
+                    <img src="{% static 'core/icons/mic.svg' %}" alt="" class="icon icon--16">
+                    Голос
+                </button>
 
                 <div class="flex-grow-1">
                     {{ form.text }}
