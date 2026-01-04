@@ -1,8 +1,8 @@
 {# Карточка сообщества для списка /communities/ #}
 
-<div class="card community-card position-relative" data-href="{% url 'community_detail' c.slug %}">
-  <div class="card-body py-3">
-    <div class="d-flex flex-column flex-md-row align-items-start gap-3">
+<div class="card community-card position-relative shadow-sm border rounded-4 bg-body" data-href="{% url 'community_detail' c.slug %}">
+  <div class="card-body p-3">
+    <div class="d-flex flex-column flex-md-row align-items-start gap-2">
       <div class="flex-shrink-0">
         {# У Community нет avatar по умолчанию, partial avatar умеет показывать инициалы #}
         {% include "core/partials/avatar.html" with user_obj=c size="md" %}
@@ -27,11 +27,11 @@
           </div>
 
           <div class="community-actions d-flex align-items-center gap-2 flex-nowrap">
-            <a href="{% url 'community_detail' c.slug %}" class="btn btn-outline-secondary btn-sm">Открыть</a>
+            <a href="{% url 'community_detail' c.slug %}" class="btn btn-light-surface btn-sm">Открыть</a>
 
             {% if user.is_authenticated %}
               {% if c.id in member_community_ids %}
-                <button type="button" class="btn btn-outline-success btn-sm" disabled>Вы подписаны</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" disabled>Вы подписаны</button>
               {% else %}
                 <form method="post"
                       action="{% url 'community_join' c.slug %}"
@@ -39,7 +39,7 @@
                       data-community-slug="{{ c.slug }}"
                       data-community-id="{{ c.id }}">
                   {% csrf_token %}
-                  <button type="submit" class="btn btn-success btn-sm">Вступить</button>
+                  <button type="submit" class="btn btn-primary btn-sm">Вступить</button>
                 </form>
               {% endif %}
             {% endif %}
