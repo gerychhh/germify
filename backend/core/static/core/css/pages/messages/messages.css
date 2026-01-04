@@ -11,18 +11,24 @@
 }
 
 /* Composer */
+.messages-form {
+  --messages-input-size: 44px;
+}
+
 .messages-form textarea.form-control {
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
+  height: var(--messages-input-size);
+  min-height: var(--messages-input-size);
+  max-height: var(--messages-input-size);
   resize: none;
   padding-top: 10px;
   padding-bottom: 10px;
 }
 
-.messages-form .messages-send-btn {
-  width: 44px;
-  height: 44px;
+.messages-form .messages-send-btn,
+.messages-form .messages-attach-btn,
+.messages-form .voice-record-btn {
+  width: var(--messages-input-size);
+  height: var(--messages-input-size);
   display: inline-flex;
   align-items: center;
   justify-content: center;

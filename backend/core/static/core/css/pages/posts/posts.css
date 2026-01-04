@@ -517,6 +517,7 @@
 
 /* ===== VK composer row (кнопка отправки справа) ===== */
 .vk-compose-row{
+  --vk-compose-size: 44px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -527,16 +528,18 @@
   flex: 1 1 auto;
   order: 1;
   margin: 0 !important;
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
+  height: var(--vk-compose-size);
+  min-height: var(--vk-compose-size);
+  max-height: var(--vk-compose-size);
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .vk-compose-row .vk-send-btn{
   flex: 0 0 auto;
   order: 2;
-  width: 44px;
-  height: 44px;
+  width: var(--vk-compose-size);
+  height: var(--vk-compose-size);
   padding: 0;
   border: 1px solid var(--g-border);
   border-radius: 14px;
