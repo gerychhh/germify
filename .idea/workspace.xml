@@ -5,26 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2d5614a6-939c-4f99-a314-b1c6afd6ce92" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/core/static/core/icons/heart-filled.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/core/static/core/icons/heart-outline.svg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/pages/posts/posts.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/pages/posts/posts.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/theme.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/js/code_copy.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/js/code_copy.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/js/posts.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/js/posts.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/community_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/community_detail.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/feed.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/feed.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/comment.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/comment.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/post.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/post.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/post_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/post_detail.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/profile.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/profile.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deploy/nginx.conf" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/nginx.conf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nginx/conf.d/germify.conf" beforeDir="false" afterPath="$PROJECT_DIR$/nginx/conf.d/germify.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/germify/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/germify/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -142,6 +124,8 @@
       <workItem from="1766701916870" duration="2820000" />
       <workItem from="1767366694205" duration="2547000" />
       <workItem from="1767385343625" duration="6283000" />
+      <workItem from="1767489857636" duration="10047000" />
+      <workItem from="1767544940421" duration="910000" />
     </task>
     <servers />
   </component>

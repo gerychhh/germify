@@ -29,7 +29,7 @@ DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
 
 # Hosts
 _hosts_env = os.getenv("DJANGO_ALLOWED_HOSTS", "").strip()
-_hosts_fallback = "germify.ddns.net,www.germify.ddns.net,127.0.0.1,localhost,79.170.108.189,51.195.190.235"
+_hosts_fallback = "germify.ddns.net,www.germify.ddns.net,127.0.0.1,localhost,79.170.108.244,51.195.190.235"
 ALLOWED_HOSTS = [h.strip() for h in (_hosts_env or _hosts_fallback).split(",") if h.strip()]
 
 # CSRF
