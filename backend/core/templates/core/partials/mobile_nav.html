@@ -1,14 +1,19 @@
 {# Mobile bottom nav #}
+{% load static %}
 <nav class="navbar fixed-bottom bg-white border-top d-lg-none">
     <div class="container-fluid justify-content-around">
         <a class="nav-link text-center small {% if current == 'feed' %}fw-semibold{% endif %}" href="{% url 'feed' %}">
-            <div style="font-size:18px; line-height: 1;">🏠</div>
+            <div style="font-size:18px; line-height: 1;">
+                <img src="{% static 'core/icons/home.svg' %}" alt="" class="g-ic">
+            </div>
             <div>Лента</div>
         </a>
 
         {% if request.user.is_authenticated %}
             <a class="nav-link text-center small {% if current == 'messages_inbox' or current == 'messages_thread' or current == 'messages_chat' or current == 'messages_group_create' %}fw-semibold{% endif %}" href="{% url 'messages_inbox' %}" style="position: relative;">
-                <div style="font-size:18px; line-height: 1;">💬</div>
+                <div style="font-size:18px; line-height: 1;">
+                    <img src="{% static 'core/icons/chat.svg' %}" alt="" class="g-ic">
+                </div>
                 <div>Сообщения</div>
                 {% if unread_messages_count %}
                     <span id="global-unread-mobile" class="messages-unread-badge" style="position:absolute; top:6px; right:18px;">{{ unread_messages_count }}</span>
@@ -18,17 +23,23 @@
             </a>
 
             <a class="nav-link text-center small {% if current == 'profile' or current == 'user_profile' %}fw-semibold{% endif %}" href="{% url 'profile' %}">
-                <div style="font-size:18px; line-height: 1;">👤</div>
+                <div style="font-size:18px; line-height: 1;">
+                    <img src="{% static 'core/icons/user.svg' %}" alt="" class="g-ic">
+                </div>
                 <div>Профиль</div>
             </a>
         {% else %}
             <a class="nav-link text-center small {% if current == 'login' %}fw-semibold{% endif %}" href="{% url 'login' %}">
-                <div style="font-size:18px; line-height: 1;">🔐</div>
+                <div style="font-size:18px; line-height: 1;">
+                    <img src="{% static 'core/icons/lock.svg' %}" alt="" class="g-ic">
+                </div>
                 <div>Войти</div>
             </a>
 
             <a class="nav-link text-center small {% if current == 'register' %}fw-semibold{% endif %}" href="{% url 'register' %}">
-                <div style="font-size:18px; line-height: 1;">➕</div>
+                <div style="font-size:18px; line-height: 1;">
+                    <img src="{% static 'core/icons/plus.svg' %}" alt="" class="g-ic">
+                </div>
                 <div>Регистрация</div>
             </a>
         {% endif %}

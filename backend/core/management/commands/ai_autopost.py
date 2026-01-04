@@ -22,7 +22,7 @@ class Command(BaseCommand):
     help = "AI-активность: редкие посты, лайки, комменты и ответы с контекстом."
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.SUCCESS("🤖 AI activity engine started..."))
+        self.stdout.write(self.style.SUCCESS("AI activity engine started..."))
 
         while True:
             persona = random.choice(PERSONAS)
@@ -49,9 +49,9 @@ class Command(BaseCommand):
                 info = ai_reply_to_comment(persona) or \
                        f"{persona['username']} не нашёл комментарий для ответа"
 
-            self.stdout.write(self.style.SUCCESS(f"🔹 {info}"))
+            self.stdout.write(self.style.SUCCESS(f"• {info}"))
 
             delay = random.randint(MIN_INTERVAL, MAX_INTERVAL)
-            self.stdout.write(f"⏳ Следующее действие через {delay} секунд...\n")
+            self.stdout.write(f"Следующее действие через {delay} секунд...\n")
 
             time.sleep(delay)

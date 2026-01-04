@@ -38,6 +38,17 @@
         if (!list) return;
 
         const chatCard = document.getElementById("messagesChatCard") || list.closest("#messagesChatCard");
+
+        const iconMap = chatCard ? {
+            pdf: chatCard.dataset.iconPdf || "",
+            archive: chatCard.dataset.iconArchive || "",
+            doc: chatCard.dataset.iconDoc || "",
+            text: chatCard.dataset.iconText || "",
+            sheet: chatCard.dataset.iconSheet || "",
+            audio: chatCard.dataset.iconAudio || "",
+            video: chatCard.dataset.iconVideo || "",
+            generic: chatCard.dataset.iconGeneric || ""
+        } : {};
         const chatId = chatCard?.dataset?.chatId ? parseInt(chatCard.dataset.chatId, 10) : null;
         const meId = chatCard?.dataset?.meId ? parseInt(chatCard.dataset.meId, 10) : null;
         const chatKind = chatCard?.dataset?.kind || null;
@@ -288,13 +299,14 @@
 
         function iconForFile(name) {
             const ext = getExt(name);
-            if (ext === "pdf") return "📄";
-            if (ext === "zip" || ext === "rar" || ext === "7z") return "🗜️";
-            if (ext === "doc" || ext === "docx") return "📝";
-            if (ext === "xls" || ext === "xlsx") return "📊";
-            if (ext === "mp3" || ext === "wav" || ext === "ogg" || ext === "webm") return "🎵";
-            if (ext === "mp4" || ext === "mov") return "🎬";
-            return "📁";
+            if (ext === "pdf") return iconMap.pdf;
+            if (ext === "zip" || ext === "rar" || ext === "7z") return iconMap.archive;
+            if (ext === "doc" || ext === "docx") return iconMap.doc;
+            if (ext === "txt") return iconMap.text || iconMap.doc;
+            if (ext === "xls" || ext === "xlsx" || ext === "csv") return iconMap.sheet || iconMap.text;
+            if (ext === "mp3" || ext === "wav" || ext === "ogg" || ext === "webm") return iconMap.audio;
+            if (ext === "mp4" || ext === "mov" || ext === "mkv") return iconMap.video;
+            return iconMap.generic;
         }
 
         function renderSelectedFiles() {
@@ -315,7 +327,14 @@
                 } else {
                     left = document.createElement("div");
                     left.className = "post-edit-att-icon";
-                    left.textContent = iconForFile(file.name);
+                    const iconUrl = iconForFile(file.name);
+                    if (iconUrl) {
+                        const img = document.createElement("img");
+                        img.src = iconUrl;
+                        img.alt = "";
+                        img.className = "g-ic g-ic--sm";
+                        left.appendChild(img);
+                    }
                 }
 
                 const name = document.createElement("div");

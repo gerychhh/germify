@@ -1,4 +1,5 @@
 {# core/partials/messages_thread_chat.html #}
+{% load static %}
 
 <div id="messagesChatCard"
      class="card messages-chat-card messages-chat d-flex flex-column"
@@ -6,7 +7,15 @@
      data-me-id="{{ request.user.id }}"
      data-username="{% if other_user %}{{ other_user.username }}{% endif %}"
      data-kind="{{ chat.kind }}"
-     data-header-url="{% url 'messages_chat_header' chat.id %}">
+     data-header-url="{% url 'messages_chat_header' chat.id %}"
+     data-icon-pdf="{% static 'core/icons/file-pdf.svg' %}"
+     data-icon-archive="{% static 'core/icons/file-archive.svg' %}"
+     data-icon-doc="{% static 'core/icons/file-doc.svg' %}"
+     data-icon-text="{% static 'core/icons/file-text.svg' %}"
+     data-icon-sheet="{% static 'core/icons/file-sheet.svg' %}"
+     data-icon-audio="{% static 'core/icons/file-audio.svg' %}"
+     data-icon-video="{% static 'core/icons/file-video.svg' %}"
+     data-icon-generic="{% static 'core/icons/file-generic.svg' %}">
 
     <div id="messagesChatHeader" class="card-header messages-chat-header d-flex align-items-center justify-content-between">
         {% include "core/partials/messages_thread_header.html" %}
@@ -43,12 +52,17 @@
                 <button type="button"
                         class="btn btn-light border messages-attach-btn"
                         id="messages-attach-btn"
-                        title="Прикрепить файлы">📎</button>
+                        title="Прикрепить файлы">
+                    <img src="{% static 'core/icons/paperclip.svg' %}" alt="" class="g-ic">
+                </button>
 
                 <button type="button"
                         class="btn btn-light border voice-record-btn"
                         id="chat-voice-record-btn"
-                        title="Записать голосовое">🎙 Голос</button>
+                        title="Записать голосовое">
+                    <img src="{% static 'core/icons/mic.svg' %}" alt="" class="g-ic">
+                    <span class="ms-1 voice-record-btn__text">Голос</span>
+                </button>
 
                 <div class="flex-grow-1">
                     {{ form.text }}

@@ -131,7 +131,9 @@
 <div class="offcanvas offcanvas-end g-offcanvas" tabindex="-1" id="uiSettings" aria-labelledby="uiSettingsLabel">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="uiSettingsLabel">Интерфейс</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+        <button type="button" class="btn g-close-btn" data-bs-dismiss="offcanvas" aria-label="Закрыть">
+            <img src="{% static 'core/icons/close.svg' %}" alt="" class="g-ic g-ic--sm">
+        </button>
     </div>
     <div class="offcanvas-body">
         <form id="uiSettingsForm" class="vstack gap-3">

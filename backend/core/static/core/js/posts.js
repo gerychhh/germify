@@ -805,12 +805,14 @@ document.addEventListener("DOMContentLoaded", function () {
     const MAX_FILE_COUNT = parseInt(document.body?.dataset?.attachMax || "10", 10); // максимум файлов
 
     const fileInput = document.querySelector(".new-post-form input[name='attachments']");
+    const newPostForm = document.querySelector(".new-post-form");
     const previewBox = document.getElementById("file-preview");
     const dropZone = document.getElementById("drop-zone");
     const fileCountEl = document.getElementById("file-count");
     const fileSizeEl = document.getElementById("file-size");
     const uploadProgress = document.getElementById("upload-progress");
     const uploadProgressBar = document.getElementById("upload-progress-bar");
+    const fileIconUrl = newPostForm?.dataset?.fileIcon || "";
 
     let selectedFiles = [];
 
@@ -930,7 +932,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const icon = document.createElement("span");
                 icon.className = "file-preview-icon";
-                icon.textContent = "📎";
+                if (fileIconUrl) {
+                    const img = document.createElement("img");
+                    img.src = fileIconUrl;
+                    img.alt = "";
+                    img.className = "g-ic g-ic--sm";
+                    icon.appendChild(img);
+                }
 
                 const name = document.createElement("span");
                 name.className = "file-preview-name";

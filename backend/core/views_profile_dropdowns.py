@@ -17,6 +17,38 @@ def _avatar_html(request: HttpRequest, u: User, size: str = "sm") -> str:
     )
 
 
+def _paginate_list(request: HttpRequest, items: list[User], *, default_limit: int = 20) -> tuple[list[User], dict[str, int | bool | None]]:
+    try:
+        limit = int(request.GET.get("limit", default_limit))
+    except (TypeError, ValueError):
+        limit = default_limit
+
+    try:
+        offset = int(request.GET.get("offset", 0))
+    except (TypeError, ValueError):
+        offset = 0
+
+    limit = max(1, min(limit, 50))
+    offset = max(0, offset)
+
+    total = len(items)
+    paginated = items[offset : offset + limit]
+
+    next_offset: int | None = None
+    if offset + limit < total:
+        next_offset = offset + limit
+
+    meta: dict[str, int | bool | None] = {
+        "total": total,
+        "has_more": next_offset is not None,
+        "next_offset": next_offset,
+        "limit": limit,
+        "offset": offset,
+    }
+
+    return paginated, meta
+
+
 @require_GET
 def profile_followers_json(request: HttpRequest, username: str) -> JsonResponse:
     profile_user = get_object_or_404(User, username=username)
@@ -32,18 +64,28 @@ def profile_followers_json(request: HttpRequest, username: str) -> JsonResponse:
             or q in (u.display_name or "").lower()
         ]
 
+    users_slice, meta = _paginate_list(request, users)
+
     items = []
-    for u in users[:200]:
+    for u in users_slice:
+        avatar_url = ""
+        if getattr(u, "avatar", None):
+            try:
+                avatar_url = request.build_absolute_uri(u.avatar.url)
+            except Exception:
+                avatar_url = ""
+
         items.append(
             {
                 "title": u.display_name or u.username,
                 "subtitle": f"@{u.username}",
                 "url": reverse("user_profile", kwargs={"username": u.username}),
+                "avatar_url": avatar_url,
                 "avatar_html": _avatar_html(request, u, "sm"),
             }
         )
 
-    return JsonResponse({"success": True, "items": items, "total": len(users)})
+    return JsonResponse({"success": True, "items": items, **meta})
 
 
 @require_GET
@@ -61,18 +103,28 @@ def profile_following_json(request: HttpRequest, username: str) -> JsonResponse:
             or q in (u.display_name or "").lower()
         ]
 
+    users_slice, meta = _paginate_list(request, users)
+
     items = []
-    for u in users[:200]:
+    for u in users_slice:
+        avatar_url = ""
+        if getattr(u, "avatar", None):
+            try:
+                avatar_url = request.build_absolute_uri(u.avatar.url)
+            except Exception:
+                avatar_url = ""
+
         items.append(
             {
                 "title": u.display_name or u.username,
                 "subtitle": f"@{u.username}",
                 "url": reverse("user_profile", kwargs={"username": u.username}),
+                "avatar_url": avatar_url,
                 "avatar_html": _avatar_html(request, u, "sm"),
             }
         )
 
-    return JsonResponse({"success": True, "items": items, "total": len(users)})
+    return JsonResponse({"success": True, "items": items, **meta})
 
 
 @require_GET
@@ -85,11 +137,12 @@ def profile_communities_admin_json(request: HttpRequest, username: str) -> JsonR
         .select_related("community")
     )
 
+    mem_list = [m for m in mem_qs if not q or q in (m.community.name or "").lower()]
+    mem_slice, meta = _paginate_list(request, mem_list)
+
     items = []
-    for m in mem_qs[:200]:
+    for m in mem_slice:
         c = m.community
-        if q and q not in (c.name or "").lower():
-            continue
 
         icon_url = ""
         if getattr(c, "icon", None):
@@ -108,7 +161,7 @@ def profile_communities_admin_json(request: HttpRequest, username: str) -> JsonR
             }
         )
 
-    return JsonResponse({"success": True, "items": items, "total": mem_qs.count()})
+    return JsonResponse({"success": True, "items": items, **meta})
 
 
 @require_GET
@@ -121,11 +174,12 @@ def profile_communities_joined_json(request: HttpRequest, username: str) -> Json
         .select_related("community")
     )
 
+    mem_list = [m for m in mem_qs if not q or q in (m.community.name or "").lower()]
+    mem_slice, meta = _paginate_list(request, mem_list)
+
     items = []
-    for m in mem_qs[:200]:
+    for m in mem_slice:
         c = m.community
-        if q and q not in (c.name or "").lower():
-            continue
 
         icon_url = ""
         if getattr(c, "icon", None):
@@ -144,4 +198,4 @@ def profile_communities_joined_json(request: HttpRequest, username: str) -> Json
             }
         )
 
-    return JsonResponse({"success": True, "items": items, "total": mem_qs.count()})
+    return JsonResponse({"success": True, "items": items, **meta})

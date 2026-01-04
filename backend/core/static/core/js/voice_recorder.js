@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const form = document.querySelector(".new-post-form");
     const recordBtn = document.getElementById("voice-record-btn");
+    const recordText = recordBtn ? recordBtn.querySelector(".voice-record-btn__text") : null;
     const statusEl = document.getElementById("voice-record-status");
     const audioPreview = document.getElementById("voice-preview");
 
@@ -28,6 +29,14 @@ document.addEventListener("DOMContentLoaded", function () {
     let recordedBlob = null;
     let stream = null;
     let isRecording = false;
+
+    const setRecordLabel = (text) => {
+        if (recordText) {
+            recordText.textContent = text;
+        } else if (recordBtn) {
+            recordBtn.textContent = text;
+        }
+    };
 
     function pickMimeType() {
         const candidates = [
@@ -120,7 +129,7 @@ document.addEventListener("DOMContentLoaded", function () {
         mediaRecorder.start();
         isRecording = true;
         recordBtn.classList.add("voice-record-btn--active");
-        recordBtn.textContent = "■ Стоп";
+        setRecordLabel("Стоп");
         if (statusEl) statusEl.textContent = "Запись…";
     }
 
@@ -131,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
             mediaRecorder.stop();
             isRecording = false;
             recordBtn.classList.remove("voice-record-btn--active");
-            recordBtn.textContent = "🎙 Голос";
+            setRecordLabel("Голос");
         }
     }
 
@@ -168,7 +177,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         isRecording = false;
         recordBtn.classList.remove("voice-record-btn--active");
-        recordBtn.textContent = "🎙 Голос";
+        setRecordLabel("Голос");
 
         if (stream) {
             stream.getTracks().forEach((t) => t.stop());
