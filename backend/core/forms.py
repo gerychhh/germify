@@ -190,9 +190,33 @@ class CommentForm(BootstrapFormMixin, forms.ModelForm):
 
 
 class CommunityForm(BootstrapFormMixin, forms.ModelForm):
+    tags = forms.CharField(required=False, help_text="Через запятую", widget=forms.TextInput())
+    links = forms.CharField(required=False, help_text="По одному в строке", widget=forms.Textarea(attrs={"rows": 2}))
+    mod_manage_posts = forms.BooleanField(required=False, label="Модераторы могут управлять постами")
+    mod_manage_members = forms.BooleanField(required=False, label="Модераторы могут управлять участниками")
+    mod_manage_requests = forms.BooleanField(required=False, label="Модераторы могут обрабатывать заявки")
+    mod_manage_settings = forms.BooleanField(required=False, label="Модераторы могут менять настройки")
+    mod_manage_appearance = forms.BooleanField(required=False, label="Модераторы могут менять оформление")
+
     class Meta:
         model = Community
-        fields = ("name", "description", "icon")
+        fields = (
+            "name",
+            "description",
+            "icon",
+            "cover",
+            "accent_color",
+            "tags",
+            "links",
+            "rules",
+            "visibility",
+            "join_policy",
+            "post_policy",
+            "post_requires_approval",
+            "comments_enabled",
+            "allow_links",
+            "moderator_permissions",
+        )
         widgets = {
             "name": forms.TextInput(
                 attrs={
@@ -210,11 +234,47 @@ class CommunityForm(BootstrapFormMixin, forms.ModelForm):
                     "accept": "image/*",
                 }
             ),
+            "cover": forms.FileInput(
+                attrs={"accept": "image/*"},
+            ),
+            "rules": forms.Textarea(attrs={"rows": 3, "placeholder": "Правила и рекомендации"}),
+            "accent_color": forms.TextInput(attrs={"placeholder": "#3366ff"}),
         }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        # Pre-fill textual representation for JSON fields
+        if self.instance and self.instance.pk:
+            self.fields["tags"].initial = ", ".join(self.instance.tags or [])
+            self.fields["links"].initial = "\n".join(self.instance.links or [])
+            perms = self.instance.moderator_permissions or {}
+            self.fields["mod_manage_posts"].initial = perms.get("manage_posts", True)
+            self.fields["mod_manage_members"].initial = perms.get("manage_members", True)
+            self.fields["mod_manage_requests"].initial = perms.get("manage_requests", True)
+            self.fields["mod_manage_settings"].initial = perms.get("manage_settings", False)
+            self.fields["mod_manage_appearance"].initial = perms.get("manage_appearance", False)
         self.apply_bootstrap()
+
+    def clean_tags(self):
+        raw = (self.cleaned_data.get("tags") or "").strip()
+        if not raw:
+            return []
+        return [t.strip() for t in raw.replace(";", ",").split(",") if t.strip()]
+
+    def clean_links(self):
+        raw = (self.cleaned_data.get("links") or "").strip()
+        if not raw:
+            return []
+        return [ln.strip() for ln in raw.splitlines() if ln.strip()]
+
+    def cleaned_moderator_permissions(self):
+        return {
+            "manage_posts": bool(self.cleaned_data.get("mod_manage_posts")),
+            "manage_members": bool(self.cleaned_data.get("mod_manage_members")),
+            "manage_requests": bool(self.cleaned_data.get("mod_manage_requests")),
+            "manage_settings": bool(self.cleaned_data.get("mod_manage_settings")),
+            "manage_appearance": bool(self.cleaned_data.get("mod_manage_appearance")),
+        }
 
 
 class CommunityPostForm(BootstrapFormMixin, forms.ModelForm):

@@ -8,6 +8,16 @@ import mimetypes
 from django.utils.text import slugify
 
 
+def default_moderator_permissions():
+    return {
+        "manage_posts": True,
+        "manage_members": True,
+        "manage_requests": True,
+        "manage_settings": False,
+        "manage_appearance": False,
+    }
+
+
 class Community(models.Model):
     """Минимальная модель сообщества."""
 
@@ -15,6 +25,50 @@ class Community(models.Model):
     slug = models.SlugField("Ссылка", max_length=90, unique=True, blank=True, allow_unicode=True)
     description = models.TextField("Описание", blank=True)
     icon = models.ImageField("Иконка", upload_to="community_icons/", blank=True, null=True)
+    cover = models.ImageField("Обложка", upload_to="community_covers/", blank=True, null=True)
+    accent_color = models.CharField("Акцентный цвет", max_length=9, blank=True, default="")
+    tags = models.JSONField("Темы", default=list, blank=True)
+    links = models.JSONField("Ссылки", default=list, blank=True)
+    rules = models.TextField("Правила", blank=True)
+    visibility = models.CharField(
+        "Видимость",
+        max_length=16,
+        choices=(
+            ("public", "Публичное"),
+            ("private", "Приватное"),
+            ("hidden", "Скрытое"),
+        ),
+        default="public",
+    )
+    join_policy = models.CharField(
+        "Политика вступления",
+        max_length=16,
+        choices=(
+            ("open", "Свободный вход"),
+            ("request", "По запросу"),
+            ("invite", "По приглашению"),
+        ),
+        default="open",
+    )
+    post_policy = models.CharField(
+        "Кто может публиковать",
+        max_length=16,
+        choices=(
+            ("anyone", "Любой пользователь"),
+            ("members", "Только участники"),
+            ("staff", "Только модераторы/админы"),
+        ),
+        default="members",
+    )
+    post_requires_approval = models.BooleanField("Нужна модерация постов", default=False)
+    comments_enabled = models.BooleanField("Комментарии включены", default=True)
+    allow_links = models.BooleanField("Разрешить ссылки", default=True)
+    archived = models.BooleanField("Архивировано", default=False)
+    moderator_permissions = models.JSONField(
+        "Права модераторов",
+        default=default_moderator_permissions,
+        blank=True,
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -58,6 +112,10 @@ class Community(models.Model):
     def members_count(self):
         return self.memberships.count()
 
+    @property
+    def posts_count(self):
+        return self.posts.count()
+
     def is_member(self, user):
         if not user or not user.is_authenticated:
             return False
@@ -67,6 +125,27 @@ class Community(models.Model):
         if not user or not user.is_authenticated:
             return False
         return self.memberships.filter(user=user, is_admin=True).exists()
+
+    # --- Permissions helpers ---
+    def can_view(self, user):
+        if self.visibility == "public":
+            return True
+        if not user or not user.is_authenticated:
+            return False
+        return self.memberships.filter(user=user).exists()
+
+    def can_post(self, user):
+        if not user or not user.is_authenticated:
+            return False
+
+        membership = self.memberships.filter(user=user).first()
+        role = getattr(membership, "role", "guest") if membership else "guest"
+
+        if self.post_policy == "anyone":
+            return True
+        if self.post_policy == "members":
+            return role in {"member", "moderator", "admin", "owner"}
+        return role in {"moderator", "admin", "owner"}
 
 
 class CommunityMembership(models.Model):
@@ -82,6 +161,15 @@ class CommunityMembership(models.Model):
         related_name="community_memberships",
         verbose_name="Пользователь",
     )
+    ROLE_CHOICES = (
+        ("owner", "Владелец"),
+        ("admin", "Администратор"),
+        ("moderator", "Модератор"),
+        ("member", "Участник"),
+        ("guest", "Гость"),
+    )
+
+    role = models.CharField("Роль", max_length=16, choices=ROLE_CHOICES, default="member")
     is_admin = models.BooleanField("Администратор", default=False)
     joined_at = models.DateTimeField("Вступил", auto_now_add=True)
 
@@ -90,8 +178,68 @@ class CommunityMembership(models.Model):
         ordering = ["-joined_at"]
 
     def __str__(self):
-        role = "admin" if self.is_admin else "member"
+        role = self.role or ("admin" if self.is_admin else "member")
         return f"{self.user} in {self.community} ({role})"
+
+    def save(self, *args, **kwargs):
+        if self.role in {"owner", "admin", "moderator"}:
+            self.is_admin = True
+        elif self.role == "guest":
+            self.is_admin = False
+        super().save(*args, **kwargs)
+
+    @property
+    def role_label(self):
+        mapping = dict(self.ROLE_CHOICES)
+        return mapping.get(self.role, "Участник")
+
+    def can_moderate(self):
+        if self.role in {"owner", "admin"}:
+            return True
+        if self.role != "moderator":
+            return False
+        perms = self.community.moderator_permissions or {}
+        return any(perms.values())
+
+    def has_permission(self, perm: str) -> bool:
+        if self.role in {"owner", "admin"}:
+            return True
+        if self.role != "moderator":
+            return False
+        perms = self.community.moderator_permissions or {}
+        return bool(perms.get(perm))
+
+
+class CommunityJoinRequest(models.Model):
+    community = models.ForeignKey(
+        Community,
+        on_delete=models.CASCADE,
+        related_name="join_requests",
+        verbose_name="Сообщество",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="community_join_requests",
+        verbose_name="Пользователь",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=12,
+        choices=(
+            ("pending", "В ожидании"),
+            ("approved", "Принята"),
+            ("denied", "Отклонена"),
+        ),
+        default="pending",
+    )
+
+    class Meta:
+        unique_together = ("community", "user")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"JoinRequest({self.user} -> {self.community}, {self.status})"
 
 
 class User(AbstractUser):
