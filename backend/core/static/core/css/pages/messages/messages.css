@@ -86,6 +86,21 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 }
 
 @media (max-width: 991.98px) {
+  body.messages-page main.container {
+    padding: 0;
+  }
+
+  body.messages-page main.container > .messages-layout {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  body.messages-page .messages-layout {
+    --bs-gutter-x: 0;
+    --bs-gutter-y: 0;
+    row-gap: 0;
+  }
+
   .messages-layout {
     min-height: calc(100dvh - var(--g-navbar-h));
   }
@@ -114,6 +129,11 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
   .messages-chat-card {
     border-radius: var(--g-radius);
+  }
+
+  body.messages-page .messages-sidebar-card,
+  body.messages-page .messages-chat-card {
+    border-radius: 0;
   }
 
   .messages-mobile-back {
