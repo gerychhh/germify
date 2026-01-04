@@ -133,7 +133,7 @@
                     {% csrf_token %}
                     <div class="d-flex align-items-start gap-2 community-post-row">
                       <div class="flex-grow-1">
-                        {{ post_form.text.as_widget(attrs={'class': 'form-control community-post-text', 'rows': 3, 'placeholder': 'Напишите пост для сообщества...'}) }}
+                        {{ post_form.text }}
                         {% if is_admin %}
                           <div class="form-check mt-2 small text-body-secondary">
                             {{ post_form.post_as_community }}

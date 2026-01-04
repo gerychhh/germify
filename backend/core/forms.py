@@ -48,7 +48,8 @@ class PostForm(BootstrapFormMixin, forms.ModelForm):
             "text": forms.Textarea(
                 attrs={
                     "rows": 3,
-                    "placeholder": "Напишите что-нибудь интересное...",
+                    "placeholder": "Напишите пост для сообщества...",
+                    "class": "community-post-text",
                     "maxlength": POST_TEXT_MAX_LENGTH,
                 }
             )
