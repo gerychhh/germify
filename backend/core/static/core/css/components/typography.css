@@ -1,5 +1,0 @@
-/* Чуть более «плотный» и читаемый muted */
-.text-muted,
-.text-body-secondary {
-  color: var(--g-muted) !important;
-}

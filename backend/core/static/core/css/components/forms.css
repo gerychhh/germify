@@ -1,6 +1,0 @@
-/* Инпуты */
-.form-control,
-.form-select,
-textarea.form-control {
-  border-radius: calc(var(--g-radius) / 2);
-}
