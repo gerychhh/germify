@@ -1,0 +1,80 @@
+.community-create {
+  border: 1px solid color-mix(in srgb, var(--g-border) 85%, transparent);
+  box-shadow: var(--g-shadow-md);
+}
+
+.community-create .form-label {
+  font-weight: 600;
+  color: color-mix(in srgb, var(--g-text) 78%, var(--g-muted));
+}
+
+.community-avatar-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.community-avatar-picker {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 4px auto 2px;
+  cursor: pointer;
+  user-select: none;
+  text-align: center;
+  color: var(--g-text);
+}
+
+.community-avatar-visual {
+  width: 128px;
+  height: 128px;
+  border-radius: 28px;
+  border: 1.6px dashed color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--g-primary) 14%, var(--g-surface) 90%),
+    color-mix(in srgb, var(--g-primary-2) 10%, var(--g-surface) 92%));
+  display: grid;
+  place-items: center;
+  box-shadow: 0 14px 36px color-mix(in srgb, var(--g-primary) 10%, transparent);
+  transition: border-color .18s ease, background-color .18s ease, transform .12s ease, box-shadow .18s ease;
+  overflow: hidden;
+}
+
+.community-avatar-picker:hover .community-avatar-visual {
+  border-color: color-mix(in srgb, var(--g-primary) 74%, var(--g-border));
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--g-primary) 18%, var(--g-surface) 88%),
+    color-mix(in srgb, var(--g-primary-2) 16%, var(--g-surface) 90%));
+  transform: translateY(-1px);
+  box-shadow: 0 16px 44px color-mix(in srgb, var(--g-primary) 18%, transparent);
+}
+
+.community-avatar-plus {
+  width: 34px;
+  height: 34px;
+  color: var(--g-primary);
+  opacity: .9;
+}
+
+.community-avatar-plus.is-hidden { display: none; }
+
+.community-avatar-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: none;
+}
+
+.community-avatar-preview.is-visible { display: block; }
+
+.community-avatar-hint {
+  font-weight: 700;
+  letter-spacing: .01em;
+  color: color-mix(in srgb, var(--g-text) 86%, var(--g-muted));
+}
+
+@media (max-width: 575.98px) {
+  .community-create .card-body { padding: 24px; }
+}
