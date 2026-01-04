@@ -46,6 +46,7 @@
 
     root.dataset.themePref = prefs.theme;
     root.dataset.theme = resolveTheme(prefs.theme);
+    root.dataset.bsTheme = root.dataset.theme;
   }
 
   function loadPrefs() {
