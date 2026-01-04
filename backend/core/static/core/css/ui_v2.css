@@ -120,6 +120,17 @@ html[data-glass="off"] .g-glass{
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
+html[data-theme="dark"] .g-navbar .navbar-toggler{
+  color: var(--g-text);
+  border-color: color-mix(in srgb, var(--g-text) 28%, var(--g-border));
+  background: color-mix(in srgb, var(--g-surface) 88%, transparent);
+}
+
+html[data-theme="dark"] .g-navbar .navbar-toggler-icon{
+  filter: brightness(0) invert(1);
+  opacity: .9;
+}
+
 .g-navbar .g-icon-btn{
   color: var(--g-text);
   border-color: var(--g-border);
