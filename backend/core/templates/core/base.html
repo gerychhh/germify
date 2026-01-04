@@ -25,6 +25,7 @@
           const resolved = prefTheme === "system" ? (prefersDark ? "dark" : "light") : prefTheme;
           root.dataset.themePref = prefTheme;
           root.dataset.theme = resolved;
+          root.dataset.bsTheme = resolved;
         } catch (e) {}
       })();
     </script>
@@ -50,12 +51,12 @@
 
     <script src="{% static 'core/js/code_copy.js' %}" defer></script>
 </head>
-<body class="bg-light"
+<body class="app-body"
       data-is-authenticated="{% if user.is_authenticated %}1{% else %}0{% endif %}"
       data-unread-url="{% if user.is_authenticated %}{% url 'messages_unread_count' %}{% endif %}">
-<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top shadow-sm">
+<nav class="navbar navbar-expand-lg g-navbar sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold text-primary" href="{% url 'feed' %}">GERMiFY</a>
+        <a class="navbar-brand fw-bold" href="{% url 'feed' %}">GERMiFY</a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
