@@ -54,6 +54,7 @@ from .models import (
     PostAttachment,
     Community,
     CommunityMembership,
+    CommunityJoinRequest,
 )
 
 
@@ -1928,7 +1929,7 @@ def community_create(request):
             CommunityMembership.objects.get_or_create(
                 community=community,
                 user=request.user,
-                defaults={"is_admin": True},
+                defaults={"is_admin": True, "role": "owner"},
             )
             return redirect("community_detail", slug=community.slug)
     else:
@@ -1939,12 +1940,12 @@ def community_create(request):
 def community_detail(request, slug):
     community = get_object_or_404(Community, slug=slug)
 
-    is_member = False
-    is_admin = False
+    membership = None
     if request.user.is_authenticated:
-        m = CommunityMembership.objects.filter(community=community, user=request.user).first()
-        is_member = bool(m)
-        is_admin = bool(m and m.is_admin)
+        membership = CommunityMembership.objects.filter(community=community, user=request.user).first()
+
+    is_member = bool(membership and membership.role != "guest")
+    is_admin = bool(membership and membership.can_moderate())
 
     members_qs = (
         CommunityMembership.objects
@@ -1952,9 +1953,9 @@ def community_detail(request, slug):
         .select_related("user")
         .order_by("-is_admin", "-joined_at", "user__username")
     )
-    memberships = list(members_qs[:7])
+    memberships = list(members_qs[:12])
     members_total = members_qs.count()
-    members_has_more = members_total > 7
+    members_has_more = members_total > len(memberships)
 
     posts_qs = (
         Post.objects.filter(community=community)
@@ -1963,21 +1964,37 @@ def community_detail(request, slug):
         .order_by("-created_at")
     )
 
+    posts_visible = community.can_view(request.user)
+    if not posts_visible:
+        posts_qs = posts_qs.none()
+
     state = get_user_state(request.user)
 
     post_form = None
-    if request.user.is_authenticated and is_member:
+    if request.user.is_authenticated and community.can_post(request.user):
         post_form = CommunityPostForm()
+
+    staff_members = members_qs.filter(role__in=["owner", "admin", "moderator"]).select_related("user")
+    join_request = None
+    if request.user.is_authenticated and not is_member:
+        join_request = CommunityJoinRequest.objects.filter(community=community, user=request.user).first()
+
+    settings_form = CommunityForm(instance=community) if is_admin else None
 
     return render(request, "core/community_detail.html", {
         "community": community,
+        "membership": membership,
         "is_member": is_member,
         "is_admin": is_admin,
         "memberships": memberships,
         "members_total": members_total,
         "members_has_more": members_has_more,
         "posts": posts_qs,
+        "posts_visible": posts_visible,
         "post_form": post_form,
+        "staff_members": staff_members,
+        "join_request": join_request,
+        "settings_form": settings_form,
         **state,
     })
 
@@ -2000,11 +2017,36 @@ def community_join(request, slug):
     community = get_object_or_404(Community, slug=slug)
     if request.method != "POST":
         return _redirect_back(request, "community_detail", slug=community.slug)
-    CommunityMembership.objects.get_or_create(
+
+    if community.join_policy == "invite":
+        data = {"status": "invite_only", "members": community.members_count}
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse(data, status=403)
+        messages.error(request, "Присоединение только по приглашению")
+        return _redirect_back(request, "community_detail", slug=community.slug)
+
+    membership, created = CommunityMembership.objects.get_or_create(
         community=community,
         user=request.user,
-        defaults={"is_admin": False},
+        defaults={"is_admin": False, "role": "member"},
     )
+
+    status = "joined"
+    if community.join_policy == "request" and created:
+        membership.delete()
+        CommunityJoinRequest.objects.update_or_create(
+            community=community,
+            user=request.user,
+            defaults={"status": "pending"},
+        )
+        status = "pending"
+
+    members_count = community.memberships.count()
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({
+            "status": status,
+            "members": members_count,
+        })
     return _redirect_back(request, "community_detail", slug=community.slug)
 
 
@@ -2014,7 +2056,17 @@ def community_leave(request, slug):
     if request.method != "POST":
         return _redirect_back(request, "community_detail", slug=community.slug)
 
+    membership = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if membership and membership.role == "owner":
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"error": "owner_cannot_leave"}, status=400)
+        messages.error(request, "Владелец не может выйти")
+        return _redirect_back(request, "community_detail", slug=community.slug)
+
     CommunityMembership.objects.filter(community=community, user=request.user).delete()
+    CommunityJoinRequest.objects.filter(community=community, user=request.user).delete()
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"status": "left", "members": community.memberships.count()})
     return _redirect_back(request, "community_detail", slug=community.slug)
 
 
@@ -2041,7 +2093,7 @@ def community_create_post(request, slug):
     community = get_object_or_404(Community, slug=slug)
 
     member = CommunityMembership.objects.filter(community=community, user=request.user).first()
-    if not member:
+    if not community.can_post(request.user):
         return HttpResponseForbidden("Forbidden")
 
     if request.method != "POST":
@@ -2055,7 +2107,7 @@ def community_create_post(request, slug):
         author=request.user,
         community=community,
         text=form.cleaned_data["text"],
-        as_community=bool(form.cleaned_data.get("post_as_community")) if member.is_admin else False,
+        as_community=bool(form.cleaned_data.get("post_as_community")) if member and member.is_admin else False,
     )
     return redirect("community_detail", slug=community.slug)
 
@@ -2094,3 +2146,177 @@ def community_members_chunk(request, slug):
         "has_more": next_offset < total,
         "total": total,
     })
+
+
+@require_GET
+def community_members_api(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+
+    if not community.can_view(request.user):
+        return JsonResponse({"error": "forbidden"}, status=403)
+
+    q = request.GET.get("q", "").strip()
+    page_number = int(request.GET.get("page", "1") or 1)
+    page_size = 15
+
+    qs = CommunityMembership.objects.filter(community=community).select_related("user")
+    if q:
+        qs = qs.filter(Q(user__username__icontains=q) | Q(user__display_name__icontains=q))
+
+    paginator = Paginator(qs, page_size)
+    page = paginator.get_page(page_number)
+
+    results = []
+    for m in page.object_list:
+        u = m.user
+        results.append({
+            "id": u.id,
+            "username": u.username,
+            "display_name": u.display_name or u.username,
+            "avatar_url": u.avatar.url if u.avatar else "",
+            "role": m.role,
+            "role_label": m.role_label,
+        })
+
+    return JsonResponse({
+        "results": results,
+        "page": page.number,
+        "has_next": page.has_next(),
+        "total": paginator.count,
+    })
+
+
+@login_required
+def community_settings_api(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    membership = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not membership or not membership.can_moderate():
+        return JsonResponse({"error": "forbidden"}, status=403)
+
+    if request.method == "GET":
+        data = {
+            "name": community.name,
+            "description": community.description,
+            "slug": community.slug,
+            "tags": community.tags,
+            "links": community.links,
+            "rules": community.rules,
+            "visibility": community.visibility,
+            "join_policy": community.join_policy,
+            "post_policy": community.post_policy,
+            "post_requires_approval": community.post_requires_approval,
+            "comments_enabled": community.comments_enabled,
+            "allow_links": community.allow_links,
+            "accent_color": community.accent_color,
+        }
+        return JsonResponse({"data": data, "can_manage": True})
+
+    form = CommunityForm(request.POST, request.FILES, instance=community)
+    if form.is_valid():
+        form.save()
+        return JsonResponse({"success": True})
+    return JsonResponse({"errors": form.errors}, status=400)
+
+
+@login_required
+def community_member_role(request, slug, user_id):
+    community = get_object_or_404(Community, slug=slug)
+    me = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not me or not me.can_moderate():
+        return JsonResponse({"error": "forbidden"}, status=403)
+    if request.method != "POST":
+        return JsonResponse({"error": "method"}, status=405)
+
+    membership = get_object_or_404(CommunityMembership, community=community, user_id=user_id)
+    new_role = request.POST.get("role") or "member"
+    if me.role not in {"owner", "admin"} and new_role in {"owner", "admin"}:
+        return JsonResponse({"error": "insufficient"}, status=403)
+    if membership.role == "owner" and me.role != "owner":
+        return JsonResponse({"error": "insufficient"}, status=403)
+
+    membership.role = new_role
+    membership.save()
+    return JsonResponse({"success": True, "role": membership.role, "role_label": membership.role_label})
+
+
+@login_required
+def community_member_remove(request, slug, user_id):
+    community = get_object_or_404(Community, slug=slug)
+    me = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not me or not me.can_moderate():
+        return JsonResponse({"error": "forbidden"}, status=403)
+    if request.method != "POST":
+        return JsonResponse({"error": "method"}, status=405)
+
+    membership = get_object_or_404(CommunityMembership, community=community, user_id=user_id)
+    if membership.role == "owner":
+        return JsonResponse({"error": "cant_remove_owner"}, status=400)
+
+    membership.delete()
+    return JsonResponse({"success": True, "members": community.memberships.count()})
+
+
+@login_required
+def community_join_requests(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    me = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not me or not me.can_moderate():
+        return JsonResponse({"error": "forbidden"}, status=403)
+
+    q = request.GET.get("q", "").strip()
+    page_number = int(request.GET.get("page", "1") or 1)
+
+    qs = CommunityJoinRequest.objects.filter(community=community, status="pending").select_related("user")
+    if q:
+        qs = qs.filter(Q(user__username__icontains=q) | Q(user__display_name__icontains=q))
+
+    paginator = Paginator(qs, 15)
+    page = paginator.get_page(page_number)
+    results = []
+    for jr in page.object_list:
+        u = jr.user
+        results.append({
+            "id": jr.id,
+            "user_id": u.id,
+            "username": u.username,
+            "display_name": u.display_name or u.username,
+            "avatar_url": u.avatar.url if u.avatar else "",
+            "created_at": jr.created_at.isoformat(),
+        })
+
+    return JsonResponse({
+        "results": results,
+        "page": page.number,
+        "has_next": page.has_next(),
+        "total": paginator.count,
+    })
+
+
+@login_required
+def community_join_request_action(request, slug, request_id, action):
+    community = get_object_or_404(Community, slug=slug)
+    me = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not me or not me.can_moderate():
+        return JsonResponse({"error": "forbidden"}, status=403)
+    if request.method != "POST":
+        return JsonResponse({"error": "method"}, status=405)
+
+    jr = get_object_or_404(CommunityJoinRequest, pk=request_id, community=community)
+    if jr.status != "pending":
+        return JsonResponse({"error": "already_processed"}, status=400)
+
+    if action == "approve":
+        CommunityMembership.objects.update_or_create(
+            community=community,
+            user=jr.user,
+            defaults={"role": "member", "is_admin": False},
+        )
+        jr.status = "approved"
+        jr.save()
+    elif action == "deny":
+        jr.status = "denied"
+        jr.save()
+    else:
+        return JsonResponse({"error": "bad_action"}, status=400)
+
+    return JsonResponse({"success": True, "members": community.memberships.count()})
