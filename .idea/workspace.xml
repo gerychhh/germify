@@ -5,9 +5,26 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2d5614a6-939c-4f99-a314-b1c6afd6ce92" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/backend/core/static/core/icons/heart-filled.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/core/static/core/icons/heart-outline.svg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/germify/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/germify/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/pages/posts/posts.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/pages/posts/posts.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/theme.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/static/core/js/code_copy.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/js/code_copy.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/static/core/js/posts.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/js/posts.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/community_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/community_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/feed.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/feed.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/comment.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/comment.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/post.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/post.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/post_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/post_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/profile.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/profile.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deploy/nginx.conf" beforeDir="false" afterPath="$PROJECT_DIR$/deploy/nginx.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nginx/conf.d/germify.conf" beforeDir="false" afterPath="$PROJECT_DIR$/nginx/conf.d/germify.conf" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,6 +40,11 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="db85de4b32625d2bb135ba38ac32ea24f1828e5d" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectColorInfo">{
@@ -39,15 +61,21 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;restructure&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/gerychhh_/germify/germify/backend/core/static/icons&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\gerychhh_\germify\germify\backend\core\static\icons" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\gerychhh_\germify\germify\backend\core\static\core" />
       <recent name="C:\gerychhh_\germify\germify\backend" />
       <recent name="C:\gerychhh_\germify\germify" />
       <recent name="C:\gerychhh_\germify\germify\backend\core" />
@@ -112,6 +140,8 @@
       <workItem from="1766680208795" duration="604000" />
       <workItem from="1766686074168" duration="12829000" />
       <workItem from="1766701916870" duration="2820000" />
+      <workItem from="1767366694205" duration="2547000" />
+      <workItem from="1767385343625" duration="6283000" />
     </task>
     <servers />
   </component>
@@ -128,10 +158,6 @@
           <url>file://$PROJECT_DIR$/main.py</url>
           <line>8</line>
           <option name="timeStamp" value="1" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/backend/core/urls.py</url>
-          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

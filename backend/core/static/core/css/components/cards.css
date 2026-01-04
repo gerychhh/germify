@@ -1,0 +1,6 @@
+/* Карточки */
+.card {
+  border: 1px solid var(--g-border);
+  border-radius: var(--g-radius);
+  box-shadow: var(--g-shadow-sm);
+}

@@ -73,6 +73,15 @@
 .post-menu-delete-btn { color: #fecaca; }
 
 /* ===== ЛАЙКИ ===== */
+.post-actions{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.like-form{ margin: 0; }
+
 .like-button {
   border: none;
   background: transparent;
@@ -81,8 +90,31 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 10px;
   transition: transform 0.18s ease-out, filter 0.18s ease-out;
+}
+
+/* если иконка подключена как <img> (SVG), обязательно задаём размер,
+   иначе берётся "intrinsic" размер из файла (часто 512px) */
+.like-button img.like-icon,
+.like-button .like-icon{
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display:block;
+}
+
+.like-button:hover{
+  background: color-mix(in srgb, var(--g-border) 35%, transparent);
+}
+
+.like-button .like-count{
+  font-size: 13px;
+  line-height: 1;
+  color: var(--g-muted);
 }
 
 .like-button.is-liked {
@@ -131,6 +163,285 @@
   .like-button { font-size: 17px; }
 }
 
+/* ===== VK-like bottom actions ===== */
+.post-vk-actions{
+  justify-content:flex-start !important;
+  display:flex;
+  flex-wrap: wrap;
+  align-items:center;
+  justify-content:flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--g-border);
+}
+
+.post-vk-action{
+  flex: 0 0 auto;
+  min-width: auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--g-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.post-vk-action:hover{
+  background: color-mix(in srgb, var(--g-border) 35%, transparent);
+  color: var(--g-text);
+}
+
+.post-vk-action:active{ transform: scale(0.98); }
+
+.post-vk-action.is-disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.post-vk-actions .like-form{
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+/* лайк — тоже как кнопка действия */
+.post-vk-actions .like-button{
+  width: auto;
+  justify-content: flex-start;
+  margin: 0;
+}
+
+.post-vk-action img,
+.post-vk-action .post-action-icon,
+.post-vk-action .like-icon{
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: block;
+}
+
+.post-vk-action__label{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.post-vk-action__count{
+  font-size: 13px;
+  color: var(--g-muted);
+  margin-left: 2px;
+}
+
+@media (max-width: 480px){
+  .post-vk-action{ padding: 8px 6px; }
+  .post-vk-action__label{ display:none; }
+}
+
+
+/* маленький тост (копирование ссылки / репост) */
+.mini-toast{
+  position: fixed;
+  /* must be above vk modal overlay (10050) */
+  z-index: 10120;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  border: 1px solid var(--g-border);
+  color: var(--g-text);
+  font-size: 13px;
+  line-height: 1;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  transform: translate(-50%, -130%) scale(.98);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  backdrop-filter: blur(10px);
+}
+
+.mini-toast--show{
+  opacity: 1;
+  transform: translate(-50%, -150%) scale(1);
+}
+
+
+/* ===================== VK-style modal: post left, comments right ===================== */
+.vk-modal-overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vk-modal-overlay.hidden{ display:none; }
+
+.vk-modal-backdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+}
+
+.vk-modal{
+  position: relative;
+  width: min(var(--g-posts-width, 700px), calc(100vw - 24px));
+  height: calc(100vh - 24px);
+  max-height: calc(100vh - 24px);
+  overflow: hidden;
+  border-radius: 18px;
+  /* В модалке делаем фон НЕ стеклянным, иначе под ней видно ленту */
+  background: var(--g-surface-solid);
+  border: 1px solid var(--g-border);
+  box-shadow: 0 24px 80px rgba(0,0,0,.35);
+}
+
+.vk-modal-close{
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 999;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--g-border);
+  background: color-mix(in srgb, var(--g-surface) 88%, transparent);
+  color: var(--g-text);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  font-size: 22px;
+  backdrop-filter: blur(10px);
+}
+
+.vk-modal-grid{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  height: 100%;
+  max-height: 100%;
+}
+
+.vk-modal-left{
+  overflow: auto;
+  padding: 14px;
+  background: var(--g-surface-solid);
+  min-width: 0;
+  min-height: 0;
+}
+
+
+/* ВАЖНО:
+   Левую колонку НЕ делаем flex со stretch по высоте.
+   Иначе .post-card растягивается по высоте окна (100%), а длинный текст
+   вываливается ниже карточки «без тела».
+   Нам нужно: карточка по высоте = контент, а скролл — у колонки. */
+.vk-modal-left > .vk-modal-post,
+.vk-modal-left > .post-card {
+    width: 100%;
+    max-width: none !important;
+    margin: 0;
+}
+
+.vk-modal-left > .post-card{
+    height: auto !important;
+}
+
+/* v6: в модалке скрываем кнопку "Показать ещё" (раскрываем батчами автоматически по скроллу) */
+.vk-modal-right-scroll .comments-more-btn,
+.vk-modal-right-scroll .replies-more-btn {
+    display: none;
+}
+
+/* v6: визуально убираем вложенность (reply-item / depth-*) */
+.vk-modal-right-scroll .comment-item.reply-item {
+    margin-left: 0 !important;
+}
+
+/* v6: баннер "ответ на комментарий" над основным полем ввода */
+.vk-reply-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--g-border);
+    background: color-mix(in srgb, var(--g-surface) 85%, var(--g-border));
+    margin-bottom: 8px;
+}
+
+.vk-reply-banner.hidden {
+    display: none;
+}
+
+.vk-reply-banner__text {
+    font-size: 13px;
+    color: var(--g-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vk-reply-banner__close {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    border: 1px solid var(--g-border);
+    background: transparent;
+    color: var(--g-muted);
+    display: grid;
+    place-items: center;
+    line-height: 1;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.vk-reply-banner__close:hover {
+    color: var(--g-text);
+    background: color-mix(in srgb, var(--g-surface) 70%, var(--g-border));
+}
+
+.vk-modal-right{
+  border-left: 1px solid var(--g-border);
+  background: var(--g-surface-solid);
+  display:flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.vk-modal-right-header{
+  padding: 12px 14px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--g-border);
+}
+
+/* чтобы пост в модалке не выглядел как “пост в ленте” со всеми эффектами */
+.vk-modal-left .post-card{
+  box-shadow: none !important;
+}
+
+@media (max-width: 980px){
+  .vk-modal-grid{ grid-template-columns: 1fr; }
+  .vk-modal-right{ border-left: 0; border-top: 1px solid var(--g-border); }
+  /* контент не должен залезать под кнопку закрытия */
+  .vk-modal-left{ padding-top: 52px; }
+  .vk-modal-right-header{ padding-right: 52px; }
+  /* чтобы кнопка закрытия не перекрывалась контентом и было удобно тапать */
+  .vk-modal-close{
+    top: 8px;
+    right: 8px;
+    z-index: 999;
+  }
+}
+
 /* ===== РЕДАКТИРОВАНИЕ ПОСТА (inline) ===== */
 .post-edit-block {
   margin-top: 8px;
@@ -153,3 +464,213 @@
 @media (max-width: 576px) {
   .post-edit-block { padding: 8px; }
 }
+
+.vk-modal-right-scroll{
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 12px 14px;
+  min-height: 0;
+}
+
+.vk-modal-right-composer{
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-top: 1px solid var(--g-border);
+  background: color-mix(in srgb, var(--g-surface) 94%, transparent);
+}
+
+/* делаем инпут комментария удобным и всегда видимым */
+.vk-modal-right-composer .comment-form{
+  margin: 0;
+}
+
+.vk-modal-right-composer .comment-input{
+  resize: none;
+  min-height: 44px;
+  max-height: 140px;
+}
+
+/* ===== VK composer row (кнопка отправки справа) ===== */
+.vk-compose-row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-direction: row !important; /* на случай, если где-то было row-reverse */
+}
+
+.vk-compose-row .comment-input{
+  flex: 1 1 auto;
+  order: 1;
+  margin: 0 !important;
+}
+
+.vk-compose-row .vk-send-btn{
+  flex: 0 0 auto;
+  order: 2;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--g-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.vk-compose-row .vk-send-btn img{
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* чтобы карточка поста в модалке занимала всю ширину колонки */
+.vk-modal-left .post-card{ width: 100%; }
+
+/* ===================== VK modal scroll (fix) =====================
+   Разметка модалки сейчас:
+   .vk-modal -> .vk-modal-stack -> (.vk-modal-scroll + .vk-modal-composer)
+   Внутри .vk-modal-scroll: .vk-modal-left (пост) + .vk-modal-comments (комменты).
+
+   Ранее часть CSS была под grid (.vk-modal-grid/.vk-modal-right-*) и из-за этого
+   .vk-modal-scroll не становился скролл-контейнером. В итоге колесо мыши/свайп
+   пытались прокрутить страницу под модалкой.
+
+   Ниже — явные стили для "одного скролла внутри модалки".
+*/
+
+html.vk-modal-open,
+body.vk-modal-open{
+  overflow: hidden;
+  height: 100%;
+}
+
+.vk-modal{
+  display: flex;
+  flex-direction: column;
+}
+
+.vk-modal-stack{
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Единственный скролл-контейнер */
+.vk-modal-scroll{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0; /* паддинги делаем у внутренних секций */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: var(--g-surface-solid);
+}
+
+/* Внутри общего скролла пост НЕ должен иметь свой отдельный скролл */
+.vk-modal-left{
+  overflow: visible !important;
+  min-height: 0;
+  padding: 14px;
+  background: transparent;
+}
+
+.vk-modal-comments{
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--g-border);
+}
+
+.vk-modal-comments-header{
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.vk-modal-comments-list{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vk-modal-composer{
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-top: 1px solid var(--g-border);
+  background: color-mix(in srgb, var(--g-surface) 94%, transparent);
+}
+
+@media (max-width: 980px){
+  /* Чтобы контент не залезал под кнопку закрытия */
+  .vk-modal-left{ padding-top: 52px; }
+  .vk-modal-comments{ padding-bottom: 16px; }
+  .vk-modal-close{ z-index: 999; }
+}
+
+
+/* ===== Comment action icon buttons (reply/delete) ===== */
+
+.comment-icon-btn{
+  border: none;
+  background: transparent;
+  padding: 2px 6px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  color: var(--g-muted);
+  transition: filter .15s ease, background .15s ease, transform .15s ease;
+}
+.comment-icon-btn:hover{
+  background: color-mix(in srgb, var(--g-surface) 72%, transparent);
+  filter: brightness(1.05);
+}
+.comment-icon-btn:active{ transform: scale(0.98); }
+.comment-action-icon{
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.comment-icon-btn.is-danger:hover{
+  background: color-mix(in srgb, var(--g-danger, #dc3545) 14%, transparent);
+}
+
+/* ===================== Small typography tweaks ===================== */
+/* Post author name: bold + strong color */
+.post-author-name{
+  font-weight: 700;
+  color: var(--g-text);
+}
+
+/* "time ago" labels: slightly smaller + muted */
+.post-date{
+  color: var(--g-muted) !important;
+  font-size: 13px;
+}
+
+.comment-time{
+  color: var(--g-muted) !important;
+  font-size: 12px;
+}
+
+/* Comment like button: use same SVG as posts, show only number */
+.comment-like-button{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: 10px;
+}
+.comment-like-button .like-icon{
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.comment-like-count{
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* Ensure actions never stretch across row */
+.post-vk-actions > *{ flex: 0 0 auto; }

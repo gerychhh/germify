@@ -4,217 +4,422 @@
 {% block title %}Лента — Germify{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'core/css/shared/attachments.css' %}?v=1">
-    <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=13">
+  <link rel="stylesheet" href="{% static 'core/css/shared/attachments.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=25">
 
-    {# UI polish just for feed search + composer #}
-    <style>
-        /* --- Search --- */
-        .feed-search-card{
-            border-radius: 18px;
-            border: 1px solid rgba(0,0,0,.08);
-            box-shadow: 0 2px 10px rgba(0,0,0,.05);
-            overflow: hidden;
-        }
-        .feed-search-form{ width: 100%; }
-        .feed-search-pill{
-            display:flex;
-            align-items:center;
-            gap:.5rem;
-            padding:.55rem .6rem;
-            border: 1px solid rgba(0,0,0,.12);
-            border-radius: 999px;
-            background: rgba(255,255,255,.9);
-        }
-        .feed-search-pill:focus-within{
-            border-color: rgba(13,110,253,.50);
-            box-shadow: 0 0 0 .25rem rgba(13,110,253,.15);
-        }
-        .feed-search-icon{
-            opacity:.65;
-            padding-left:.25rem;
-            user-select:none;
-        }
-        .feed-search-input{
-            border: 0 !important;
-            outline: 0 !important;
-            box-shadow: none !important;
-            flex: 1 1 auto;
-            min-width: 220px;
-            background: transparent !important;
-            padding: .15rem .25rem;
-        }
-        .feed-search-btn{
-            border-radius: 999px;
-            padding: .38rem .95rem;
-            white-space: nowrap;
-        }
-        .feed-search-clear{
-            border-radius: 999px;
-            padding: .38rem .75rem;
-            text-decoration: none;
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            white-space: nowrap;
-        }
+  <style>
+    /* =============================
+       Feed: search + composer (v2)
+       ============================= */
 
-        /* --- Composer --- */
-        .feed-new-post-card{
-            border-radius: 18px;
-            border: 1px solid rgba(0,0,0,.08);
-            box-shadow: 0 2px 10px rgba(0,0,0,.05);
-            overflow: hidden;
-        }
-        .feed-new-post-textarea{
-            border-radius: 14px;
-            padding: .8rem .95rem;
-            resize: vertical;
-        }
-        .feed-new-post-textarea:focus{
-            border-color: rgba(13,110,253,.45);
-            box-shadow: 0 0 0 .25rem rgba(13,110,253,.15);
-        }
-        .file-info span{
-            background: rgba(0,0,0,.04);
-            border: 1px solid rgba(0,0,0,.08);
-            padding: .20rem .55rem;
-            border-radius: 999px;
-        }
-        .feed-new-post-footer .btn{
-            border-radius: 999px;
-            padding-left: .9rem;
-            padding-right: .9rem;
-        }
+    .feed-page{
+      display:flex;
+      flex-direction:column;
+      gap: 14px;
+    }
 
-        @media (max-width: 576px){
-            .feed-search-input{ min-width: 140px; }
-        }
-    </style>
+    /* ---------- SVG icons ---------- */
+    .feed-ic{
+      width: 20px;
+      height: 20px;
+      display:block;
+    }
+
+    /* ---------- Search ---------- */
+    .feed-search{
+      border-radius: var(--g-radius-lg);
+      padding: 12px;
+    }
+
+    .feed-search__pill{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--g-border);
+      background: var(--g-surface-2);
+    }
+
+    .feed-search__pill:focus-within{
+      border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--g-primary) 18%, transparent);
+      background: var(--g-surface);
+    }
+
+    .feed-search__icon{
+      color: var(--g-muted);
+      flex: 0 0 auto;
+    }
+
+    .feed-search__input{
+      flex: 1 1 auto;
+      min-width: 160px;
+      border: 0 !important;
+      outline: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      padding: 0;
+      color: var(--g-text);
+      font-size: 15px;
+    }
+
+    .feed-search__clear{
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      display:grid;
+      place-items:center;
+      color: var(--g-muted);
+      border: 1px solid transparent;
+    }
+
+    .feed-search__clear:hover{
+      background: color-mix(in srgb, var(--g-border) 35%, transparent);
+      border-color: var(--g-border);
+      text-decoration: none;
+    }
+
+    /* ---------- Composer ---------- */
+    .feed-composer{
+      border-radius: var(--g-radius-lg);
+      padding: 12px;
+    }
+
+    .feed-composer__row{
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+    }
+
+    .feed-composer__avatar{
+      padding-top: 2px;
+      flex: 0 0 auto;
+    }
+
+    .feed-composer__input-wrap{
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .feed-composer__bubble{
+      border: 1px solid var(--g-border);
+      background: var(--g-surface-2);
+      border-radius: 18px;
+      padding: 10px 12px;
+    }
+
+    .feed-composer__bubble:focus-within{
+      border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--g-primary) 18%, transparent);
+      background: var(--g-surface);
+    }
+
+    .feed-composer__textarea{
+      width:100%;
+      border:0 !important;
+      outline:0 !important;
+      background:transparent !important;
+      box-shadow:none !important;
+      resize:none;
+      padding:0;
+      margin:0;
+      min-height: 42px;
+      max-height: 220px;
+      overflow:auto;
+      color: var(--g-text);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .feed-composer__footer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding-top: 10px;
+    }
+
+    .feed-composer__left{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .feed-composer__btn{
+      width: 38px;
+      height: 34px;
+      padding: 0;
+      display:grid;
+      place-items:center;
+      border-radius: 12px;
+      color: var(--g-muted);
+    }
+
+    .feed-composer__btn:hover{
+      color: var(--g-text);
+    }
+
+    .feed-composer__send{
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 999px;
+      display:grid;
+      place-items:center;
+      flex: 0 0 auto;
+    }
+
+    .feed-composer__status{
+      color: var(--g-muted);
+      min-height: 18px;
+    }
+
+    @media (max-width: 576px){
+      .feed-search{ padding: 10px; }
+      .feed-composer{ padding: 10px; }
+      .feed-composer__send{ width: 42px; height: 42px; }
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
 <div class="feed-page">
 
-    <!-- Поиск по ленте -->
-    <section class="card feed-search-card">
-        <div class="card-body p-3">
-            <form method="get" action="{% url 'feed' %}" class="feed-search-form">
-                <div class="feed-search-pill">
-                    <span class="feed-search-icon">🔎</span>
+  <!-- SVG sprite (inline) -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+    <symbol id="ic-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+      <path d="M20 20l-3.5-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
 
-                    <input
-                        type="search"
-                        name="q"
-                        value="{{ q|default:'' }}"
-                        class="form-control feed-search-input"
-                        placeholder="Поиск постов… (можно @username или имя автора)"
-                        autocomplete="off">
+    <symbol id="ic-x" viewBox="0 0 24 24">
+      <path d="M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
 
-                    <button type="submit" class="btn btn-success feed-search-btn">Найти</button>
+    <symbol id="ic-image" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M7.5 14.5l2.5-3 3.5 4.5 2.5-3 3.5 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="9" cy="9" r="1" fill="currentColor"/>
+    </symbol>
 
-                    {% if q %}
-                        <a class="btn btn-outline-secondary feed-search-clear" href="{% url 'feed' %}" title="Сбросить">✕</a>
-                    {% endif %}
-                </div>
-            </form>
+    <symbol id="ic-video" viewBox="0 0 24 24">
+      <rect x="3" y="6" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M17 10l4-2v8l-4-2v-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M9 9l4 3-4 3V9z" fill="currentColor"/>
+    </symbol>
 
-            {% if q_author %}
-                <div class="small text-muted mt-2">
-                    Фильтр по автору:
-                    <strong>@{{ q_author.username }}</strong>{% if q_author.display_name %} ({{ q_author.display_name }}){% endif %}
-                </div>
-            {% endif %}
+    <symbol id="ic-file" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M8 13h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M8 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="ic-mic" viewBox="0 0 24 24">
+      <path d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M19 11a7 7 0 0 1-14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M12 18v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M8 22h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="ic-send" viewBox="0 0 24 24">
+      <path d="M22 2L11 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 2L15 22l-4-9-9-4 20-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    </symbol>
+  </svg>
+
+  <!-- Поиск по ленте -->
+  <section class="feed-search g-glass">
+    <form method="get" action="{% url 'feed' %}">
+      <div class="feed-search__pill">
+        <svg class="feed-ic feed-search__icon" aria-hidden="true"><use href="#ic-search"></use></svg>
+
+        <input
+          type="search"
+          name="q"
+          value="{{ q|default:'' }}"
+          class="feed-search__input"
+          placeholder="Поиск новостей…"
+          autocomplete="off">
+
+        {% if q %}
+          <a class="feed-search__clear" href="{% url 'feed' %}" title="Сбросить" aria-label="Сбросить">
+            <svg class="feed-ic" aria-hidden="true"><use href="#ic-x"></use></svg>
+          </a>
+        {% endif %}
+
+        <button type="submit" class="visually-hidden">Найти</button>
+      </div>
+    </form>
+
+    {% if q_author %}
+      <div class="small text-muted mt-2">
+        Фильтр по автору:
+        <strong>@{{ q_author.username }}</strong>{% if q_author.display_name %} ({{ q_author.display_name }}){% endif %}
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- Форма нового поста (как на примере) -->
+  <section class="feed-composer g-glass">
+    <form method="post"
+          action="{% url 'create_post' %}"
+          class="new-post-form feed-composer__form"
+          enctype="multipart/form-data"
+          data-authenticated="{% if user.is_authenticated %}1{% else %}0{% endif %}"
+          data-login-url="{% url 'login' %}?next={{ request.path }}">
+      {% csrf_token %}
+
+      <div class="feed-composer__row">
+        <div class="feed-composer__avatar">
+          {% include "core/partials/avatar.html" with user_obj=user size="md" %}
         </div>
-    </section>
 
-    <!-- Форма нового поста -->
-    <section class="card feed-new-post-card">
-        <div class="card-body p-3">
-            <form method="post"
-                  action="{% url 'create_post' %}"
-                  class="new-post-form"
-                  enctype="multipart/form-data"
-                  data-authenticated="{% if user.is_authenticated %}1{% else %}0{% endif %}"
-                  data-login-url="{% url 'login' %}?next={{ request.path }}">
-                {% csrf_token %}
-                <h2 class="h6 mb-2 feed-new-post-title">Чем поделишься сегодня?</h2>
+        <div class="feed-composer__input-wrap">
+          <div class="feed-composer__bubble">
+            <textarea
+              name="text"
+              class="feed-composer__textarea"
+              rows="1"
+              placeholder="{% if user.is_authenticated %}Что нового, {{ user.display_name|default:user.username }}?{% else %}Войдите, чтобы написать пост…{% endif %}">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
+          </div>
 
-                <textarea
-                    name="text"
-                    class="form-control feed-new-post-textarea"
-                    rows="4"
-                    placeholder="Напишите что-нибудь интересное.">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
+          <!-- PREVIEW -->
+          <div class="file-preview mt-2" id="file-preview"></div>
 
-                <!-- PREVIEW -->
-                <div class="file-preview mt-2" id="file-preview"></div>
+          <!-- PREVIEW голосового -->
+          <audio id="voice-preview"
+                 class="voice-preview hidden mt-2 w-100"
+                 controls></audio>
 
-                <!-- PREVIEW голосового -->
-                <audio id="voice-preview"
-                       class="voice-preview hidden mt-2 w-100"
-                       controls></audio>
+          <!-- DRAG & DROP ZONE -->
+          <div id="drop-zone" class="drop-zone hidden mt-2 p-3 rounded text-center">
+            Перетащи файлы сюда или нажми на кнопку вложений
+          </div>
 
-                <!-- DRAG & DROP ZONE -->
-                <div id="drop-zone" class="drop-zone hidden mt-2 p-3 rounded text-center">
-                    Перетащи файлы сюда или нажми на скрепку
-                </div>
+          <!-- INFO + PROGRESS -->
+          <div class="file-info small text-muted mt-2 d-flex gap-2 flex-wrap">
+            <span id="file-count">Файлы: 0</span>
+            <span id="file-size">Размер: 0 MB</span>
+          </div>
 
-                <!-- INFO + PROGRESS -->
-                <div class="file-info small text-muted mt-2 d-flex gap-2 flex-wrap">
-                    <span id="file-count">Файлы: 0</span>
-                    <span id="file-size">Размер: 0 MB</span>
-                </div>
-
-                <div class="upload-progress hidden mt-2" id="upload-progress">
-                    <div class="upload-progress-bar" id="upload-progress-bar"></div>
-                </div>
-
-                <div class="feed-new-post-footer mt-3 d-flex align-items-center gap-2 flex-wrap">
-                    <!-- Голосовой ввод -->
-                    <div class="voice-recorder d-flex align-items-center gap-2 me-auto">
-                        <button type="button"
-                                id="voice-record-btn"
-                                class="btn btn-outline-primary btn-sm voice-record-btn">
-                            🎙 Голос
-                        </button>
-                        <span id="voice-record-status" class="voice-record-status small text-muted"></span>
-                    </div>
-
-                    <label class="btn btn-outline-secondary btn-sm attach-btn mb-0" title="Прикрепить файлы">
-                        📎 <span class="d-none d-sm-inline">Файлы</span>
-                        <input type="file"
-                               name="attachments"
-                               multiple
-                               style="display:none;">
-                    </label>
-
-                    <button type="submit" class="btn btn-primary btn-sm primary-button">Опубликовать</button>
-                </div>
-            </form>
+          <div class="upload-progress hidden mt-2" id="upload-progress">
+            <div class="upload-progress-bar" id="upload-progress-bar"></div>
+          </div>
         </div>
-    </section>
+      </div>
 
-    <!-- Лента постов -->
-    <section class="posts-list d-flex flex-column gap-3"
-             id="posts-list"
-             data-next-page="{% if has_next %}{{ next_page }}{% else %}0{% endif %}"
-             data-has-next="{% if has_next %}1{% else %}0{% endif %}">
-        {% for post in posts %}
-            {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
-        {% empty %}
-            {% if q %}
-                <div class="card">
-                    <div class="card-body p-3 text-muted">
-                        Ничего не найдено по запросу <strong>“{{ q }}”</strong>.
-                    </div>
-                </div>
-            {% endif %}
-        {% endfor %}
-    </section>
+      <div class="feed-composer__footer">
+        <div class="feed-composer__left">
+          <!-- Один input (как было), но открываем его кнопками -->
+          <input id="newPostFiles" type="file" name="attachments" multiple hidden>
 
-    <div class="feed-loading" id="feed-loading" style="display:none;">
-        Загрузка ещё постов...
-    </div>
+          <button type="button"
+                  class="btn btn-outline-secondary feed-composer__btn"
+                  data-feed-attach
+                  data-accept="image/*"
+                  title="Фото"
+                  aria-label="Фото">
+            <svg class="feed-ic" aria-hidden="true"><use href="#ic-image"></use></svg>
+          </button>
+
+          <button type="button"
+                  class="btn btn-outline-secondary feed-composer__btn"
+                  data-feed-attach
+                  data-accept="video/*"
+                  title="Видео"
+                  aria-label="Видео">
+            <svg class="feed-ic" aria-hidden="true"><use href="#ic-video"></use></svg>
+          </button>
+
+          <button type="button"
+                  class="btn btn-outline-secondary feed-composer__btn"
+                  data-feed-attach
+                  data-accept=""
+                  title="Файлы"
+                  aria-label="Файлы">
+            <svg class="feed-ic" aria-hidden="true"><use href="#ic-file"></use></svg>
+          </button>
+
+          <!-- Голосовой ввод (оставил, но теперь SVG) -->
+          <button type="button"
+                  id="voice-record-btn"
+                  class="btn btn-outline-secondary feed-composer__btn voice-record-btn"
+                  title="Голос"
+                  aria-label="Голос">
+            <svg class="feed-ic" aria-hidden="true"><use href="#ic-mic"></use></svg>
+          </button>
+
+          <span id="voice-record-status" class="feed-composer__status small"></span>
+        </div>
+
+        <button type="submit"
+                class="btn btn-primary feed-composer__send primary-button"
+                title="Опубликовать"
+                aria-label="Опубликовать">
+          <img class="feed-ic" src="{% static 'core/icons/post-send.svg' %}" alt="">
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Лента постов -->
+  <section class="posts-list d-flex flex-column gap-3"
+           id="posts-list"
+           data-next-page="{% if has_next %}{{ next_page }}{% else %}0{% endif %}"
+           data-has-next="{% if has_next %}1{% else %}0{% endif %}">
+    {% for post in posts %}
+      {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids %}
+    {% empty %}
+      {% if q %}
+        <div class="card">
+          <div class="card-body p-3 text-muted">
+            Ничего не найдено по запросу <strong>“{{ q }}”</strong>.
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </section>
+
+  <div class="feed-loading" id="feed-loading" style="display:none;">
+    Загрузка ещё постов...
+  </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const form = document.querySelector(".new-post-form");
+  if (!form) return;
+
+  // Attach buttons -> single file input
+  const fileInput = form.querySelector("input[name='attachments']");
+  form.querySelectorAll("[data-feed-attach]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const accept = btn.getAttribute("data-accept") || "";
+      if (!fileInput) return;
+      fileInput.setAttribute("accept", accept);
+      fileInput.click();
+    });
+  });
+
+  // Auto-resize textarea (compact like in mock)
+  const ta = form.querySelector("textarea[name='text']");
+  if (ta) {
+    const resize = () => {
+      ta.style.height = "auto";
+      ta.style.height = Math.min(ta.scrollHeight, 220) + "px";
+    };
+    ta.addEventListener("input", resize);
+    window.addEventListener("load", resize);
+    resize();
+  }
+})();
+</script>
 {% endblock %}

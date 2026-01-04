@@ -1,29 +1,64 @@
-# Виртуальное окружение
-venv/
-.venv/
+# ===== Secrets / env =====
+.env
+.env.*
+!.env.example
 
-# Кэш Python
+# ===== Certificates / keys =====
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.p12
+certs/
+deploy/certs/
+
+# ===== DB dumps / backups =====
+*.sql
+*.dump
+*.bak
+backup.sql
+
+# ===== Python cache =====
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 *.pyd
 
-# База данных (локальная)
+# ===== Django artifacts =====
 db.sqlite3
+*.sqlite3
+backend/staticfiles/
+backend/media/
 
-# Логи
-*.log
+# ===== Tests / tooling =====
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
 
-# Медиа (загружаемые файлы пользователей)
-media/
-
-# IDE настройки
-.vscode/
-.idea/
-
-# Оставляем кастомный батник
-!backend/autoRunServerPython.bat
-
-# Игнорируем виртуальное окружение
+# ===== Virtual envs =====
 venv/
 .venv/
+Venv*/
+VenvMain/
+
+# ===== IDE =====
+.idea/
+.vscode/
+
+# ===== OS junk =====
+.DS_Store
+Thumbs.db
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== Docker overrides =====
+docker-compose.override.yml
+
+# ===== Node (если вдруг есть фронт) =====
+node_modules/
+dist/
+build/

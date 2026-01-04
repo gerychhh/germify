@@ -1,5 +1,6 @@
 {# core/partials/comment.html #}
-{% load tz markdown_extras %}
+{% load tz markdown_extras static %}
+{% load time_ago %}
 
 {% with depth=level %}
 <div class="comment-item border rounded-3 p-2 bg-body mt-2
@@ -19,20 +20,15 @@
                     {{ c.author.display_name|default:c.author.username }}
                 </a>
 
-                <a href="{% url 'user_profile' c.author.username %}"
-                   class="comment-username small text-muted text-decoration-none">
-                    @{{ c.author.username }}
-                </a>
-
                 {% if c.parent %}
                     <span class="comment-reply-meta small text-muted">
-                        в ответ @{{ c.parent.author.username }}
+                        в ответ {{ c.parent.author.display_name|default:c.parent.author.username }}
                         «{{ c.parent.text|truncatechars:18 }}»
                     </span>
                 {% endif %}
 
                 <span class="comment-time small text-muted ms-auto">
-                    {{ c.created_at|localtime|date:"d.m.Y H:i" }}
+                    {{ c.created_at|time_ago }}
                 </span>
             </div>
         </div>
@@ -60,23 +56,28 @@
                 {% csrf_token %}
                 <button class="comment-like-button btn btn-link p-0 text-decoration-none"
                         type="submit"
+                        aria-label="Лайк"
                         data-liked="{% if c.id in liked_comment_ids %}true{% else %}false{% endif %}">
-                    {% if c.id in liked_comment_ids %}❤️{% else %}🤍{% endif %}
+                    <img
+                      class="like-icon"
+                      alt=""
+                      src="{% if c.id in liked_comment_ids %}{% static 'core/icons/post-like-filled.svg' %}{% else %}{% static 'core/icons/post-like.svg' %}{% endif %}"
+                      data-src-liked="{% static 'core/icons/post-like-filled.svg' %}"
+                      data-src-unliked="{% static 'core/icons/post-like.svg' %}"
+                    >
                 </button>
             </form>
         {% endif %}
 
-        <span class="comment-like-count text-muted"
-              data-comment-id="{{ c.id }}">
-            {{ c.likes.count }} лайков
-        </span>
+        <span class="comment-like-count text-muted" data-comment-id="{{ c.id }}">{{ c.likes.count }}</span>
 
         {% if user.is_authenticated %}
-            <button class="comment-reply-toggle btn btn-link btn-sm p-0 text-decoration-none"
-                    type="button"
-                    data-comment-id="{{ c.id }}">
-                Ответить
-            </button>
+            <button class="comment-reply-toggle comment-icon-btn"
+        type="button"
+        data-comment-id="{{ c.id }}"
+        aria-label="Ответить" title="Ответить">
+    <img src="{% static 'core/icons/comment-reply.svg' %}" alt="" class="comment-action-icon">
+</button>
 
             {% if c.replies.count %}
                 <button class="replies-toggle btn btn-link btn-sm p-0 text-decoration-none"
@@ -94,9 +95,10 @@
                       data-post-id="{{ c.post.id }}">
                     {% csrf_token %}
                     <button type="submit"
-                            class="comment-delete-btn btn btn-link btn-sm p-0 text-decoration-none text-danger">
-                        Удалить
-                    </button>
+        class="comment-delete-btn comment-icon-btn is-danger"
+        aria-label="Удалить комментарий" title="Удалить">
+    <img src="{% static 'core/icons/comment-delete.svg' %}" alt="" class="comment-action-icon">
+</button>
                 </form>
             {% endif %}
         {% endif %}

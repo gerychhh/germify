@@ -570,6 +570,7 @@
                 wrapper.dataset.inited = "1";
 
                 const video       = wrapper.querySelector(".video-player");
+                const overlayBtn  = wrapper.querySelector(".video-overlay-play");
                 const playBtn     = wrapper.querySelector(".video-play");
                 const muteBtn     = wrapper.querySelector(".video-mute");
                 const fsBtn       = wrapper.querySelector(".video-fullscreen");
@@ -605,19 +606,70 @@
                 video.addEventListener("loadeddata", updateBuffer);
                 video.addEventListener("progress", updateBuffer);
 
-                playBtn.addEventListener("click", () => {
-                    if (video.paused) { video.play(); playBtn.textContent = "⏸"; }
-                    else { video.pause(); playBtn.textContent = "▶"; }
-                });
+                function setBtnImg(btn, src) {
+                    if (!btn || !src) return;
+                    const img = btn.querySelector("img");
+                    if (img) img.src = src;
+                }
 
-                video.addEventListener("click", () => playBtn.click());
+                function syncPlayUi() {
+                    const playing = !video.paused && !video.ended;
+                    wrapper.classList.toggle("is-playing", playing);
+                    if (playing || video.currentTime > 0) wrapper.classList.add("has-started");
 
-                if (muteBtn) {
-                    muteBtn.addEventListener("click", () => {
-                        video.muted = !video.muted;
-                        muteBtn.textContent = video.muted ? "🔇" : "🔊";
+                    const iconPlay = playBtn?.dataset?.iconPlay;
+                    const iconPause = playBtn?.dataset?.iconPause;
+                    setBtnImg(playBtn, playing ? iconPause : iconPlay);
+                }
+
+                function syncMuteUi() {
+                    if (!muteBtn) return;
+                    const iconOn = muteBtn.dataset.iconOn;
+                    const iconOff = muteBtn.dataset.iconOff;
+                    setBtnImg(muteBtn, video.muted ? iconOff : iconOn);
+                }
+
+                function requestPlay() {
+                    wrapper.classList.add("has-started");
+                    const p = video.play();
+                    if (p && typeof p.catch === "function") p.catch(() => {});
+                }
+
+                function togglePlay() {
+                    if (video.paused || video.ended) requestPlay();
+                    else video.pause();
+                }
+
+                if (overlayBtn) {
+                    overlayBtn.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        requestPlay();
                     });
                 }
+
+                playBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    togglePlay();
+                });
+
+                video.addEventListener("click", (e) => {
+                    if (e.target && e.target.closest && e.target.closest(".video-controls")) return;
+                    togglePlay();
+                });
+
+                if (muteBtn) {
+                    muteBtn.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        video.muted = !video.muted;
+                        syncMuteUi();
+                    });
+                }
+
+                video.addEventListener("play", syncPlayUi);
+                video.addEventListener("pause", syncPlayUi);
 
                 video.addEventListener("timeupdate", () => {
                     if (!video.duration || isNaN(video.duration)) return;
@@ -627,7 +679,7 @@
                 });
 
                 video.addEventListener("ended", () => {
-                    playBtn.textContent = "▶";
+                    syncPlayUi();
                     progressEl.style.width = "0%";
                     currentEl.textContent = "0:00";
                 });
@@ -654,6 +706,10 @@
                         toggleFullscreenFor(wrapper, video);
                     });
                 }
+
+                // init state
+                syncPlayUi();
+                syncMuteUi();
             });
         }
 
@@ -698,9 +754,31 @@
                 audio.addEventListener("progress", updateBuffer);
                 audio.addEventListener("loadeddata", updateBuffer);
 
+                function setAudioBtnIcon(btn, isPlaying) {
+                    if (!btn) return;
+                    const playIcon = btn.dataset.iconPlay;
+                    const pauseIcon = btn.dataset.iconPause;
+                    const img = btn.querySelector("img");
+                    if (!img) return;
+                    img.src = isPlaying ? (pauseIcon || img.src) : (playIcon || img.src);
+                }
+
                 playButton.addEventListener("click", () => {
-                    if (audio.paused) { audio.play(); playButton.textContent = "⏸"; }
-                    else { audio.pause(); playButton.textContent = "▶"; }
+                    if (window.__g_currentAudio && window.__g_currentAudio !== audio) {
+                        try { window.__g_currentAudio.pause(); } catch (e) {}
+                        setAudioBtnIcon(window.__g_currentAudioBtn, false);
+                    }
+
+                    if (audio.paused) {
+                        const p = audio.play();
+                        if (p && typeof p.catch === "function") p.catch(() => {});
+                        setAudioBtnIcon(playButton, true);
+                        window.__g_currentAudio = audio;
+                        window.__g_currentAudioBtn = playButton;
+                    } else {
+                        audio.pause();
+                        setAudioBtnIcon(playButton, false);
+                    }
                 });
 
                 audio.addEventListener("timeupdate", () => {
@@ -712,7 +790,7 @@
                 });
 
                 audio.addEventListener("ended", () => {
-                    playButton.textContent = "▶";
+                    setAudioBtnIcon(playButton, false);
                     progressEl.style.width = "0%";
                     slider.value = "0";
                     currentEl.textContent = "0:00";

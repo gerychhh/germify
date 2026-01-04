@@ -1,0 +1,4 @@
+/* Кнопки */
+.btn {
+  border-radius: calc(var(--g-radius) / 2);
+}

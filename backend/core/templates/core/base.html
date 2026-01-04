@@ -29,9 +29,10 @@
       })();
     </script>
 
-    <!-- Optional: Inter font (safe fallback to system) -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <title>{% block title %}GERMiFY{% endblock %}</title>
@@ -196,12 +197,35 @@
     </div>
 </div>
 
+{# ===================== VK-style post modal (post left, comments right) ===================== #}
+<div id="vk-post-modal" class="vk-modal-overlay hidden" aria-hidden="true">
+    <div class="vk-modal-backdrop" data-vk-modal-close></div>
+    <div class="vk-modal" role="dialog" aria-modal="true">
+        <button type="button" class="vk-modal-close" aria-label="Закрыть" data-vk-modal-close>
+            ×
+        </button>
+
+        <div class="vk-modal-stack">
+            <div class="vk-modal-scroll">
+                <div class="vk-modal-left"></div>
+
+                <div class="vk-modal-comments">
+                    <div class="vk-modal-comments-header">Комментарии</div>
+                    <div class="vk-modal-comments-list"></div>
+                </div>
+            </div>
+
+            <div class="vk-modal-composer"></div>
+        </div>
+    </div>
+</div>
+
 <form id="csrfToken" style="display:none">{% csrf_token %}</form>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script src="{% static 'core/js/messages.js' %}"></script>
-<script src="{% static 'core/js/posts.js' %}"></script>
+<script src="{% static 'core/js/posts.js' %}?v=25"></script>
 {% block extra_js %}{% endblock %}
 
 </body>

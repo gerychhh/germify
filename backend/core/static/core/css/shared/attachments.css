@@ -281,6 +281,30 @@
     background: #000;
 }
 
+/* Большая кнопка play поверх видео (SVG) */
+.video-overlay-play {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.video-overlay-icon {
+    width: 74px;
+    height: 74px;
+    display: block;
+    filter: drop-shadow(0 10px 26px rgba(0,0,0,.55));
+}
+
+.video-wrapper.is-playing .video-overlay-play {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .video-player {
     display: block;
     width: 100%;
@@ -308,25 +332,76 @@
     max-height: none;
 }
 
+/* Низ плеера: скрыт до первого запуска (has-started).
+   Когда видео на паузе — показываем по hover/focus-within.
+   На touch (hover:none) — показываем всегда, чтобы было удобно. */
 .video-controls {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 6px 10px 8px;
     background: var(--g-surface);
+    overflow: hidden;
+    transition: opacity .18s ease, transform .18s ease, max-height .18s ease, padding .18s ease;
+}
+
+.video-wrapper:not(.has-started) .video-controls {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+}
+
+.video-wrapper.has-started:not(.is-playing) .video-controls {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+}
+
+.video-wrapper.has-started.is-playing .video-controls,
+.video-wrapper.has-started:not(.is-playing):hover .video-controls,
+.video-wrapper.has-started:not(.is-playing):focus-within .video-controls {
+    max-height: 84px;
+    padding-top: 6px;
+    padding-bottom: 8px;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+@media (hover: none) {
+    .video-wrapper.has-started:not(.is-playing) .video-controls {
+        max-height: 84px;
+        padding-top: 6px;
+        padding-bottom: 8px;
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
 }
 
 .video-btn {
-    border: none;
-    background: var(--g-border);
+    border: 1px solid var(--g-border);
+    background: color-mix(in srgb, var(--g-surface) 92%, transparent);
     color: var(--g-text);
     border-radius: 999px;
-    padding: 4px 8px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
     cursor: pointer;
-    font-size: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
+}
+
+.video-btn .video-icon {
+    width: 18px;
+    height: 18px;
+    display: block;
 }
 
 .video-btn:hover {
@@ -375,7 +450,6 @@
 
 .video-download {
     margin-left: 4px;
-    font-size: 18px;
     text-decoration: none;
     color: var(--g-text);
     cursor: pointer;
@@ -414,9 +488,15 @@
     border: none;
     background: var(--g-surface);
     border: 1px solid var(--g-border);
-    color: var(--g-text);
-    font-size: 16px;
     cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+
+.audio-icon {
+    width: 18px;
+    height: 18px;
+    display: block;
 }
 
 .audio-play:hover {
@@ -500,9 +580,15 @@
 }
 
 .audio-download {
-    font-size: 20px;
     text-decoration: none;
     color: var(--g-text);
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: 1px solid var(--g-border);
+    background: var(--g-surface);
+    display: grid;
+    place-items: center;
 }
 
 .audio-download:hover {

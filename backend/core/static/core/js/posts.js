@@ -23,6 +23,562 @@ function ajaxPost(url, form) {
     });
 }
 
+
+// ========================
+// MINI TOAST (copy link etc.)
+// ========================
+function showMiniToast(anchorEl, text) {
+    if (!anchorEl) return;
+    const el = document.createElement('div');
+    el.className = 'mini-toast';
+    el.textContent = text;
+    document.body.appendChild(el);
+
+    const r = anchorEl.getBoundingClientRect();
+    el.style.left = Math.round(r.left + r.width / 2) + 'px';
+    el.style.top = Math.round(r.top) + 'px';
+
+    requestAnimationFrame(() => el.classList.add('mini-toast--show'));
+
+    window.setTimeout(() => {
+        el.classList.remove('mini-toast--show');
+        window.setTimeout(() => el.remove(), 180);
+    }, 1200);
+}
+
+
+// ===================== VK-style modal (post left, comments right) =====================
+const __vkModalState = {
+    openPostId: null,
+    // мы НЕ копируем комментарии, а переносим их в модалку, чтобы не было дублей data-post-id
+    movedWrapEl: null,
+    movedBodyEl: null,
+    movedFormEl: null,
+    placeholderEl: null,
+
+    autoRevealScrollEl: null,
+    autoRevealHandler: null,
+};
+
+function getVkPostModal() {
+    return document.getElementById('vk-post-modal');
+}
+
+function _vkDetachAutoReveal() {
+    if (__vkModalState.autoRevealScrollEl && __vkModalState.autoRevealHandler) {
+        __vkModalState.autoRevealScrollEl.removeEventListener('scroll', __vkModalState.autoRevealHandler);
+    }
+    __vkModalState.autoRevealScrollEl = null;
+    __vkModalState.autoRevealHandler = null;
+}
+
+function _vkAutoGrowTextarea(textarea, maxPx = 140) {
+    if (!textarea) return;
+    const resize = () => {
+        textarea.style.height = 'auto';
+        const next = Math.min(textarea.scrollHeight, maxPx);
+        textarea.style.height = next + 'px';
+    };
+    resize();
+    textarea.addEventListener('input', resize);
+}
+
+function _vkAttachAutoReveal(scrollEl) {
+    if (!scrollEl) return;
+
+    let ticking = false;
+    const handler = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+            ticking = false;
+            // близко к низу — автоматически раскрываем следующий батч
+            if (scrollEl.scrollTop + scrollEl.clientHeight < scrollEl.scrollHeight - 180) return;
+            const btn = scrollEl.querySelector('.comments-more-btn');
+            if (btn) {
+                btn.click();
+                // если кнопка скрыта (мы её прячем CSS), то при малом числе комментов
+                // пользователь не может создать скролл вручную. Дожимаем батчи программно,
+                // пока контейнер не станет скроллимым или пока кнопка не исчезнет.
+                _vkFillCommentsUntilScrollable(scrollEl);
+            }
+        });
+    };
+
+    scrollEl.addEventListener('scroll', handler);
+    __vkModalState.autoRevealScrollEl = scrollEl;
+    __vkModalState.autoRevealHandler = handler;
+
+    // один раз сразу — если комментариев мало, ничего не случится
+    handler();
+}
+
+// Если комментов мало и из-за батчинга показывается только 3 шт.,
+// правый блок не становится скроллимым, и автоподгрузка по scroll не срабатывает.
+// Поэтому при открытии модалки «дожимаем» кнопку Show more, пока:
+//  - scrollHeight > clientHeight (появился скролл)
+//  - или кнопка пропала (всё раскрыли)
+function _vkFillCommentsUntilScrollable(scrollEl, maxSteps = 24) {
+    if (!scrollEl) return;
+
+    // уже есть скролл — ничего делать не надо
+    if (scrollEl.scrollHeight > scrollEl.clientHeight + 20) return;
+
+    let steps = 0;
+    const step = () => {
+        steps++;
+        if (steps > maxSteps) return;
+
+        // Если скролл уже появился — стоп.
+        if (scrollEl.scrollHeight > scrollEl.clientHeight + 20) return;
+
+        const btn = scrollEl.querySelector('.comments-more-btn');
+        if (!btn) return;
+
+        btn.click();
+
+        // DOM обновится синхронно, но на всякий случай — следующий тик.
+        requestAnimationFrame(step);
+    };
+
+    requestAnimationFrame(step);
+}
+
+// После удаления комментария список может стать «короче», но scroll-событие не произойдёт,
+// из-за чего автоподгрузка (раскрытие батчей) не сработает. Добиваем контент вручную.
+function _vkRevealMoreIfNearBottom(scrollEl, maxSteps = 8) {
+    if (!scrollEl) return;
+    let steps = 0;
+    const step = () => {
+        steps++;
+        if (steps > maxSteps) return;
+        const btn = scrollEl.querySelector('.comments-more-btn');
+        if (!btn) return;
+
+        const dist = scrollEl.scrollHeight - (scrollEl.scrollTop + scrollEl.clientHeight);
+        // если до низа далеко — значит пользователь не у конца списка, не трогаем
+        if (dist > 260) return;
+
+        btn.click();
+        requestAnimationFrame(step);
+    };
+
+    requestAnimationFrame(step);
+}
+
+function _vkRefillCommentsAfterMutation(postId) {
+    const modal = getVkPostModal();
+    if (!modal || modal.classList.contains('hidden')) return;
+    if (String(__vkModalState.openPostId || '') !== String(postId || '')) return;
+
+    const scrollEl = modal.querySelector('.vk-modal-scroll');
+    if (!scrollEl) return;
+
+    // если пользователь у низа — попробуем раскрыть следующий батч
+    _vkRevealMoreIfNearBottom(scrollEl);
+
+    // если скролла нет (или его стало мало) — дожимаем до появления скролла
+    _vkFillCommentsUntilScrollable(scrollEl);
+
+    // ещё один тик — на случай перерасчёта высот
+    requestAnimationFrame(() => _vkFillCommentsUntilScrollable(scrollEl));
+}
+
+
+
+// ===== VK modal: reply banner (single composer) =====
+function _vkEnsureReplyBanner(form) {
+    if (!form) return null;
+
+    if (!form.dataset.defaultAction) {
+        form.dataset.defaultAction = form.getAttribute('action') || '';
+    }
+
+    const ta = form.querySelector('textarea');
+    if (ta && !form.dataset.defaultPlaceholder) {
+        form.dataset.defaultPlaceholder = ta.getAttribute('placeholder') || '';
+    }
+
+    let banner = form.querySelector('.vk-reply-banner');
+    if (banner) return banner;
+
+    banner = document.createElement('div');
+    banner.className = 'vk-reply-banner hidden';
+    banner.innerHTML = `
+        <div class="vk-reply-banner__text"></div>
+        <button type="button" class="vk-reply-banner__close" aria-label="Отменить ответ">×</button>
+    `;
+
+    // ВАЖНО: баннер должен быть НАД полем ввода (и над кнопкой отправки).
+    // Если есть обёртка строки ввода (.vk-compose-row) — вставляем перед ней.
+    // Иначе вставляем перед textarea / в начало формы.
+    const beforeEl = form.querySelector('.vk-compose-row') || form.querySelector('textarea') || form.firstElementChild;
+    form.insertBefore(banner, beforeEl);
+
+    banner.querySelector('.vk-reply-banner__close')?.addEventListener('click', () => {
+        _vkClearReplyTarget(form);
+    });
+
+    return banner;
+}
+
+function _vkClearReplyTarget(form) {
+    if (!form) return;
+
+    const def = form.dataset.defaultAction;
+    if (def) form.setAttribute('action', def);
+
+    delete form.dataset.replyTo;
+
+    const ta = form.querySelector('textarea');
+    if (ta && form.dataset.defaultPlaceholder) {
+        ta.setAttribute('placeholder', form.dataset.defaultPlaceholder);
+    }
+
+    const banner = form.querySelector('.vk-reply-banner');
+    if (banner) banner.classList.add('hidden');
+}
+
+function _vkSetReplyTargetFromToggle(toggleEl) {
+    const modal = getVkPostModal();
+    if (!modal) return;
+
+    const form = modal.querySelector('.vk-modal-composer .comment-form');
+    if (!form) return;
+
+    const item = toggleEl.closest('.comment-item');
+    if (!item) return;
+
+    const commentId = item.dataset.commentId;
+
+    // URL для ответа (заранее проставляем на элемент, или берём из скрытой формы)
+    let replyUrl = item.dataset.replyUrl;
+    if (!replyUrl) {
+        const rf = item.querySelector('form.reply-form');
+        if (rf && rf.action) replyUrl = rf.action;
+    }
+    if (!replyUrl) return;
+
+    const banner = _vkEnsureReplyBanner(form);
+
+    const unameEl = item.querySelector('.comment-username');
+    const uname = unameEl ? unameEl.textContent.replace('@', '').trim() : '';
+
+    const snippetEl = item.querySelector('.comment-text');
+    const snippet = snippetEl ? (snippetEl.textContent || '').trim().slice(0, 80) : '';
+
+    form.dataset.replyTo = String(commentId || '');
+    form.setAttribute('action', replyUrl);
+
+    const ta = form.querySelector('textarea');
+    if (ta) {
+        ta.setAttribute('placeholder', uname ? ('Ответить @' + uname + '…') : 'Ответить…');
+        ta.focus();
+    }
+
+    if (banner) {
+        const txt = banner.querySelector('.vk-reply-banner__text');
+        if (txt) {
+            txt.textContent = uname
+                ? `Ответ на @${uname}${snippet ? ': ' + '“' + snippet + '”' : ''}`
+                : `Ответ${snippet ? ': ' + '“' + snippet + '”' : ''}`;
+        }
+        banner.classList.remove('hidden');
+    }
+}
+
+// ===== VK modal: flat comments (no nested cards), keep reply URL on each comment =====
+function _vkStripCommentDepthClasses(el) {
+    if (!el) return;
+    el.classList.remove('reply-item');
+    el.className = el.className.replace(/\bcomment-depth-\d+\b/g, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+function _vkPrepareFlatCommentItem(item) {
+    if (!item) return;
+    if (item.dataset && item.dataset.vkPrepared === '1') return;
+
+    // сохранить URL ответа
+    const rf = item.querySelector(':scope > form.reply-form');
+    if (rf && rf.action) item.dataset.replyUrl = rf.action;
+    rf?.remove();
+
+    // убрать кнопку "Ответы" и вложенный блок
+    item.querySelectorAll('.replies-toggle').forEach(btn => btn.remove());
+    const rb = item.querySelector(':scope > .replies-block');
+    if (rb) rb.remove();
+
+    _vkStripCommentDepthClasses(item);
+
+    if (item.dataset) item.dataset.vkPrepared = '1';
+}
+
+function _vkFlattenCommentsBody(body) {
+    if (!body) return;
+    if (body.dataset.vkFlat === '1') return;
+
+    const top = Array.from(body.children).filter(el => el.classList && el.classList.contains('comment-item'));
+    const flat = [];
+
+    const collect = (item) => {
+        if (!item || !(item.classList && item.classList.contains('comment-item'))) return;
+
+        // сначала вытащим детей-ответы (если есть)
+        const rb = item.querySelector(':scope > .replies-block');
+        let children = [];
+        if (rb) {
+            rb.classList.remove('hidden');
+            children = Array.from(rb.children).filter(el => el.classList && el.classList.contains('comment-item'));
+            rb.remove();
+        }
+
+        // подготовим элемент как плоский
+        _vkPrepareFlatCommentItem(item);
+
+        flat.push(item);
+        children.forEach(collect);
+    };
+
+    top.forEach(collect);
+
+    body.innerHTML = '';
+    for (const el of flat) body.appendChild(el);
+
+    body.dataset.vkFlat = '1';
+
+    try {
+        delete body.dataset.orderInited;
+        delete body.dataset.batchInited;
+    } catch (e) {}
+}
+
+function closeVkPostModal() {
+    const modal = getVkPostModal();
+    if (!modal) return;
+
+    _vkDetachAutoReveal();
+
+    const left = modal.querySelector('.vk-modal-left');
+    const commentsList = modal.querySelector('.vk-modal-comments-list');
+    const composer = modal.querySelector('.vk-modal-composer');
+    const scrollHost = modal.querySelector('.vk-modal-scroll');
+    
+
+    // вернуть комментарии назад в пост
+    if (__vkModalState.movedWrapEl && __vkModalState.placeholderEl) {
+        const wrap = __vkModalState.movedWrapEl;
+        const body = __vkModalState.movedBodyEl;
+        const form = __vkModalState.movedFormEl;
+
+        // собрать обратно структуру как в шаблоне: form -> body
+        if (form && !wrap.contains(form)) wrap.appendChild(form);
+        if (body && !wrap.contains(body)) wrap.appendChild(body);
+
+        wrap.classList.add('hidden');
+        if (form) form.classList.add('hidden');
+
+        __vkModalState.placeholderEl.replaceWith(wrap);
+    }
+
+    if (left) left.innerHTML = '';
+    if (commentsList) commentsList.innerHTML = '';
+    if (composer) composer.innerHTML = '';
+
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    document.documentElement.classList.remove('vk-modal-open');
+    document.body.classList.remove('vk-modal-open');
+
+    // Вернуть overflow для html/body (если меняли при открытии)
+    if (typeof __vkModalState._prevHtmlOverflow === 'string') {
+        document.documentElement.style.overflow = __vkModalState._prevHtmlOverflow;
+    } else {
+        document.documentElement.style.overflow = '';
+    }
+    if (typeof __vkModalState._prevBodyOverflow === 'string') {
+        document.body.style.overflow = __vkModalState._prevBodyOverflow;
+    } else {
+        document.body.style.overflow = '';
+    }
+
+    // Вернуть прокрутку страницы
+    const y = __vkModalState._lockY || 0;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, y);
+    __vkModalState._lockY = 0;
+
+    __vkModalState._prevHtmlOverflow = null;
+    __vkModalState._prevBodyOverflow = null;
+
+    __vkModalState.openPostId = null;
+    __vkModalState.movedWrapEl = null;
+    __vkModalState.movedBodyEl = null;
+    __vkModalState.movedFormEl = null;
+    __vkModalState.placeholderEl = null;
+}
+
+function openVkPostModal(postId, focusForm = true) {
+    const modal = getVkPostModal();
+    if (!modal) return;
+
+    // если уже открыто — закроем, потом откроем заново
+    if (__vkModalState.openPostId && __vkModalState.openPostId !== postId) {
+        closeVkPostModal();
+    }
+
+    const postEl = document.getElementById('post-' + postId);
+    if (!postEl) return;
+
+    // сохраняем позицию ленты ДО любых изменений DOM / focus (иначе некоторые браузеры
+    // могут временно обнулять scrollY и "откидывать" к началу ленты)
+    const currentY = window.scrollY || window.pageYOffset || 0;
+
+    const left = modal.querySelector('.vk-modal-left');
+    const commentsList = modal.querySelector('.vk-modal-comments-list');
+    const composer = modal.querySelector('.vk-modal-composer');
+    const scrollHost = modal.querySelector('.vk-modal-scroll');
+    
+    if (!left || !commentsList || !composer || !scrollHost) return;
+
+    left.innerHTML = '';
+    commentsList.innerHTML = '';
+    composer.innerHTML = '';
+
+    // Клонируем пост в левую колонку
+    const postClone = postEl.cloneNode(true);
+    postClone.removeAttribute('id');
+    postClone.classList.add('vk-modal-post');
+    postClone.style.maxWidth = 'none';
+    postClone.style.width = '100%';
+
+    // в модалке нам не нужна кнопка “комментарии” в баре поста
+    postClone.querySelectorAll('.post-action-comment').forEach(el => el.remove());
+
+    // в клоне не нужны “скрытые источники комментариев” и блоки редактирования
+    postClone.querySelectorAll('.post-comments-source, .post-edit-block').forEach(el => el.remove());
+    left.appendChild(postClone);
+
+    // Переносим (НЕ копируем) комментарии в правую часть
+    const commentsSource = postEl.querySelector('.post-comments-source');
+    if (commentsSource) {
+        const ph = document.createElement('div');
+        ph.className = 'post-comments-placeholder';
+        ph.dataset.postId = String(postId);
+        commentsSource.replaceWith(ph);
+
+        commentsSource.classList.remove('hidden');
+
+        const body = commentsSource.querySelector('.comments-body');
+        const form = commentsSource.querySelector('.comment-form');
+
+        // тело комментариев — в скролл-зону
+        if (body) {
+            commentsList.appendChild(body);
+
+            // делаем комментарии плоскими (без вложенных карточек)
+            _vkFlattenCommentsBody(body);
+
+            // безопасно: функции могут быть экспортированы из DOMContentLoaded
+            if (typeof window.initPostTextCollapsing === 'function') window.initPostTextCollapsing(body);
+            if (typeof window.initCommentsBatchingForBody === 'function') window.initCommentsBatchingForBody(body);
+        }
+
+        // форма — в нижний композер (не скроллится)
+        if (form) {
+            form.classList.remove('hidden');
+            form.classList.remove('mt-2');
+            composer.appendChild(form);
+            _vkAutoGrowTextarea(form.querySelector('textarea'));
+        } else {
+            composer.innerHTML = '<div class="small text-muted">Войдите, чтобы комментировать.</div>';
+        }
+
+        _vkAttachAutoReveal(scrollHost);
+        // если батчинг показал слишком мало элементов и скролл не появился —
+        // добиваем батчи сразу при открытии
+        _vkFillCommentsUntilScrollable(scrollHost);
+
+        __vkModalState.movedWrapEl = commentsSource;
+        __vkModalState.movedBodyEl = body;
+        __vkModalState.movedFormEl = form;
+        __vkModalState.placeholderEl = ph;
+    }
+
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    document.documentElement.classList.add('vk-modal-open');
+    document.body.classList.add('vk-modal-open');
+
+    // Надёжно блокируем скролл фона: ставим overflow:hidden на html/body.
+    // (На некоторых браузерах position:fixed на body не всегда полностью блокирует wheel.)
+    if (__vkModalState._prevHtmlOverflow == null) {
+        __vkModalState._prevHtmlOverflow = document.documentElement.style.overflow || '';
+    }
+    if (__vkModalState._prevBodyOverflow == null) {
+        __vkModalState._prevBodyOverflow = document.body.style.overflow || '';
+    }
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    // Надёжная блокировка скролла фона (особенно iOS): фиксируем body на текущем scrollY
+    __vkModalState._lockY = currentY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = '-' + __vkModalState._lockY + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+
+    __vkModalState.openPostId = postId;
+
+    if (focusForm) {
+        const ta = modal.querySelector('.vk-modal-composer textarea');
+        if (ta) {
+            try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); }
+        }
+    }
+}
+
+// Глобальные обработчики закрытия модалки
+document.addEventListener('click', function (e) {
+    const closeBtn = e.target.closest('[data-vk-modal-close]');
+    if (closeBtn) {
+        closeVkPostModal();
+    }
+});
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        const modal = getVkPostModal();
+        if (modal && !modal.classList.contains('hidden')) {
+            closeVkPostModal();
+        }
+    }
+});
+
+// UX: when user starts typing a comment in the modal, nudge the modal scroll a bit down
+// (helps keep the input comfortably visible, especially on mobile keyboards)
+document.addEventListener('focusin', function (e) {
+    const modal = getVkPostModal();
+    if (!modal || modal.classList.contains('hidden')) return;
+
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    // Only for the main comment textarea in the modal composer
+    const inComposer = target.closest?.('.vk-modal-composer');
+    if (!inComposer) return;
+    if (target.tagName !== 'TEXTAREA') return;
+
+    const scrollHost = modal.querySelector('.vk-modal-scroll');
+    if (!scrollHost) return;
+    // small smooth scroll
+    scrollHost.scrollBy({ top: 90, left: 0, behavior: 'smooth' });
+});
+
 // ========================
 // SMART IMAGE GALLERIES (1–10)
 // ========================
@@ -605,6 +1161,7 @@ document.addEventListener("DOMContentLoaded", function () {
             wrapper.dataset.inited = "1";
 
             const video       = wrapper.querySelector(".video-player");
+            const overlayBtn  = wrapper.querySelector(".video-overlay-play");
             const playBtn     = wrapper.querySelector(".video-play");
             const muteBtn     = wrapper.querySelector(".video-mute");
             const fsBtn       = wrapper.querySelector(".video-fullscreen");
@@ -655,26 +1212,71 @@ document.addEventListener("DOMContentLoaded", function () {
             video.addEventListener("loadeddata", updateBuffer);
             video.addEventListener("progress", updateBuffer);
 
-            playBtn.addEventListener("click", () => {
-                if (video.paused) {
-                    video.play();
-                    playBtn.textContent = "⏸";
-                } else {
-                    video.pause();
-                    playBtn.textContent = "▶";
-                }
+            function setBtnImg(btn, src) {
+                if (!btn || !src) return;
+                const img = btn.querySelector("img");
+                if (img) img.src = src;
+            }
+
+            function syncPlayUi() {
+                const playing = !video.paused && !video.ended;
+                wrapper.classList.toggle("is-playing", playing);
+                if (playing || video.currentTime > 0) wrapper.classList.add("has-started");
+
+                const iconPlay = playBtn?.dataset?.iconPlay;
+                const iconPause = playBtn?.dataset?.iconPause;
+                setBtnImg(playBtn, playing ? iconPause : iconPlay);
+            }
+
+            function syncMuteUi() {
+                if (!muteBtn) return;
+                const iconOn = muteBtn.dataset.iconOn;
+                const iconOff = muteBtn.dataset.iconOff;
+                setBtnImg(muteBtn, video.muted ? iconOff : iconOn);
+            }
+
+            function requestPlay() {
+                wrapper.classList.add("has-started");
+                const p = video.play();
+                if (p && typeof p.catch === "function") p.catch(() => {});
+            }
+
+            function togglePlay() {
+                if (video.paused || video.ended) requestPlay();
+                else video.pause();
+            }
+
+            if (overlayBtn) {
+                overlayBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    requestPlay();
+                });
+            }
+
+            playBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                togglePlay();
             });
 
-            video.addEventListener("click", () => {
-                playBtn.click();
+            video.addEventListener("click", (e) => {
+                // не мешаем кликам по прогрессу/кнопкам
+                if (e.target && e.target.closest && e.target.closest(".video-controls")) return;
+                togglePlay();
             });
 
             if (muteBtn) {
-                muteBtn.addEventListener("click", () => {
+                muteBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     video.muted = !video.muted;
-                    muteBtn.textContent = video.muted ? "🔇" : "🔊";
+                    syncMuteUi();
                 });
             }
+
+            video.addEventListener("play", syncPlayUi);
+            video.addEventListener("pause", syncPlayUi);
 
             video.addEventListener("timeupdate", () => {
                 if (!video.duration || isNaN(video.duration)) return;
@@ -684,7 +1286,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
 
             video.addEventListener("ended", () => {
-                playBtn.textContent = "▶";
+                syncPlayUi();
                 progressEl.style.width = "0%";
                 currentEl.textContent = "0:00";
             });
@@ -750,11 +1352,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     wrapper.classList.toggle("video-fullscreen", isFull);
                 });
             }
+
+            // init state
+            syncPlayUi();
+            syncMuteUi();
         });
     }
 
     // ---------- АУДИО ----------
     let currentAudio = null;
+    let currentAudioBtn = null;
 
     function initAudioPlayers(root = document) {
         if (!root.querySelectorAll) return;
@@ -808,19 +1415,30 @@ document.addEventListener("DOMContentLoaded", function () {
             audio.addEventListener("loadeddata", updateAudioBuffer);
             audio.addEventListener("progress", updateAudioBuffer);
 
+            function setAudioBtnIcon(btn, isPlaying) {
+                if (!btn) return;
+                const playIcon = btn.dataset.iconPlay;
+                const pauseIcon = btn.dataset.iconPause;
+                const img = btn.querySelector("img");
+                if (!img) return;
+                img.src = isPlaying ? (pauseIcon || img.src) : (playIcon || img.src);
+            }
+
             playButton.addEventListener("click", () => {
                 if (currentAudio && currentAudio !== audio) {
-                    currentAudio.pause();
-                    document.querySelectorAll(".audio-play").forEach(btn => (btn.textContent = "▶"));
+                    try { currentAudio.pause(); } catch (e) {}
+                    setAudioBtnIcon(currentAudioBtn, false);
                 }
 
                 if (audio.paused) {
-                    audio.play();
-                    playButton.textContent = "⏸";
+                    const p = audio.play();
+                    if (p && typeof p.catch === "function") p.catch(() => {});
+                    setAudioBtnIcon(playButton, true);
                     currentAudio = audio;
+                    currentAudioBtn = playButton;
                 } else {
                     audio.pause();
-                    playButton.textContent = "▶";
+                    setAudioBtnIcon(playButton, false);
                 }
             });
 
@@ -898,7 +1516,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 progressBar.style.width = "0%";
                 slider.value = 0;
                 currentTimeEl.textContent = "0:00";
-                playButton.textContent = "▶";
+                setAudioBtnIcon(playButton, false);
                 isSeeking = false;
             });
         });
@@ -1184,25 +1802,37 @@ document.addEventListener("DOMContentLoaded", function () {
             ajaxPost(form.action, form)
                 .then(r => r.json())
                 .then(data => {
-                    const btn = form.querySelector(".like-button");
-                    const cnt = document.querySelector('.like-count[data-post-id="' + postId + '"]');
-                    if (!btn) return;
+                    const liked = !!(data.liked ?? data.is_liked);
+                    const likesCount = (typeof data.likes_count !== "undefined") ? data.likes_count : null;
 
-                    btn.textContent = data.liked ? "❤️" : "🤍";
-                    btn.dataset.liked = data.liked ? "true" : "false";
+                    // Обновляем ВСЕ кнопки лайка для этого postId (лента + модалка)
+                    document
+                        .querySelectorAll('.like-form[data-post-id="' + postId + '"] .like-button')
+                        .forEach(btn => {
+                            const icon = btn.querySelector("img");
+                            if (icon) {
+                                icon.src = liked
+                                    ? "/static/core/icons/post-like-filled.svg"
+                                    : "/static/core/icons/post-like.svg";
+                            }
 
-                    if (data.liked) btn.classList.add("is-liked");
-                    else btn.classList.remove("is-liked");
+                            btn.dataset.liked = liked ? "true" : "false";
+                            btn.classList.toggle("is-liked", liked);
 
-                    btn.classList.remove("like-animate");
-                    void btn.offsetWidth;
-                    btn.classList.add("like-animate");
+                            btn.classList.remove("like-animate");
+                            void btn.offsetWidth;
+                            btn.classList.add("like-animate");
+                        });
 
-                    if (cnt && typeof data.likes_count !== "undefined") {
-                        cnt.textContent = data.likes_count + " лайков";
-                        cnt.classList.remove("like-count-bump");
-                        void cnt.offsetWidth;
-                        cnt.classList.add("like-count-bump");
+                    if (likesCount !== null) {
+                        document
+                            .querySelectorAll('.like-count[data-post-id="' + postId + '"]')
+                            .forEach(cnt => {
+                                cnt.textContent = likesCount;
+                                cnt.classList.remove("like-count-bump");
+                                void cnt.offsetWidth;
+                                cnt.classList.add("like-count-bump");
+                            });
                     }
                 })
                 .catch(err => console.error("post like error:", err));
@@ -1220,12 +1850,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(r => r.json())
                 .then(data => {
                     const btn = form.querySelector("button");
-                    const cnt = document.querySelector(
+                    const img = btn ? btn.querySelector("img") : null;
+                    const cnts = document.querySelectorAll(
                         '.comment-like-count[data-comment-id="' + commentId + '"], ' +
                         '.reply-like-count[data-comment-id="' + commentId + '"]'
                     );
-                    btn.textContent = data.liked ? "❤️" : "🤍";
-                    if (cnt) cnt.textContent = data.likes_count + " лайков";
+
+                    if (img) {
+                        const likedSrc = img.getAttribute('data-src-liked') || (img.dataset ? img.dataset.srcLiked : "");
+                        const unlikedSrc = img.getAttribute('data-src-unliked') || (img.dataset ? img.dataset.srcUnliked : "");
+                        img.src = data.liked ? (likedSrc || img.src) : (unlikedSrc || img.src);
+                    }
+                    if (btn) btn.dataset.liked = data.liked ? "true" : "false";
+                    cnts.forEach(el => { el.textContent = String(data.likes_count); });
                 })
                 .catch(err => console.error("comment like error:", err));
 
@@ -1258,12 +1895,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     else if (addBtn) addBtn.insertAdjacentHTML("beforebegin", data.html);
                     else body.insertAdjacentHTML("afterbegin", data.html);
 
+                    if (body.closest('#vk-post-modal')) {
+                        body.querySelectorAll(':scope > .comment-item').forEach(_vkPrepareFlatCommentItem);
+                    }
+
                     initPostTextCollapsing(body);
 
                     if (body.dataset.batchInited === "1") updateCommentsMoreButton(body);
 
                     const badge = document.querySelector(
-                        '.comments-toggle[data-post-id="' + pid + '"] .comments-count-badge'
+                        '.post-comments-count[data-post-id="' + pid + '"]'
                     );
 
                     if (badge && typeof data.comments_count !== "undefined") {
@@ -1271,7 +1912,15 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
 
                     textArea.value = "";
-                    form.classList.add("hidden");
+
+                    // если это был ответ (в модалке) — сбрасываем режим ответа
+                    if (form.closest('#vk-post-modal') && form.dataset.replyTo) {
+                        _vkClearReplyTarget(form);
+                    }
+
+                    if (!form.closest('#vk-post-modal')) {
+                        form.classList.add("hidden");
+                    }
                 })
                 .catch(err => console.error("add comment error:", err));
 
@@ -1324,7 +1973,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
 
                     const badge = document.querySelector(
-                        '.comments-toggle[data-post-id="' + pid + '"] .comments-count-badge'
+                        '.post-comments-count[data-post-id="' + pid + '"]'
                     );
 
                     if (badge && typeof data.comments_count !== "undefined") {
@@ -1359,13 +2008,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (repliesContainer && repliesContainer.dataset.batchInited === "1") updateRepliesMoreButton(repliesContainer);
 
                     const badge = document.querySelector(
-                        '.comments-toggle[data-post-id="' + postId + '"] .comments-count-badge'
+                        '.post-comments-count[data-post-id="' + postId + '"]'
                     );
 
                     if (badge) {
                         const n = parseInt(badge.textContent) || 0;
                         badge.textContent = n > 0 ? n - 1 : 0;
                     }
+
+                    // Если удаляли в VK-модалке — добьём батчи, чтобы снизу не оставалась пустота
+                    _vkRefillCommentsAfterMutation(postId);
                 })
                 .catch(err => console.error("delete comment error:", err));
 
@@ -1636,11 +2288,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(fullUrl)
                     .then(function () {
-                        const oldText = shareBtn.textContent;
-                        shareBtn.textContent = "Ссылка скопирована";
-                        setTimeout(function () {
-                            shareBtn.textContent = oldText;
-                        }, 2000);
+                        showMiniToast(shareBtn, 'Ссылка скопирована');
                     })
                     .catch(function () {
                         alert("Не удалось скопировать ссылку");
@@ -1653,6 +2301,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 menu.classList.add("hidden");
             });
 
+            return;
+        }
+
+        // ----- КНОПКА "КОММЕНТАРИЙ" (VK bar) -----
+        const commentAction = e.target.closest(".post-action-comment");
+        if (commentAction) {
+            const postId = commentAction.dataset.postId;
+            openVkPostModal(postId, true);
             return;
         }
 
@@ -1672,6 +2328,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     body.querySelectorAll(".replies-block").forEach(b => b.classList.add("hidden"));
 
                     // ✅ именно тут появляются кнопки “Показать ещё” у комментариев
+                    if (body.closest('#vk-post-modal')) {
+                        body.querySelectorAll(':scope > .comment-item').forEach(_vkPrepareFlatCommentItem);
+                    }
+
                     initPostTextCollapsing(body);
                     initCommentsBatchingForBody(body);
                 }
@@ -1706,9 +2366,16 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // ----- ОТКРЫТЬ ФОРМУ ОТВЕТА -----
+        // ----- ОТВЕТ НА КОММЕНТАРИЙ -----
         const replyToggle = e.target.closest(".comment-reply-toggle");
         if (replyToggle) {
+            // внутри VK-модалки отвечаем через один композер (снизу)
+            if (replyToggle.closest('#vk-post-modal')) {
+                _vkSetReplyTargetFromToggle(replyToggle);
+                return;
+            }
+
+            // вне модалки — старое поведение (показываем форму под комментом)
             const commentId = replyToggle.dataset.commentId;
             const form = document.querySelector('.reply-form[data-parent-id="' + commentId + '"]');
             if (form) form.classList.toggle("hidden");
@@ -1833,6 +2500,12 @@ document.addEventListener("DOMContentLoaded", function () {
         window.addEventListener("scroll", onScroll);
         onScroll();
     })();
+
+    // --------------------------------------------
+    // Экспорт хелперов наружу (нужно для VK-модалки)
+    // --------------------------------------------
+    window.initPostTextCollapsing = initPostTextCollapsing;
+    window.initCommentsBatchingForBody = initCommentsBatchingForBody;
 
     // --------------------------------------------
     // Инициализация (комменты скрытые — пропускаем)

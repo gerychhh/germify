@@ -41,7 +41,15 @@
   }
 
   function ensureButton(codehilite) {
-    if (!codehilite || codehilite.dataset.copyInited === "1") return;
+    if (!codehilite) return;
+
+    // В постах/модалке у нас уже есть новая обёртка `.md-code` и кнопка Copy
+    // (см. posts.js -> initMarkdownCodeBlocks). Иначе появляется ДВЕ кнопки.
+    if (codehilite.closest && (codehilite.closest(".post-text") || codehilite.closest(".md-code"))) {
+      return;
+    }
+
+    if (codehilite.dataset.copyInited === "1") return;
 
     const text = getCodeText(codehilite).trim();
     if (!text) return;

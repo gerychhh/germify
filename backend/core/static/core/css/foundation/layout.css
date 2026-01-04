@@ -1,0 +1,14 @@
+/* Layout */
+html { scroll-padding-top: var(--g-navbar-h); }
+
+body {
+  background: var(--g-bg);
+  color: var(--g-text);
+}
+
+@media (max-width: 991.98px) {
+  /* чтобы fixed-bottom меню не перекрывало контент на мобилках */
+  body {
+    padding-bottom: calc(var(--g-bottomnav-h) + 10px);
+  }
+}
