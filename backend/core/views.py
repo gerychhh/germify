@@ -130,6 +130,43 @@ def render_comment_html(comment: Comment, request: HttpRequest, level: int) -> s
 
 
 def feed(request: HttpRequest) -> HttpResponse:
+    raw_query = request.GET.get("q", "")
+    q = raw_query.strip()
+    filters: list[Q] = []
+    q_author = None
+
+    if q:
+        for term in (t for t in q.split() if t):
+            if term.startswith("@") and len(term) > 1:
+                username = term[1:]
+                filters.append(
+                    Q(author__username__iexact=username)
+                    | Q(author__display_name__icontains=username)
+                )
+                if not q_author:
+                    q_author = (
+                        User.objects.filter(
+                            Q(username__iexact=username)
+                            | Q(display_name__iexact=username)
+                        )
+                        .only("id", "username", "display_name")
+                        .first()
+                    )
+                continue
+
+            if term.startswith("#") and len(term) > 1:
+                hashtag = term[1:]
+                filters.append(Q(text__icontains=f"#{hashtag}"))
+                continue
+
+            filters.append(
+                Q(text__icontains=term)
+                | Q(author__username__icontains=term)
+                | Q(author__display_name__icontains=term)
+                | Q(community__name__icontains=term)
+                | Q(community__slug__icontains=term)
+            )
+
     base_qs = (
         Post.objects
         .select_related("author", "community")
@@ -147,6 +184,9 @@ def feed(request: HttpRequest) -> HttpResponse:
         )
         .order_by("-created_at")
     )
+
+    for f in filters:
+        base_qs = base_qs.filter(f)
 
     paginator = Paginator(base_qs, 7)
 
@@ -195,6 +235,8 @@ def feed(request: HttpRequest) -> HttpResponse:
         "page_obj": page_obj,
         "has_next": page_obj.has_next(),
         "next_page": page_obj.next_page_number() if page_obj.has_next() else None,
+        "q": q,
+        "q_author": q_author,
         **state,
     }
 
