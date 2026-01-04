@@ -185,12 +185,46 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
   overflow: hidden;
 }
 
+.profile-list-header{
+  position: relative;
+  align-items: flex-start;
+  padding-right: 52px;
+}
+
+.profile-list-close{
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
 .profile-list-dialog{
   max-width: min(var(--g-posts-width, 700px), calc(100vw - 24px));
 }
 
 .profile-list-search{
   margin-bottom: 12px;
+}
+
+.profile-list-body{
+  display: flex;
+  flex-direction: column;
+  height: clamp(360px, 60vh, 520px);
+}
+
+.profile-list-scroll{
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.profile-list-scroll::-webkit-scrollbar{
+  width: 8px;
+}
+
+.profile-list-scroll::-webkit-scrollbar-thumb{
+  background: rgba(0,0,0,.08);
+  border-radius: 999px;
 }
 
 .profile-list-items{

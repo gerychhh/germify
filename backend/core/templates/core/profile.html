@@ -4,8 +4,8 @@
 {% block title %}Профиль — Germify{% endblock %}
 
 {% block extra_css %}
-  <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=25">
-  <link rel="stylesheet" href="{% static 'core/css/pages/profile/profile.css' %}?v=15">
+  <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=26">
+  <link rel="stylesheet" href="{% static 'core/css/pages/profile/profile.css' %}?v=16">
 {% endblock %}
 
 {% block content %}
@@ -156,31 +156,33 @@
 <div class="modal fade" id="profileListModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable profile-list-dialog">
     <div class="modal-content profile-list-modal">
-      <div class="modal-header">
+      <div class="modal-header profile-list-header">
         <div class="d-flex flex-column gap-1">
           <h5 class="modal-title" id="profileListTitle">Список</h5>
           <div class="text-muted small" id="profileListCount"></div>
         </div>
-        <button type="button" class="g-modal-close" data-bs-dismiss="modal" aria-label="Закрыть">
+        <button type="button" class="g-modal-close profile-list-close" data-bs-dismiss="modal" aria-label="Закрыть">
           <img src="{% static 'core/icons/close.svg' %}" alt="" width="18" height="18">
         </button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body profile-list-body">
         <form class="profile-list-search" role="search">
           <input type="search" id="profileListSearch" class="form-control" placeholder="Поиск по людям" autocomplete="off">
         </form>
-        <div id="profileListItems" class="profile-list-items"></div>
-        <div id="profileListEmpty" class="text-muted small d-none mt-3">Ничего не найдено</div>
-        <div id="profileListLoading" class="profile-list-loading d-none" aria-live="polite">
-          <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+        <div class="profile-list-scroll" id="profileListScroll">
+          <div id="profileListItems" class="profile-list-items"></div>
+          <div id="profileListEmpty" class="text-muted small d-none mt-3">Ничего не найдено</div>
+          <div id="profileListLoading" class="profile-list-loading d-none" aria-live="polite">
+            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+          </div>
+          <div id="profileListSentinel" class="profile-list-sentinel" aria-hidden="true"></div>
         </div>
-        <div id="profileListSentinel" class="profile-list-sentinel" aria-hidden="true"></div>
       </div>
     </div>
   </div>
 </div>
 
-<script src="{% static 'core/js/profile_lists.js' %}?v=2" defer></script>
+<script src="{% static 'core/js/profile_lists.js' %}?v=3" defer></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

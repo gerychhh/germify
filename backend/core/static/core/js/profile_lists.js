@@ -116,8 +116,9 @@
     const emptyEl = document.getElementById("profileListEmpty");
     const searchEl = document.getElementById("profileListSearch");
     const searchForm = document.querySelector(".profile-list-search");
+    const scrollEl = document.getElementById("profileListScroll");
 
-    if (!modal || !modalEl || !itemsEl || !sentinelEl) return;
+    if (!modal || !modalEl || !itemsEl || !sentinelEl || !scrollEl) return;
 
     let abortCtrl = null;
     let activeBtn = null;
@@ -125,6 +126,7 @@
     let offset = 0;
     let hasMore = true;
     let inFlight = false;
+    const pageSize = 12;
 
     function setEmptyVisible(show) {
       if (!emptyEl) return;
@@ -139,6 +141,7 @@
     function renderItems(items, { reset = false } = {}) {
       if (reset) {
         itemsEl.innerHTML = "";
+        scrollEl.scrollTop = 0;
       }
 
       const arr = Array.isArray(items) ? items : [];
@@ -170,7 +173,7 @@
       const url = new URL(baseUrl, window.location.origin);
       if (query) url.searchParams.set("q", query);
       url.searchParams.set("offset", reset ? "0" : String(offset));
-      url.searchParams.set("limit", "20");
+      url.searchParams.set("limit", String(pageSize));
 
       if (abortCtrl) abortCtrl.abort();
       abortCtrl = new AbortController();
@@ -247,7 +250,7 @@
           }
         });
       },
-      { root: modalEl.querySelector(".modal-body"), rootMargin: "400px 0px", threshold: 0.01 }
+      { root: scrollEl, rootMargin: "200px 0px", threshold: 0.1 }
     );
 
     io.observe(sentinelEl);
