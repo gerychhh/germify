@@ -9,7 +9,7 @@
 {% block title %}{% if chat_title %}{{ chat_title }}{% elif chat.title %}{{ chat.title }}{% else %}Чат{% endif %} — Germify{% endblock %}
 
 {% block content %}
-<div class="row g-3 messages-layout is-chat-open" id="messages-layout">
+<div class="row g-3 messages-layout is-chat-open" id="messages-layout" data-inbox-url="{% url 'messages_inbox' %}">
 
     <div class="col-12 col-lg-4 messages-sidebar-col">
         <div class="card messages-sidebar-card d-flex flex-column">

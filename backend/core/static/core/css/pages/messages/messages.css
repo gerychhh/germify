@@ -29,13 +29,19 @@
 }
 
 .messages-form textarea.form-control {
-  height: var(--messages-input-size);
-  min-height: var(--messages-input-size);
-  max-height: var(--messages-input-size);
+  height: var(--messages-input-size) !important;
+  min-height: var(--messages-input-size) !important;
+  max-height: var(--messages-input-size) !important;
   resize: none;
   padding: 10px 12px;
   box-sizing: border-box;
   line-height: 1.35;
+}
+
+@media (max-width: 575.98px) {
+  .messages-form {
+    --messages-input-size: 40px;
+  }
 }
 
 .messages-form .messages-send-btn,
@@ -72,7 +78,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
 @media (max-width: 991.98px) {
   .messages-layout {
-    min-height: calc(100vh - var(--g-navbar-h) - 24px);
+    min-height: calc(100dvh - var(--g-navbar-h));
   }
 
   .messages-sidebar-col {
@@ -93,7 +99,8 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
   .messages-sidebar-card,
   .messages-chat-card {
-    height: calc(100vh - var(--g-navbar-h) - 24px);
+    height: calc(100dvh - var(--g-navbar-h));
+    min-height: calc(100dvh - var(--g-navbar-h));
   }
 
   .messages-chat-card {
