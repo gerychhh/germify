@@ -37,6 +37,7 @@
         // If present, right-side chat pane can be replaced via AJAX (no full page reload)
         const chatPane = document.getElementById("messages-chat-pane");
         const messagesLayout = document.getElementById("messages-layout");
+        const inboxUrl = messagesLayout?.dataset?.inboxUrl || "/messages/";
 
         function setBadge(el, count) {
             if (!el) return;
@@ -266,6 +267,10 @@
             if (!backBtn) return;
             ev.preventDefault();
             setLayoutMode("sidebar");
+
+            if (window.location.pathname !== inboxUrl) {
+                try { window.history.pushState({ germify_chat_url: inboxUrl }, "", inboxUrl); } catch (e) {}
+            }
         });
 
         // -------------------------
