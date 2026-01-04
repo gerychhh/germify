@@ -124,6 +124,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
   body.messages-page main.container {
     min-height: calc(100dvh - var(--g-navbar-h));
+    padding: 0 !important;
   }
 
   body.messages-page main.container > .messages-layout {
@@ -192,7 +193,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
   .messages-composer {
     position: sticky;
-    bottom: 0;
+    bottom: calc(var(--g-bottomnav-h) + env(safe-area-inset-bottom));
     z-index: 5;
     background: var(--g-surface);
     box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.08);
