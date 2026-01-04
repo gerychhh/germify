@@ -61,6 +61,16 @@ urlpatterns = [
     path("communities/<slug:slug>/edit/", views.community_edit, name="community_edit"),
     path("communities/<slug:slug>/posts/create/", views.community_create_post, name="community_create_post"),
     path("communities/<slug:slug>/members/chunk/", views.community_members_chunk, name="community_members_chunk"),
+    path("communities/<slug:slug>/members/", views.community_members_api, name="community_members_api"),
+    path("communities/<slug:slug>/settings/api/", views.community_settings_api, name="community_settings_api"),
+    path("communities/<slug:slug>/members/<int:user_id>/role/", views.community_member_role, name="community_member_role"),
+    path("communities/<slug:slug>/members/<int:user_id>/remove/", views.community_member_remove, name="community_member_remove"),
+    path("communities/<slug:slug>/join-requests/", views.community_join_requests, name="community_join_requests"),
+    path(
+        "communities/<slug:slug>/join-requests/<int:request_id>/<str:action>/",
+        views.community_join_request_action,
+        name="community_join_request_action",
+    ),
 
     # Users (list + realtime search + infinite scroll)
     path("users/", users_view, name="users"),

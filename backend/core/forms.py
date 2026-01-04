@@ -190,9 +190,27 @@ class CommentForm(BootstrapFormMixin, forms.ModelForm):
 
 
 class CommunityForm(BootstrapFormMixin, forms.ModelForm):
+    tags = forms.CharField(required=False, help_text="Через запятую", widget=forms.TextInput())
+    links = forms.CharField(required=False, help_text="По одному в строке", widget=forms.Textarea(attrs={"rows": 2}))
+
     class Meta:
         model = Community
-        fields = ("name", "description", "icon")
+        fields = (
+            "name",
+            "description",
+            "icon",
+            "cover",
+            "accent_color",
+            "tags",
+            "links",
+            "rules",
+            "visibility",
+            "join_policy",
+            "post_policy",
+            "post_requires_approval",
+            "comments_enabled",
+            "allow_links",
+        )
         widgets = {
             "name": forms.TextInput(
                 attrs={
@@ -210,11 +228,32 @@ class CommunityForm(BootstrapFormMixin, forms.ModelForm):
                     "accept": "image/*",
                 }
             ),
+            "cover": forms.FileInput(
+                attrs={"accept": "image/*"},
+            ),
+            "rules": forms.Textarea(attrs={"rows": 3, "placeholder": "Правила и рекомендации"}),
+            "accent_color": forms.TextInput(attrs={"placeholder": "#3366ff"}),
         }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        # Pre-fill textual representation for JSON fields
+        if self.instance and self.instance.pk:
+            self.fields["tags"].initial = ", ".join(self.instance.tags or [])
+            self.fields["links"].initial = "\n".join(self.instance.links or [])
         self.apply_bootstrap()
+
+    def clean_tags(self):
+        raw = (self.cleaned_data.get("tags") or "").strip()
+        if not raw:
+            return []
+        return [t.strip() for t in raw.replace(";", ",").split(",") if t.strip()]
+
+    def clean_links(self):
+        raw = (self.cleaned_data.get("links") or "").strip()
+        if not raw:
+            return []
+        return [ln.strip() for ln in raw.splitlines() if ln.strip()]
 
 
 class CommunityPostForm(BootstrapFormMixin, forms.ModelForm):
