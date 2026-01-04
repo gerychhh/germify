@@ -6,9 +6,9 @@
 
 :root{
   /* ---- layout ---- */
-  --g-page-w: 1200px;
+  --g-page-w: 700px;
   --g-navbar-h: 64px;
-  --g-aside-w: 320px;
+  --g-aside-w: 340px;
   --g-bottomnav-h: 62px;
 
   /* ---- primitives (общие маркеры) ---- */

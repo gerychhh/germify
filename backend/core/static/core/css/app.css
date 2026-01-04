@@ -362,12 +362,8 @@ img[src*="/core/icons/"] {
 }
 
 /* ===============================
-   Global page width (one standard)
+   Global page width (single source is theme.css)
    =============================== */
-:root{
-  --g-page-w: 700px;
-}
-
 /* универсальная обёртка для страниц/лент */
 .g-page{
   width: 100%;
@@ -404,11 +400,6 @@ img[src*="/core/icons/"] {
    Community detail layout:
    left = 700px, right = aside
    =============================== */
-:root{
-  --g-page-w: 700px;     /* уже твой стандарт */
-  --g-aside-w: 340px;    /* ширина блока "Участники" (можешь 320/360) */
-}
-
 /* на мобилках — 700 и всё в одну колонку */
 .community-page{
   width: 100%;
