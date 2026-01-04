@@ -67,7 +67,7 @@
   background: var(--g-surface-2);
 }
 .post-menu-delete-btn {
-  color: #dc2626;
+  color: var(--g-danger-strong);
 }
 
 /* ===== Комментарии ===== */
@@ -151,7 +151,7 @@
   border-radius: calc(var(--g-radius) / 2);
   padding: 6px 12px;
   background: var(--g-primary);
-  color: #fff;
+  color: var(--g-white);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -215,7 +215,7 @@
 }
 
 .comment-delete-btn {
-  color: #dc2626;
+  color: var(--g-danger-strong);
   border-color: rgba(220,38,38,0.25);
 }
 

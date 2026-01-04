@@ -20,7 +20,7 @@
 }
 
 .profile-dd-head {
-  background: #fff;
+  background: var(--g-white);
 }
 
 .profile-dd-caption {

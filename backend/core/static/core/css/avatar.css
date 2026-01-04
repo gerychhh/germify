@@ -4,8 +4,8 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: radial-gradient(circle at 30% 30%, #4f46e5, #1d4ed8);
-    color: #e5e7eb;
+    background: var(--g-gradient-hero);
+    color: var(--g-text-contrast);
     font-weight: 600;
     flex-shrink: 0;
 }

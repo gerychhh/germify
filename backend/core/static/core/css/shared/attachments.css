@@ -54,7 +54,7 @@
     align-items: center;
     justify-content: center;
     background: rgba(0, 0, 0, 0.45);
-    color: #fff;
+    color: var(--g-white);
     font-size: 28px;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -208,7 +208,7 @@
     top: 50%;
     transform: translateY(-50%);
     font-size: 52px;
-    color: #fff;
+    color: var(--g-white);
     opacity: 0.7;
     cursor: pointer;
     user-select: none;
@@ -233,7 +233,7 @@
     right: 30px;
     font-size: 36px;
     cursor: pointer;
-    color: #fff;
+    color: var(--g-white);
     opacity: 0.8;
     transition: 0.2s;
 }
@@ -278,7 +278,7 @@
     position: relative;
     width: 100%;
     max-height: min(60vh, 520px);
-    background: #000;
+    background: var(--g-black);
 }
 
 /* Большая кнопка play поверх видео (SVG) */
@@ -311,7 +311,7 @@
     height: auto;
     max-height: min(60vh, 520px);
     object-fit: contain;
-    background: #000;
+    background: var(--g-black);
 }
 
 .video-wrapper.video-fullscreen {
@@ -435,7 +435,7 @@
     position: absolute;
     inset: 0;
     width: 0%;
-    background: #22c55e;
+    background: var(--g-success-strong);
 }
 
 @media (max-width: 640px) {
@@ -456,7 +456,7 @@
 }
 
 .video-download:hover {
-    color: #22c55e;
+    color: var(--g-success-strong);
 }
 
 /* ===== AUDIO ===== */
@@ -524,7 +524,7 @@
     position: absolute;
     inset: 0;
     width: 0%;
-    background: #22c55e;
+    background: var(--g-success-strong);
 }
 
 .audio-slider {
@@ -592,7 +592,7 @@
 }
 
 .audio-download:hover {
-    color: #22c55e;
+    color: var(--g-success-strong);
 }
 
 .audio-filename {
