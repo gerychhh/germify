@@ -210,20 +210,20 @@
       const nameInput = document.getElementById('communityNameInput');
       const descriptionInput = document.getElementById('communityDescriptionInput');
       const accentInput = document.getElementById('communityAccentInput');
-      const avatar = document.getElementById('appearanceAvatar');
+      const avatarVisual = appearancePreview.querySelector('.appearance-preview__avatar-visual');
       const cover = document.getElementById('appearanceCover');
       const nameTarget = appearancePreview.querySelector('[data-preview-name]');
       const descTarget = appearancePreview.querySelector('[data-preview-description]');
-      const initialAvatar = avatar?.querySelector('img')?.src || '';
+      const initialAvatar = avatarVisual?.querySelector('img')?.src || '';
       const initialCover = cover?.style.backgroundImage || '';
       const fallbackLetter = (page.dataset.communitySlug || '?')[0].toUpperCase();
 
       const setAvatar = (src) => {
-        if (!avatar) return;
+        if (!avatarVisual) return;
         if (src) {
-          avatar.innerHTML = `<img src="${src}" alt="">`;
+          avatarVisual.innerHTML = `<img src="${src}" alt="">`;
         } else {
-          avatar.innerHTML = `<span>${fallbackLetter}</span>`;
+          avatarVisual.innerHTML = `<span>${fallbackLetter}</span>`;
         }
       };
 
@@ -264,6 +264,13 @@
       accentInput?.addEventListener('input', updateAccent);
       document.querySelectorAll('input[data-preview-type]').forEach((input) => {
         input.addEventListener('change', () => handleFilePreview(input));
+      });
+      document.querySelectorAll('[data-file-trigger]').forEach((btn) => {
+        const targetId = btn.dataset.fileTrigger;
+        if (!targetId) return;
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        btn.addEventListener('click', () => input.click());
       });
       updateText();
       updateAccent();
@@ -415,6 +422,37 @@
 
     if (loadJoinRequestsBtn) {
       loadJoinRequestsBtn.addEventListener('click', loadJoinRequests);
+    }
+
+    // Delete community (owner only)
+    const deleteForm = document.getElementById('communityDeleteForm');
+    if (deleteForm) {
+      const deleteBtn = deleteForm.querySelector('[data-delete-community]');
+      deleteForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!confirm('Удалить сообщество без возможности восстановления?')) return;
+        deleteBtn && (deleteBtn.disabled = true);
+        const formData = new FormData(deleteForm);
+        try {
+          const resp = await fetch(deleteForm.action, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken'),
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: formData,
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (resp.ok) {
+            window.location.href = data.redirect || '/communities/';
+            return;
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          deleteBtn && (deleteBtn.disabled = false);
+        }
+      });
     }
   });
 })();

@@ -63,6 +63,7 @@ urlpatterns = [
     path("communities/<slug:slug>/members/chunk/", views.community_members_chunk, name="community_members_chunk"),
     path("communities/<slug:slug>/members/", views.community_members_api, name="community_members_api"),
     path("communities/<slug:slug>/settings/api/", views.community_settings_api, name="community_settings_api"),
+    path("communities/<slug:slug>/delete/", views.community_delete, name="community_delete"),
     path("communities/<slug:slug>/members/<int:user_id>/role/", views.community_member_role, name="community_member_role"),
     path("communities/<slug:slug>/members/<int:user_id>/remove/", views.community_member_remove, name="community_member_remove"),
     path("communities/<slug:slug>/join-requests/", views.community_join_requests, name="community_join_requests"),

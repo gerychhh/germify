@@ -6,7 +6,7 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=27">
-  <link rel="stylesheet" href="{% static 'core/css/pages/community_detail/community_detail.css' %}?v=7">
+  <link rel="stylesheet" href="{% static 'core/css/pages/community_detail/community_detail.css' %}?v=8">
 {% endblock %}
 
 {% block content %}
@@ -65,7 +65,6 @@
                 <span class="avatar-initial">{{ community.name|default:community.slug|slice:":1"|upper }}</span>
               {% endif %}
             </div>
-            <span class="community-avatar-badge">{{ community.slug }}</span>
           </div>
           <div class="flex-grow-1 min-w-0">
             <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -278,28 +277,40 @@
             {% csrf_token %}
             <div class="settings-block appearance-builder mb-3">
               <div class="row g-3 align-items-start">
-                <div class="col-12 col-lg-6">
-                  <div class="appearance-preview" id="communityAppearancePreview" style="--accent-color: {{ community.accent_color|default:'#3366ff' }};">
-                    <div class="appearance-preview__cover" id="appearanceCover" style="{% if community.cover %}background-image:url('{{ community.cover.url }}');{% endif %}"></div>
-                    <div class="appearance-preview__content">
-                      <div class="appearance-preview__avatar" id="appearanceAvatar">
-                        {% if community.icon %}
-                          <img src="{{ community.icon.url }}" alt="{{ community.name }}">
-                        {% else %}
-                          <span>{{ community.name|default:community.slug|slice:":1"|upper }}</span>
-                        {% endif %}
+                  <div class="col-12 col-lg-6">
+                    <div class="appearance-preview" id="communityAppearancePreview" style="--accent-color: {{ community.accent_color|default:'#3366ff' }};">
+                      <input type="file" id="communityCoverInput" name="cover" accept="image/*" class="visually-hidden" data-preview-type="cover">
+                      <input type="file" id="communityIconInput" name="icon" accept="image/*" class="visually-hidden" data-preview-type="icon">
+                      <div class="appearance-preview__cover" id="appearanceCover" style="{% if community.cover %}background-image:url('{{ community.cover.url }}');{% endif %}">
+                        <button type="button" class="appearance-upload appearance-upload--cover" data-file-trigger="communityCoverInput">
+                          <img src="{% static 'core/icons/camera.svg' %}" alt="" class="icon icon--16">
+                          <span>Сменить обложку</span>
+                        </button>
                       </div>
-                      <div class="appearance-preview__text">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                          <span class="fw-semibold" data-preview-name>{{ community.name }}</span>
-                          <span class="badge text-bg-light border">#{{ community.slug }}</span>
+                      <div class="appearance-preview__content">
+                        <div class="appearance-preview__avatar" id="appearanceAvatar">
+                          <div class="appearance-preview__avatar-visual">
+                            {% if community.icon %}
+                              <img src="{{ community.icon.url }}" alt="{{ community.name }}">
+                            {% else %}
+                              <span>{{ community.name|default:community.slug|slice:":1"|upper }}</span>
+                            {% endif %}
+                          </div>
+                          <button type="button" class="appearance-upload appearance-upload--avatar" data-file-trigger="communityIconInput">
+                            <img src="{% static 'core/icons/camera.svg' %}" alt="" class="icon icon--14">
+                          </button>
                         </div>
-                        <div class="text-body-secondary small mt-1" data-preview-description>{{ community.description|default:"Добавьте описание" }}</div>
-                        <div class="appearance-preview__accent mt-2"></div>
+                        <div class="appearance-preview__text">
+                          <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="fw-semibold" data-preview-name>{{ community.name }}</span>
+                            <span class="badge text-bg-light border">#{{ community.slug }}</span>
+                          </div>
+                          <div class="text-body-secondary small mt-1" data-preview-description>{{ community.description|default:"Добавьте описание" }}</div>
+                          <div class="appearance-preview__accent mt-2"></div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
                 <div class="col-12 col-lg-6">
                   <h6 class="mb-1">Шапка и оформление</h6>
                   <p class="text-body-secondary small mb-2">Редактируйте обложку, иконку и описание с живым предпросмотром.</p>
@@ -309,10 +320,7 @@
                   <textarea id="communityDescriptionInput" name="description" class="form-control" rows="3">{{ community.description }}</textarea>
                   <label class="form-label mt-2">Акцент</label>
                   <input type="text" id="communityAccentInput" name="accent_color" class="form-control" value="{{ community.accent_color }}" placeholder="#3366ff">
-                  <label class="form-label mt-2">Иконка</label>
-                  <input type="file" name="icon" accept="image/*" class="form-control" data-preview-type="icon">
-                  <label class="form-label mt-2">Обложка</label>
-                  <input type="file" name="cover" accept="image/*" class="form-control" data-preview-type="cover">
+                  <div class="form-text">Иконку и обложку можно заменить прямо в предпросмотре слева.</div>
                 </div>
               </div>
             </div>
@@ -419,7 +427,15 @@
                 <div class="settings-block mt-3">
                   <h6 class="text-danger mb-1">Danger Zone</h6>
                   <p class="text-body-secondary small mb-2">Удаление или архивирование сообщества.</p>
-                  <div class="alert alert-danger mb-2">В разработке: удаление и перенос владения.</div>
+                  {% if membership and membership.role == 'owner' %}
+                    <form method="post" action="{% url 'community_delete' community.slug %}" id="communityDeleteForm">
+                      {% csrf_token %}
+                      <p class="mb-2 small">Удаление необратимо и очистит все материалы сообщества.</p>
+                      <button type="submit" class="btn btn-danger" data-delete-community>Удалить сообщество</button>
+                    </form>
+                  {% else %}
+                    <div class="alert alert-warning mb-0">Только владелец может удалить сообщество.</div>
+                  {% endif %}
                 </div>
               </div>
             </div>
@@ -437,5 +453,5 @@
   </div>
 </div>
 
-  <script src="{% static 'core/js/community_detail.js' %}?v=6"></script>
+  <script src="{% static 'core/js/community_detail.js' %}?v=7"></script>
 {% endblock %}

@@ -2221,6 +2221,23 @@ def community_settings_api(request, slug):
 
 
 @login_required
+def community_delete(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    membership = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not membership or membership.role != "owner":
+        return JsonResponse({"error": "forbidden"}, status=403)
+
+    if request.method != "POST":
+        return JsonResponse({"error": "method"}, status=405)
+
+    community.delete()
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "redirect": reverse("communities")})
+    messages.success(request, "Сообщество удалено")
+    return redirect("communities")
+
+
+@login_required
 def community_member_role(request, slug, user_id):
     community = get_object_or_404(Community, slug=slug)
     me = CommunityMembership.objects.filter(community=community, user=request.user).first()
