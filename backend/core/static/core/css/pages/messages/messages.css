@@ -28,6 +28,10 @@
   --messages-input-size: 44px;
 }
 
+.messages-composer-row {
+  align-items: stretch !important;
+}
+
 .messages-form textarea.form-control {
   height: var(--messages-input-size) !important;
   min-height: var(--messages-input-size) !important;
@@ -36,6 +40,7 @@
   padding: 10px 12px;
   box-sizing: border-box;
   line-height: 1.35;
+  margin: 0;
 }
 
 @media (max-width: 575.98px) {
@@ -53,6 +58,10 @@
   align-items: center;
   justify-content: center;
   padding: 0;
+}
+
+.messages-composer {
+  border-top: 1px solid var(--g-border);
 }
 
 /* Иконки: обеспечить контраст на тёмной теме */
@@ -109,6 +118,39 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
   .messages-mobile-back {
     display: inline-flex;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .messages-chat-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--g-surface);
+  }
+
+  .messages-composer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: var(--g-surface);
+    box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .messages-thread-members,
+  .messages-header-action--desktop {
+    display: none !important;
+  }
+
+  .messages-thread-meta {
+    gap: 8px;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .messages-thread-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 
