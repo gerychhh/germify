@@ -50,16 +50,6 @@ html[data-glass="off"] .g-glass{
   -webkit-backdrop-filter: none;
 }
 
-/* Small icon button */
-.g-icon-btn{
-  width: 38px;
-  height: 34px;
-  padding: 0;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 12px;
-}
-
 /* Bootstrap components modernization */
 .navbar{
   background: var(--g-surface) !important;
@@ -105,51 +95,6 @@ html[data-glass="off"] .dropdown-menu{
   -webkit-backdrop-filter: none;
   background: var(--g-surface-solid);
 }
-
-.form-control, .form-select{
-  border-radius: var(--g-radius-md);
-  border: 1px solid var(--g-border);
-  background: var(--g-surface-2);
-  color: var(--g-text);
-}
-
-.form-control::placeholder{
-  color: color-mix(in srgb, var(--g-text) 45%, transparent);
-}
-
-.form-control:focus, .form-select:focus{
-  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--g-primary) 22%, transparent);
-  background: var(--g-surface);
-  color: var(--g-text);
-}
-
-.btn{
-  border-radius: var(--g-radius-md);
-  font-weight: 600;
-  transition: transform .06s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease;
-}
-
-.btn:active{
-  transform: translateY(1px);
-}
-
-.btn-primary{
-  border-color: transparent !important;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--g-primary) 85%, var(--g-white)fff) 0%, var(--g-primary) 55%, color-mix(in srgb, var(--g-primary) 70%, var(--g-black)000) 100%);
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--g-primary) 22%, transparent);
-}
-
-.btn-primary:hover{
-  box-shadow: 0 14px 30px color-mix(in srgb, var(--g-primary) 26%, transparent);
-}
-
-.btn-outline-secondary{
-  border-color: var(--g-border) !important;
-}
-
-.badge{ border-radius: 999px; }
 
 /* Offcanvas */
 .g-offcanvas{

@@ -1,0 +1,293 @@
+/* ==========================================================================
+   GERMiFY design system
+   Единые стили для кнопок, полей ввода, поиска и аватаров.
+   Основаны на токенах из theme.css и автоматически подстраиваются под тему.
+   ========================================================================== */
+
+:root {
+  --g-control-bg: var(--g-surface-2);
+  --g-control-bg-strong: color-mix(in srgb, var(--g-surface) 70%, transparent);
+  --g-control-border: var(--g-border);
+  --g-control-text: var(--g-text);
+  --g-control-placeholder: color-mix(in srgb, var(--g-text) 45%, transparent);
+  --g-control-ring: color-mix(in srgb, var(--g-primary) 20%, transparent);
+  --g-control-shadow: var(--g-shadow-sm);
+
+  --g-btn-height: 42px;
+  --g-btn-radius: var(--g-radius-md);
+  --g-btn-gap: 8px;
+  --g-btn-padding-x: 16px;
+  --g-btn-shadow: 0 10px 24px color-mix(in srgb, var(--g-primary) 22%, transparent);
+
+  --g-search-radius: 999px;
+}
+
+/* --------------------------- Controls (inputs) --------------------------- */
+.form-control,
+.form-select,
+textarea.form-control {
+  border-radius: var(--g-btn-radius);
+  border: 1px solid var(--g-control-border);
+  background: var(--g-control-bg);
+  color: var(--g-control-text);
+  box-shadow: none;
+  transition: border-color .15s ease, box-shadow .18s ease, background-color .15s ease;
+}
+
+.form-control::placeholder,
+textarea.form-control::placeholder {
+  color: var(--g-control-placeholder);
+}
+
+.form-control:focus,
+.form-select:focus,
+textarea.form-control:focus {
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-control-border));
+  box-shadow: 0 0 0 4px var(--g-control-ring);
+  background: var(--g-surface);
+  color: var(--g-control-text);
+}
+
+textarea.form-control {
+  min-height: 120px;
+  resize: vertical;
+}
+
+input[type="search"].form-control {
+  border-radius: var(--g-search-radius);
+  padding-left: 42px;
+  background: var(--g-control-bg-strong);
+}
+
+input[type="search"].form-control:focus {
+  background: var(--g-surface);
+}
+
+.form-control-sm,
+.form-select-sm {
+  min-height: 34px;
+  border-radius: calc(var(--g-btn-radius) - 4px);
+}
+
+input[type="search"].form-control-sm { padding-left: 34px; }
+
+.g-input-icon {
+  position: relative;
+}
+
+.g-input-icon .form-control {
+  padding-left: 42px;
+}
+
+.g-input-icon .g-input-icon__icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--g-muted);
+  pointer-events: none;
+}
+
+/* ----------------------------- Buttons ---------------------------------- */
+.btn {
+  --btn-bg: var(--g-surface);
+  --btn-bg-hover: color-mix(in srgb, var(--g-surface) 70%, var(--g-primary) 12%);
+  --btn-text: var(--g-text);
+  --btn-border: var(--g-control-border);
+  --btn-shadow: var(--g-control-shadow);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--g-btn-gap);
+  min-height: var(--g-btn-height);
+  padding: 0 var(--g-btn-padding-x);
+  border-radius: var(--g-btn-radius);
+  font-weight: 600;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  box-shadow: var(--btn-shadow);
+  transition: transform .06s ease, box-shadow .18s ease, background-color .18s ease, border-color .18s ease, color .18s ease;
+}
+
+.btn:hover { text-decoration: none; }
+
+.btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--g-primary) 35%, transparent);
+  outline-offset: 2px;
+  border-radius: calc(var(--g-btn-radius) + 2px);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled,
+.btn.disabled {
+  opacity: .7;
+  box-shadow: none;
+}
+
+/* sizes */
+.btn-sm { min-height: 34px; padding: 0 12px; border-radius: calc(var(--g-btn-radius) - 4px); }
+.btn-lg { min-height: 48px; padding: 0 20px; border-radius: calc(var(--g-btn-radius) + 2px); }
+
+/* variants */
+.btn-primary {
+  --btn-bg: linear-gradient(135deg, color-mix(in srgb, var(--g-primary) 90%, var(--g-white)) 0%, var(--g-primary) 55%, color-mix(in srgb, var(--g-primary) 70%, var(--g-black)) 100%);
+  --btn-bg-hover: linear-gradient(135deg, color-mix(in srgb, var(--g-primary) 96%, var(--g-white)) 0%, color-mix(in srgb, var(--g-primary) 92%, var(--g-white)) 60%);
+  --btn-text: var(--g-text-contrast-strong);
+  --btn-border: transparent;
+  --btn-shadow: var(--g-btn-shadow);
+}
+
+.btn-success {
+  --btn-bg: var(--g-gradient-success);
+  --btn-bg-hover: linear-gradient(135deg, color-mix(in srgb, var(--g-success-strong) 90%, var(--g-white)) 0%, var(--g-success) 60%);
+  --btn-text: var(--g-text-contrast-accent);
+  --btn-border: transparent;
+  --btn-shadow: 0 10px 24px color-mix(in srgb, var(--g-success) 24%, transparent);
+}
+
+.btn-danger {
+  --btn-bg: linear-gradient(135deg, color-mix(in srgb, var(--g-danger) 85%, #fff) 0%, var(--g-danger-strong) 60%);
+  --btn-bg-hover: linear-gradient(135deg, color-mix(in srgb, var(--g-danger) 92%, #fff) 0%, color-mix(in srgb, var(--g-danger-strong) 95%, #fff) 60%);
+  --btn-text: var(--g-text-contrast-strong);
+  --btn-border: transparent;
+  --btn-shadow: 0 10px 24px color-mix(in srgb, var(--g-danger) 26%, transparent);
+}
+
+.btn-outline-secondary,
+.btn-outline-primary,
+.btn-outline-light,
+.btn-outline-dark {
+  --btn-bg: color-mix(in srgb, var(--g-surface) 70%, transparent);
+  --btn-bg-hover: color-mix(in srgb, var(--g-border) 35%, transparent);
+  --btn-text: var(--g-text);
+  --btn-border: var(--g-control-border);
+  --btn-shadow: none;
+}
+
+.btn-ghost {
+  --btn-bg: transparent;
+  --btn-bg-hover: color-mix(in srgb, var(--g-border) 30%, transparent);
+  --btn-border: transparent;
+  --btn-shadow: none;
+}
+
+.btn-soft {
+  --btn-bg: color-mix(in srgb, var(--g-primary) 12%, var(--g-surface));
+  --btn-bg-hover: color-mix(in srgb, var(--g-primary) 18%, var(--g-surface));
+  --btn-border: color-mix(in srgb, var(--g-primary) 30%, var(--g-border));
+  --btn-text: color-mix(in srgb, var(--g-primary) 80%, var(--g-text));
+  --btn-shadow: none;
+}
+
+.btn-light-surface {
+  --btn-bg: var(--g-surface);
+  --btn-bg-hover: color-mix(in srgb, var(--g-surface) 75%, var(--g-border));
+  --btn-border: var(--g-control-border);
+  --btn-shadow: none;
+}
+
+.btn-icon,
+.g-icon-btn {
+  width: 38px;
+  height: 34px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.btn-pill { border-radius: 999px; }
+
+/* ---------------------------- Search blocks ------------------------------ */
+.g-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.g-search__field {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.g-search__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.g-search__input {
+  width: 100%;
+  padding-left: 42px;
+  border-radius: var(--g-search-radius);
+  border: 1px solid var(--g-control-border);
+  background: var(--g-control-bg-strong);
+  color: var(--g-control-text);
+}
+
+.g-search__input:focus {
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-control-border));
+  box-shadow: 0 0 0 4px var(--g-control-ring);
+  background: var(--g-surface);
+}
+
+.g-search__icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--g-muted);
+}
+
+.g-search__pill {
+  position: relative;
+}
+
+/* ------------------------------ Avatars ---------------------------------- */
+.avatar {
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--g-gradient-hero);
+  color: var(--g-text-contrast);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.avatar--xl { width: 96px; height: 96px; font-size: 32px; }
+.avatar--lg { width: 64px; height: 64px; font-size: 26px; }
+.avatar--md { width: 40px; height: 40px; font-size: 18px; }
+.avatar--sm { width: 28px; height: 28px; font-size: 14px; }
+.avatar--xs { width: 22px; height: 22px; font-size: 12px; }
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ------------------------------ Badges ----------------------------------- */
+.badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.badge.text-bg-secondary {
+  background-color: color-mix(in srgb, var(--g-surface-ink) 72%, transparent) !important;
+  color: var(--g-text-contrast) !important;
+}

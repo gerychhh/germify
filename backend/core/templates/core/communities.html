@@ -18,21 +18,20 @@
   <div class="d-flex flex-column gap-3">
 
     <div class="card">
-      <form method="get" action="{% url 'communities' %}" id="communities-search-form" class="row g-2 align-items-center">
-        <div class="col-12 col-md">
+      <form method="get" action="{% url 'communities' %}" id="communities-search-form" class="g-search">
+        <div class="g-search__field g-input-icon g-search__pill">
+          <span class="g-input-icon__icon" aria-hidden="true">🔍</span>
           <input type="text" id="communities-search-input" name="q" value="{{ q|default:'' }}" placeholder="Поиск сообществ…"
-                 autocomplete="off" class="form-control">
+                 autocomplete="off" class="form-control g-search__input">
         </div>
 
-        <div class="col-12 col-md-auto d-grid d-md-block">
-          <button type="submit" class="btn btn-success" id="communities-search-btn">Найти</button>
-        </div>
+        <div class="g-search__actions">
+          <button type="submit" class="btn btn-primary" id="communities-search-btn">Найти</button>
 
-        {% if q %}
-          <div class="col-12 col-md-auto d-grid d-md-block">
+          {% if q %}
             <a href="{% url 'communities' %}" class="btn btn-outline-secondary">Сбросить</a>
-          </div>
-        {% endif %}
+          {% endif %}
+        </div>
       </form>
     </div>
 
