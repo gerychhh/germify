@@ -15,12 +15,26 @@
 {% block title %}Сообщения — Germify{% endblock %}
 
 {% block content %}
-<div class="row g-3 messages-layout">
+<div class="row g-3 messages-layout is-sidebar" id="messages-layout">
 
-    <div class="col-12 col-lg-4">
+    <div class="col-12 col-lg-4 messages-sidebar-col">
         <div class="card messages-sidebar-card d-flex flex-column">
             <div class="card-header bg-white d-flex align-items-center justify-content-between">
                 <span class="fw-semibold">Сообщения</span>
+                <div class="dropdown messages-new-dropdown">
+                    <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            title="Новый диалог или группа">
+                        <img src="{% static 'core/icons/plus.svg' %}" alt="" class="icon icon--16">
+                        <span class="d-none d-sm-inline">Новый</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'users' %}">Новый диалог</a></li>
+                        <li><a class="dropdown-item" href="{% url 'messages_group_create' %}">Групповой чат</a></li>
+                    </ul>
+                </div>
             </div>
 
             <div class="p-2">
@@ -38,7 +52,7 @@
         </div>
     </div>
 
-    <div class="col-12 col-lg-8">
+    <div class="col-12 col-lg-8 messages-chat-col">
         {# Right pane is replaced via AJAX when user clicks a dialog #}
         <div id="messages-chat-pane">
             <div class="card messages-chat-card d-flex align-items-center justify-content-center text-center p-4">

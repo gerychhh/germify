@@ -5,6 +5,19 @@
   min-height: calc(100vh - var(--g-navbar-h) - 40px);
 }
 
+.messages-sidebar-col,
+.messages-chat-col {
+  transition: opacity 0.2s ease;
+}
+
+.messages-mobile-back {
+  display: none;
+}
+
+.messages-new-dropdown .btn {
+  border-radius: 999px;
+}
+
 .messages-sidebar-card,
 .messages-chat-card {
   height: calc(100vh - var(--g-navbar-h) - 40px);
@@ -58,9 +71,37 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 }
 
 @media (max-width: 991.98px) {
+  .messages-layout {
+    min-height: calc(100vh - var(--g-navbar-h) - 24px);
+  }
+
+  .messages-sidebar-col {
+    display: block;
+  }
+
+  .messages-chat-col {
+    display: none;
+  }
+
+  .messages-layout.is-chat-open .messages-sidebar-col {
+    display: none;
+  }
+
+  .messages-layout.is-chat-open .messages-chat-col {
+    display: block;
+  }
+
   .messages-sidebar-card,
   .messages-chat-card {
-    height: auto;
+    height: calc(100vh - var(--g-navbar-h) - 24px);
+  }
+
+  .messages-chat-card {
+    border-radius: var(--g-radius);
+  }
+
+  .messages-mobile-back {
+    display: inline-flex;
   }
 }
 

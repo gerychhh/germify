@@ -36,6 +36,7 @@
 
         // If present, right-side chat pane can be replaced via AJAX (no full page reload)
         const chatPane = document.getElementById("messages-chat-pane");
+        const messagesLayout = document.getElementById("messages-layout");
 
         function setBadge(el, count) {
             if (!el) return;
@@ -62,6 +63,18 @@
                 const haystack = (item.dataset.search || "").toLowerCase();
                 item.style.display = !q || haystack.includes(q) ? "" : "none";
             });
+        }
+
+        function setLayoutMode(mode) {
+            if (!messagesLayout) return;
+            messagesLayout.dataset.view = mode;
+            messagesLayout.classList.toggle("is-chat-open", mode === "chat");
+        }
+
+        function ensureLayoutMatchesPane() {
+            if (!messagesLayout) return;
+            const hasChat = !!(chatPane && chatPane.querySelector("#messagesChatCard"));
+            setLayoutMode(hasChat ? "chat" : "sidebar");
         }
 
         // -------------------------
@@ -110,6 +123,8 @@
                     try { window.germifyDestroyThread(); } catch (e) {}
                 }
                 chatPane.innerHTML = html;
+
+                setLayoutMode("chat");
 
                 // init thread logic for newly inserted DOM
                 if (typeof window.germifyInitThread === "function") {
@@ -244,6 +259,15 @@
         // Enable SPA-like chat switching when both sidebar and right pane exist
         initAjaxChatNav();
 
+        ensureLayoutMatchesPane();
+
+        document.addEventListener("click", (ev) => {
+            const backBtn = ev.target && ev.target.closest ? ev.target.closest("#messages-back-to-list") : null;
+            if (!backBtn) return;
+            ev.preventDefault();
+            setLayoutMode("sidebar");
+        });
+
         // -------------------------
         // WebSocket primary channel
         // -------------------------
@@ -357,6 +381,8 @@
 
             const html = await resp.text();
             chatPane.innerHTML = html;
+
+            setLayoutMode("chat");
 
             // Mark active item
             setActiveDialogByHref(url);

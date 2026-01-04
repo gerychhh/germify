@@ -1,7 +1,15 @@
 {# core/partials/messages_thread_header.html #}
 {% load static %}
 
-<div class="d-flex align-items-center gap-2">
+<div class="d-flex align-items-center gap-2 flex-wrap">
+    <button type="button"
+            id="messages-back-to-list"
+            class="btn btn-sm btn-outline-secondary messages-mobile-back d-inline-flex align-items-center gap-1"
+            aria-label="К списку чатов">
+        &larr;
+        <span class="d-none d-sm-inline">Чаты</span>
+    </button>
+
     {% if other_user %}
         {% include "core/partials/avatar.html" with user_obj=other_user size="sm" %}
         <div class="d-flex flex-column">
