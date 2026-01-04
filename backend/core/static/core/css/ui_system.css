@@ -88,6 +88,12 @@ input[type="search"].form-control-sm { padding-left: 34px; }
   pointer-events: none;
 }
 
+.g-input-icon .g-input-icon__icon img {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
 /* ----------------------------- Buttons ---------------------------------- */
 .btn {
   --btn-bg: var(--g-surface);

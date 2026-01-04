@@ -76,7 +76,11 @@
 
 .profile-avatar-overlay:hover{ background: rgba(15, 23, 42, .55); }
 
-.profile-avatar-overlay__icon{ font-size: 18px; line-height: 1; }
+.profile-avatar-overlay__icon{
+  width: 20px;
+  height: 20px;
+  display: block;
+}
 
 .profile-avatar-overlay__text{ font-size: 12px; font-weight: 600; }
 
@@ -178,6 +182,11 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
 .profile-list-modal{
   border-radius: var(--g-radius);
   box-shadow: var(--g-shadow-lg);
+  overflow: hidden;
+}
+
+.profile-list-dialog{
+  max-width: min(var(--g-posts-width, 700px), calc(100vw - 24px));
 }
 
 .profile-list-search{
@@ -188,6 +197,18 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 140px;
+}
+
+.profile-list-loading{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0 8px;
+}
+
+.profile-list-sentinel{
+  height: 1px;
 }
 
 .profile-list-item{

@@ -307,17 +307,6 @@
   top: 10px;
   right: 12px;
   z-index: 999;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid var(--g-border);
-  background: color-mix(in srgb, var(--g-surface) 88%, transparent);
-  color: var(--g-text);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  line-height:1;
-  font-size: 22px;
   backdrop-filter: blur(10px);
 }
 

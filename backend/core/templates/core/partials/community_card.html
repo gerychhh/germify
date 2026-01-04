@@ -1,4 +1,5 @@
 {# Карточка сообщества для списка /communities/ #}
+{% load static %}
 
 <div class="card community-card position-relative shadow-sm border rounded-4 bg-body" data-href="{% url 'community_detail' c.slug %}">
   <div class="card-body p-3">
@@ -17,7 +18,10 @@
 
             <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small text-secondary">
               {# ✅ сначала число участников #}
-              <span class="badge text-bg-light border">👥 {{ c.members_total }}</span>
+              <span class="badge text-bg-light border d-inline-flex align-items-center gap-1">
+                <img src="{% static 'core/icons/users.svg' %}" alt="" class="icon icon--16">
+                {{ c.members_total }}
+              </span>
 
               {# затем хэштеги/slug #}
               {% if c.slug %}
