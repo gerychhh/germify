@@ -126,11 +126,23 @@ class Community(models.Model):
         membership = self.memberships.filter(user=user).first()
         role = getattr(membership, "role", "guest") if membership else "guest"
 
+        # Owners and admins всегда могут публиковать.
+        if role in {"owner", "admin"}:
+            return True
+
+        if self.post_policy != "anyone" and not membership:
+            return False
+
+        if role == "moderator":
+            perms = membership.moderator_permissions if membership else {}
+            if not perms.get("manage_posts", False):
+                return False
+
         if self.post_policy == "anyone":
             return True
         if self.post_policy == "members":
-            return role in {"member", "moderator", "admin", "owner"}
-        return role in {"moderator", "admin", "owner"}
+            return role in {"member", "moderator"}
+        return role == "moderator"
 
 
 class CommunityMembership(models.Model):

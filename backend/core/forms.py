@@ -204,8 +204,6 @@ class CommunityForm(BootstrapFormMixin, forms.ModelForm):
             "tags",
             "links",
             "rules",
-            "visibility",
-            "join_policy",
             "post_policy",
             "post_requires_approval",
             "comments_enabled",

@@ -16,6 +16,12 @@
     return '';
   }
 
+  function autoResizeTextarea(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 420)}px`;
+  }
+
   function renderMemberCard(m) {
     const badge = `<span class="badge text-bg-light border">${m.role_label || m.role || ''}</span>`;
     const avatarLetter = (m.display_name || m.username || '?')[0].toUpperCase();
@@ -89,6 +95,8 @@
     const membersCountEl = document.getElementById('communityMembersCount');
     const shareButtons = document.querySelectorAll('[data-share-trigger]');
     const moderatorRequestBtn = document.querySelector('[data-moderator-request]');
+    const postForm = document.querySelector('.community-post-form');
+    const postTextarea = postForm?.querySelector('.community-post-text');
 
     shareButtons.forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -112,6 +120,17 @@
         }
       });
     });
+
+    if (postTextarea) {
+      autoResizeTextarea(postTextarea);
+      postTextarea.addEventListener('input', () => autoResizeTextarea(postTextarea));
+      postTextarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          postForm?.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      });
+    }
 
     if (moderatorRequestBtn && moderatorRequestUrl) {
       moderatorRequestBtn.addEventListener('click', async () => {

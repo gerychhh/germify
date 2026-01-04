@@ -2211,8 +2211,6 @@ def community_settings_api(request, slug):
             "tags": community.tags,
             "links": community.links,
             "rules": community.rules,
-            "visibility": community.visibility,
-            "join_policy": community.join_policy,
             "post_policy": community.post_policy,
             "post_requires_approval": community.post_requires_approval,
             "comments_enabled": community.comments_enabled,
