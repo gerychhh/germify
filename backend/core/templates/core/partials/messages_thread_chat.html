@@ -1,3 +1,4 @@
+{% load static %}
 {# core/partials/messages_thread_chat.html #}
 
 <div id="messagesChatCard"
@@ -27,7 +28,7 @@
             class="scroll-bottom-btn hidden"
             aria-label="Прокрутить вниз"
             title="Вниз">
-        ⬇
+        <img src="{% static 'core/icons/arrow-down.svg' %}" alt="" class="icon icon--16" aria-hidden="true">
         <span id="scroll-bottom-unread" class="scroll-bottom-unread hidden">0</span>
     </button>
 

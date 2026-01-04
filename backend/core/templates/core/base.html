@@ -93,7 +93,7 @@
 
             <div class="d-flex align-items-center gap-2">
                 <button class="btn btn-outline-secondary btn-sm g-icon-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#uiSettings" aria-controls="uiSettings" title="Настройки интерфейса">
-                    ⚙️
+                    <img src="{% static 'core/icons/gear.svg' %}" alt="" class="icon icon--18" aria-hidden="true">
                 </button>
 
                 {% if user.is_authenticated %}
