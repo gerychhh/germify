@@ -6,7 +6,7 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="{% static 'core/css/pages/posts/posts.css' %}?v=27">
-  <link rel="stylesheet" href="{% static 'core/css/pages/community_detail/community_detail.css' %}?v=6">
+  <link rel="stylesheet" href="{% static 'core/css/pages/community_detail/community_detail.css' %}?v=7">
 {% endblock %}
 
 {% block content %}
@@ -20,15 +20,49 @@
 
   <div class="community-hero g-glass card border-0 shadow-sm overflow-hidden">
     <div class="community-cover" style="{% if community.cover %}background-image:url('{{ community.cover.url }}');{% endif %}"></div>
+    <div class="community-actions dropdown">
+      <button class="btn btn-outline-secondary rounded-circle community-actions-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия с сообществом">
+        <span class="icon">⋯</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+        {% if user.is_authenticated %}
+          {% if is_member %}
+            <li>
+              <form method="post" action="{% url 'community_leave' community.slug %}" class="m-0 community-membership-form" data-action="leave">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item">Выйти</button>
+              </form>
+            </li>
+          {% elif join_request and join_request.status == 'pending' %}
+            <li><span class="dropdown-item disabled">Запрос отправлен</span></li>
+          {% else %}
+            <li>
+              <form method="post" action="{% url 'community_join' community.slug %}" class="m-0 community-membership-form" data-action="join">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item">Присоединиться</button>
+              </form>
+            </li>
+          {% endif %}
+        {% else %}
+          <li><a href="{% url 'login' %}" class="dropdown-item">Войти, чтобы вступить</a></li>
+        {% endif %}
+        <li><hr class="dropdown-divider"></li>
+        <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#participantsModal">Участники</button></li>
+        {% if is_admin %}
+          <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#communitySettingsModal">Управление</button></li>
+        {% endif %}
+        <li><button type="button" class="dropdown-item" data-share-trigger>Поделиться</button></li>
+      </ul>
+    </div>
     <div class="card-body">
       <div class="d-flex flex-column flex-md-row gap-3 align-items-start">
         <div class="d-flex align-items-center gap-3 flex-grow-1">
           <div class="community-avatar-wrap">
-            <div class="community-avatar">
+            <div class="avatar avatar--xl community-avatar">
               {% if community.icon %}
                 <img src="{{ community.icon.url }}" alt="{{ community.name }}">
               {% else %}
-                <div class="community-avatar-fallback">{{ community.name|default:community.slug|slice:":1"|upper }}</div>
+                <span class="avatar-initial">{{ community.name|default:community.slug|slice:":1"|upper }}</span>
               {% endif %}
             </div>
             <span class="community-avatar-badge">{{ community.slug }}</span>
@@ -67,40 +101,6 @@
               <p class="mb-0 mt-2 text-body">{{ community.description }}</p>
             {% endif %}
           </div>
-        </div>
-        <div class="community-actions dropdown ms-md-auto">
-          <button class="btn btn-outline-secondary rounded-circle community-actions-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия с сообществом">
-            <span class="icon">⋯</span>
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-            {% if user.is_authenticated %}
-              {% if is_member %}
-                <li>
-                  <form method="post" action="{% url 'community_leave' community.slug %}" class="m-0 community-membership-form" data-action="leave">
-                    {% csrf_token %}
-                    <button type="submit" class="dropdown-item">Выйти</button>
-                  </form>
-                </li>
-              {% elif join_request and join_request.status == 'pending' %}
-                <li><span class="dropdown-item disabled">Запрос отправлен</span></li>
-              {% else %}
-                <li>
-                  <form method="post" action="{% url 'community_join' community.slug %}" class="m-0 community-membership-form" data-action="join">
-                    {% csrf_token %}
-                    <button type="submit" class="dropdown-item">Присоединиться</button>
-                  </form>
-                </li>
-              {% endif %}
-            {% else %}
-              <li><a href="{% url 'login' %}" class="dropdown-item">Войти, чтобы вступить</a></li>
-            {% endif %}
-            <li><hr class="dropdown-divider"></li>
-            <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#participantsModal">Участники</button></li>
-            {% if is_admin %}
-              <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#communitySettingsModal">Управление</button></li>
-            {% endif %}
-            <li><button type="button" class="dropdown-item" data-share-trigger>Поделиться</button></li>
-          </ul>
         </div>
       </div>
     </div>
@@ -437,5 +437,5 @@
   </div>
 </div>
 
-<script src="{% static 'core/js/community_detail.js' %}?v=5"></script>
+  <script src="{% static 'core/js/community_detail.js' %}?v=6"></script>
 {% endblock %}

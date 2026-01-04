@@ -18,9 +18,10 @@
 
   function renderMemberCard(m) {
     const badge = `<span class="badge text-bg-light border">${m.role_label || m.role || ''}</span>`;
+    const avatarLetter = (m.display_name || m.username || '?')[0].toUpperCase();
     const avatar = m.avatar_url
-      ? `<img src="${m.avatar_url}" alt="${m.display_name}" class="avatar avatar-sm">`
-      : `<div class="avatar avatar-sm avatar-fallback">${(m.display_name || m.username || '?')[0].toUpperCase()}</div>`;
+      ? `<span class="avatar avatar--sm"><img src="${m.avatar_url}" alt="${m.display_name}"></span>`
+      : `<span class="avatar avatar--sm"><span class="avatar-initial">${avatarLetter}</span></span>`;
     return `<div class="community-member" data-member-item>
       <div class="d-flex align-items-center gap-2">
         <div class="avatar-stack">${avatar}</div>
@@ -36,9 +37,10 @@
   }
 
   function renderJoinRequest(item, approveUrl, denyUrl) {
+    const avatarLetter = (item.display_name || item.username || '?')[0].toUpperCase();
     const avatar = item.avatar_url
-      ? `<img src="${item.avatar_url}" alt="${item.display_name}" class="avatar avatar-sm">`
-      : `<div class="avatar avatar-sm avatar-fallback">${(item.display_name || item.username || '?')[0].toUpperCase()}</div>`;
+      ? `<span class="avatar avatar--sm"><img src="${item.avatar_url}" alt="${item.display_name}"></span>`
+      : `<span class="avatar avatar--sm"><span class="avatar-initial">${avatarLetter}</span></span>`;
     return `<div class="d-flex align-items-center gap-2" data-request-id="${item.id}">
       ${avatar}
       <div class="flex-grow-1 min-w-0">
