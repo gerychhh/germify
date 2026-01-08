@@ -8,6 +8,11 @@ html, body{
   height: 100%;
 }
 
+.app-body{
+  position: relative;
+  z-index: 1;
+}
+
 body{
   font-family: var(--g-font-family);
   font-size: var(--g-font-size);
@@ -21,13 +26,7 @@ body{
   z-index: 0;
 }
 
-.app-body{
-  min-height: 100vh;
-  background: var(--g-bg);
-  color: var(--g-text);
-}
-
-.app-body::before{
+body::before{
   content: "";
   position: fixed;
   inset: 0;
@@ -37,6 +36,13 @@ body{
     radial-gradient(900px 520px at 12% 12%, color-mix(in srgb, var(--g-primary) 14%, transparent), transparent 68%),
     radial-gradient(820px 560px at 88% 18%, color-mix(in srgb, var(--g-primary-2) 12%, transparent), transparent 66%),
     radial-gradient(760px 620px at 50% 100%, color-mix(in srgb, var(--g-primary-4) 10%, transparent), transparent 70%);
+  opacity: 0.9;
+}
+
+.app-body{
+  min-height: 100vh;
+  background: transparent;
+  color: var(--g-text);
 }
 
 .app-body > *{
@@ -82,6 +88,7 @@ a:hover{ text-decoration: underline; }
   border-color: var(--g-border);
   backdrop-filter: blur(var(--g-blur));
   -webkit-backdrop-filter: blur(var(--g-blur));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .g-border{
@@ -137,6 +144,7 @@ a:hover{ text-decoration: underline; }
   background: color-mix(in srgb, var(--g-surface) 90%, transparent);
   border: 1px solid var(--g-border);
   color: var(--g-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .g-input::placeholder{
@@ -148,6 +156,7 @@ a:hover{ text-decoration: underline; }
   background: color-mix(in srgb, var(--g-surface) 90%, transparent);
   border: 1px solid var(--g-border);
   color: var(--g-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .form-control::placeholder{
@@ -178,9 +187,38 @@ html[data-glass="off"] .form-select{
 .table{
   background: color-mix(in srgb, var(--g-surface) 78%, transparent);
   border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
-  box-shadow: var(--g-shadow-sm);
+  box-shadow: var(--g-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(var(--g-blur));
   -webkit-backdrop-filter: blur(var(--g-blur));
+  position: relative;
+  overflow: hidden;
+}
+
+.g-glass-surface:hover,
+.card:hover,
+.list-group-item:hover{
+  background: color-mix(in srgb, var(--g-surface) 84%, transparent);
+  border-color: color-mix(in srgb, var(--g-border) 60%, var(--g-glass-border));
+  box-shadow: var(--g-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px color-mix(in srgb, var(--g-primary) 20%, transparent);
+}
+
+.g-glass-surface::before,
+.card::before,
+.dropdown-menu::before,
+.modal-content::before,
+.toast::before,
+.popover::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(160deg,
+      rgba(255, 255, 255, 0.14),
+      rgba(255, 255, 255, 0.02) 42%,
+      transparent 60%);
+  opacity: 0.6;
 }
 
 html[data-glass="off"] .g-glass{
@@ -208,8 +246,18 @@ html[data-glass="off"] .list-group-item,
 html[data-glass="off"] .accordion-item,
 html[data-glass="off"] .table{
   background: var(--g-surface-solid);
+  box-shadow: var(--g-shadow-sm);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+
+html[data-glass="off"] .g-glass-surface::before,
+html[data-glass="off"] .card::before,
+html[data-glass="off"] .dropdown-menu::before,
+html[data-glass="off"] .modal-content::before,
+html[data-glass="off"] .toast::before,
+html[data-glass="off"] .popover::before{
+  opacity: 0.18;
 }
 
 /* Bootstrap components modernization */
