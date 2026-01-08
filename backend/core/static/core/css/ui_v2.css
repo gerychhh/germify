@@ -51,7 +51,41 @@ a:hover{ text-decoration: underline; }
   -webkit-backdrop-filter: blur(var(--g-blur));
 }
 
+.g-glass-surface,
+.card,
+.dropdown-menu,
+.g-offcanvas,
+.modal-content,
+.toast,
+.popover,
+.list-group,
+.list-group-item,
+.accordion-item,
+.table{
+  background: var(--g-surface);
+  border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
+  box-shadow: var(--g-shadow-sm);
+  backdrop-filter: blur(var(--g-blur));
+  -webkit-backdrop-filter: blur(var(--g-blur));
+}
+
 html[data-glass="off"] .g-glass{
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-glass="off"] .g-glass-surface,
+html[data-glass="off"] .card,
+html[data-glass="off"] .dropdown-menu,
+html[data-glass="off"] .g-offcanvas,
+html[data-glass="off"] .modal-content,
+html[data-glass="off"] .toast,
+html[data-glass="off"] .popover,
+html[data-glass="off"] .list-group,
+html[data-glass="off"] .list-group-item,
+html[data-glass="off"] .accordion-item,
+html[data-glass="off"] .table{
+  background: var(--g-surface-solid);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -237,13 +271,6 @@ html[data-glass="off"] .navbar{
 
 .card{
   border-radius: var(--g-radius-lg);
-  border: 1px solid var(--g-border);
-  background: var(--g-surface);
-  box-shadow: var(--g-shadow-sm);
-}
-
-html[data-glass="off"] .card{
-  background: var(--g-surface-solid);
 }
 
 .card .card-header{
@@ -253,17 +280,7 @@ html[data-glass="off"] .card{
 
 .dropdown-menu{
   border-radius: var(--g-radius-lg);
-  border: 1px solid var(--g-border);
-  background: var(--g-surface);
   box-shadow: var(--g-shadow-md);
-  backdrop-filter: blur(var(--g-blur));
-  -webkit-backdrop-filter: blur(var(--g-blur));
-}
-
-html[data-glass="off"] .dropdown-menu{
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background: var(--g-surface-solid);
 }
 
 /* Offcanvas */
