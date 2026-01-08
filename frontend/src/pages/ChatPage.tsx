@@ -3,7 +3,7 @@ import { ChatComposer } from "../components/chat/ChatComposer";
 import { GlassCard } from "../components/chat/GlassCard";
 import { IconBtn } from "../components/chat/IconBtn";
 import { cn } from "../utils/cn";
-import { GLASS_BORDER, TEXT_MUTED } from "../ui/glassTokens";
+import { GLASS_BAR } from "../ui/glassTokens";
 
 const messages = [
   {
@@ -38,17 +38,15 @@ export const ChatPage = () => (
       <GlassCard className="w-full">
         <div
           className={cn(
-            "flex items-center justify-between gap-4 px-4 py-3",
-            GLASS_BORDER,
-            "border-b",
-            "bg-black/20"
+            "flex items-center justify-between gap-4 px-4 py-3 border-b",
+            GLASS_BAR
           )}
         >
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 rounded-full bg-white/10" />
             <div>
               <div className="text-sm font-semibold">Алиса Воронова</div>
-              <div className={cn("text-xs", TEXT_MUTED)}>в сети</div>
+              <div className="text-xs text-white/55">в сети</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -86,7 +84,7 @@ export const ChatPage = () => (
           ))}
         </div>
 
-        <div className={cn("px-4 py-3", GLASS_BORDER, "border-t", "bg-black/20")}>
+        <div className={cn("px-4 py-3 border-t", GLASS_BAR)}>
           <ChatComposer />
         </div>
       </GlassCard>

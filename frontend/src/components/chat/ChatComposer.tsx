@@ -1,24 +1,18 @@
 import { cn } from "../../utils/cn";
-import {
-  COMPOSER_INPUT,
-  COMPOSER_ROW,
-  COMPOSER_SEND,
-  PLACEHOLDER,
-} from "../../ui/glassTokens";
+import { INPUT, INPUT_ROW, SEND_BTN } from "../../ui/glassTokens";
 
 type ChatComposerProps = {
   placeholder?: string;
 };
 
 export const ChatComposer = ({ placeholder = "Сообщение" }: ChatComposerProps) => (
-  <div className={cn(COMPOSER_ROW, "flex items-center gap-2")}
-  >
+  <div className={cn(INPUT_ROW)}>
     <input
       type="text"
       placeholder={placeholder}
-      className={cn(COMPOSER_INPUT, PLACEHOLDER)}
+      className={cn(INPUT)}
     />
-    <button type="button" className={COMPOSER_SEND}>
+    <button type="button" className={SEND_BTN}>
       Отправить
     </button>
   </div>
