@@ -1,6 +1,6 @@
 {% load static %}
 <!doctype html>
-<html lang="ru" data-theme="light" data-theme-pref="light" data-scale="md" data-font="system" data-accent="blue" data-glass="on">
+<html lang="ru" data-theme="dark" data-theme-pref="dark" data-scale="md" data-font="system" data-accent="blue" data-glass="on">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,7 +10,7 @@
       (function () {
         try {
           const root = document.documentElement;
-          const prefTheme = localStorage.getItem("germify_ui_theme") || "light";
+          const prefTheme = localStorage.getItem("germify_ui_theme") || "dark";
           const scale = localStorage.getItem("germify_ui_scale") || "md";
           const font = localStorage.getItem("germify_ui_font") || "system";
           const accent = localStorage.getItem("germify_ui_accent") || "blue";

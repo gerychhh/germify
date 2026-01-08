@@ -13,9 +13,9 @@ body{
   font-size: var(--g-font-size);
   line-height: var(--g-line-height);
   background:
-    radial-gradient(1200px 720px at 15% 0%, color-mix(in srgb, var(--g-primary) 18%, transparent), transparent 64%),
-    radial-gradient(960px 640px at 85% 18%, color-mix(in srgb, var(--g-primary-2) 14%, transparent), transparent 58%),
-    radial-gradient(900px 700px at 50% 110%, color-mix(in srgb, var(--g-primary-4) 14%, transparent), transparent 62%),
+    radial-gradient(1200px 720px at 15% 0%, color-mix(in srgb, var(--g-primary) 10%, transparent), transparent 64%),
+    radial-gradient(960px 640px at 85% 18%, color-mix(in srgb, var(--g-primary-2) 8%, transparent), transparent 58%),
+    radial-gradient(900px 700px at 50% 110%, color-mix(in srgb, var(--g-primary-4) 8%, transparent), transparent 62%),
     var(--g-bg);
   color: var(--g-text);
 }

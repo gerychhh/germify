@@ -40,23 +40,23 @@
   --g-space-6: 24px;
 
   /* ---- effects ---- */
-  --g-blur: 18px;
-  --g-shadow-sm: 0 1px 2px rgba(15,23,42,.08);
-  --g-shadow-md: 0 10px 30px rgba(15,23,42,.10);
-  --g-shadow-lg: 0 24px 60px rgba(15,23,42,.14);
+  --g-blur: 28px;
+  --g-shadow-sm: 0 2px 6px rgba(0, 0, 0, .28);
+  --g-shadow-md: 0 14px 40px rgba(0, 0, 0, .35);
+  --g-shadow-lg: 0 26px 70px rgba(0, 0, 0, .42);
 
-  /* ---- base palette (light) ---- */
-  --g-bg: #eef2f8;
-  --g-surface-solid: #ffffff;
-  --g-surface-glass: rgba(255,255,255,.86);
+  /* ---- base palette (liquid glass dark) ---- */
+  --g-bg: #0a0b0f;
+  --g-surface-solid: #101218;
+  --g-surface-glass: rgba(20, 22, 30, .72);
   --g-surface: var(--g-surface-glass);
-  --g-surface-2: rgba(255,255,255,.70);
-  --g-bg-soft: #f3f4f9;
+  --g-surface-2: rgba(20, 22, 30, .52);
+  --g-bg-soft: #0f141b;
 
-  --g-text: #0b1220;
-  --g-muted: #4b5563;
-  --g-border: rgba(15,23,42,.12);
-  --g-glass-border: rgba(255,255,255,.35);
+  --g-text: #f4f6fb;
+  --g-muted: rgba(205, 212, 225, .78);
+  --g-border: rgba(255, 255, 255, .10);
+  --g-glass-border: rgba(255, 255, 255, .22);
 
   /* ---- semantic neutrals (для фон1/фон2/границы/тексты) ---- */
   --g-surface-strong: #0b1120;
@@ -114,9 +114,9 @@
 
   /* ---- scrollbar ---- */
   --sb-size: 10px;
-  --sb-track: rgba(15,23,42,.08);
-  --sb-thumb: rgba(15,23,42,.28);
-  --sb-thumb-hover: rgba(15,23,42,.38);
+  --sb-track: rgba(255, 255, 255, .06);
+  --sb-thumb: rgba(255, 255, 255, .22);
+  --sb-thumb-hover: rgba(255, 255, 255, .35);
 }
 
 @media (max-width: 991.98px) {
@@ -151,17 +151,17 @@ html[data-glass="off"]{
 
 /* ---- dark theme ---- */
 html[data-theme="dark"]{
-  --g-bg: #0a101c;
-  --g-bg-soft: #0c1323;
-  --g-surface-solid: #0f172a;
-  --g-surface-glass: rgba(18,26,42,.76);
+  --g-bg: #050608;
+  --g-bg-soft: #090c11;
+  --g-surface-solid: #0b0d12;
+  --g-surface-glass: rgba(12, 14, 20, .62);
   --g-surface: var(--g-surface-glass);
-  --g-surface-2: rgba(18,26,42,.62);
+  --g-surface-2: rgba(12, 14, 20, .48);
 
-  --g-text: #e8edf5;
-  --g-muted: rgba(226,232,240,.78);
-  --g-border: rgba(232,238,248,.18);
-  --g-glass-border: rgba(255,255,255,.14);
+  --g-text: #f1f5fb;
+  --g-muted: rgba(198, 206, 222, .72);
+  --g-border: rgba(255, 255, 255, .12);
+  --g-glass-border: rgba(255, 255, 255, .18);
 
   --g-surface-strong: #0b1120;
   --g-surface-stronger: #020617;
