@@ -18,14 +18,14 @@
 
             <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small text-secondary">
               {# ✅ сначала число участников #}
-              <span class="badge text-bg-light border d-inline-flex align-items-center gap-1">
+              <span class="badge g-badge-soft border d-inline-flex align-items-center gap-1">
                 <img src="{% static 'core/icons/users.svg' %}" alt="" class="icon icon--16">
                 {{ c.members_total }}
               </span>
 
               {# затем хэштеги/slug #}
               {% if c.slug %}
-                <span class="badge text-bg-light border">#{{ c.slug }}</span>
+                <span class="badge g-badge-soft border">#{{ c.slug }}</span>
               {% endif %}
             </div>
           </div>

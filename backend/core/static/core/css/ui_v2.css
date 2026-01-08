@@ -13,17 +13,35 @@ body{
   font-size: var(--g-font-size);
   line-height: var(--g-line-height);
   background:
-    radial-gradient(1200px 720px at 15% 0%, color-mix(in srgb, var(--g-primary) 10%, transparent), transparent 64%),
-    radial-gradient(960px 640px at 85% 18%, color-mix(in srgb, var(--g-primary-2) 8%, transparent), transparent 58%),
-    radial-gradient(900px 700px at 50% 110%, color-mix(in srgb, var(--g-primary-4) 8%, transparent), transparent 62%),
-    var(--g-bg);
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--g-bg) 94%, transparent),
+      var(--g-bg));
   color: var(--g-text);
+  position: relative;
+  z-index: 0;
 }
 
 .app-body{
   min-height: 100vh;
   background: var(--g-bg);
   color: var(--g-text);
+}
+
+.app-body::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 12% 12%, color-mix(in srgb, var(--g-primary) 14%, transparent), transparent 68%),
+    radial-gradient(820px 560px at 88% 18%, color-mix(in srgb, var(--g-primary-2) 12%, transparent), transparent 66%),
+    radial-gradient(760px 620px at 50% 100%, color-mix(in srgb, var(--g-primary-4) 10%, transparent), transparent 70%);
+}
+
+.app-body > *{
+  position: relative;
+  z-index: 1;
 }
 
 a{ text-decoration: none; }
@@ -51,6 +69,102 @@ a:hover{ text-decoration: underline; }
   -webkit-backdrop-filter: blur(var(--g-blur));
 }
 
+.g-surface{
+  background: color-mix(in srgb, var(--g-surface) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
+  box-shadow: var(--g-shadow-sm);
+  backdrop-filter: blur(var(--g-blur));
+  -webkit-backdrop-filter: blur(var(--g-blur));
+}
+
+.g-bar{
+  background: color-mix(in srgb, var(--g-surface) 86%, transparent);
+  border-color: var(--g-border);
+  backdrop-filter: blur(var(--g-blur));
+  -webkit-backdrop-filter: blur(var(--g-blur));
+}
+
+.g-border{
+  border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
+}
+
+.g-btn{
+  background: color-mix(in srgb, var(--g-surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
+  color: var(--g-text);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.g-btn:hover{
+  background: color-mix(in srgb, var(--g-surface) 94%, transparent);
+  border-color: color-mix(in srgb, var(--g-border) 60%, var(--g-glass-border));
+}
+
+.btn-light{
+  background: color-mix(in srgb, var(--g-surface) 90%, transparent);
+  border-color: var(--g-border);
+  color: var(--g-text);
+}
+
+.btn-light:hover{
+  background: color-mix(in srgb, var(--g-surface) 94%, transparent);
+  border-color: color-mix(in srgb, var(--g-border) 60%, var(--g-glass-border));
+}
+
+.btn-outline-secondary{
+  background: color-mix(in srgb, var(--g-surface) 88%, transparent);
+  border-color: color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
+  color: var(--g-text);
+}
+
+.btn-outline-secondary:hover{
+  background: color-mix(in srgb, var(--g-surface) 94%, transparent);
+  border-color: color-mix(in srgb, var(--g-border) 60%, var(--g-glass-border));
+}
+
+.btn-outline-primary{
+  background: color-mix(in srgb, var(--g-primary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+  color: var(--g-primary);
+}
+
+.btn-outline-primary:hover{
+  background: color-mix(in srgb, var(--g-primary) 16%, transparent);
+  border-color: color-mix(in srgb, var(--g-primary) 70%, var(--g-border));
+}
+
+.g-input{
+  background: color-mix(in srgb, var(--g-surface) 90%, transparent);
+  border: 1px solid var(--g-border);
+  color: var(--g-text);
+}
+
+.g-input::placeholder{
+  color: var(--g-muted);
+}
+
+.form-control,
+.form-select{
+  background: color-mix(in srgb, var(--g-surface) 90%, transparent);
+  border: 1px solid var(--g-border);
+  color: var(--g-text);
+}
+
+.form-control::placeholder{
+  color: var(--g-muted);
+}
+
+.form-control:focus,
+.form-select:focus{
+  border-color: color-mix(in srgb, var(--g-primary) 35%, var(--g-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-primary) 20%, transparent);
+}
+
+html[data-glass="off"] .form-control,
+html[data-glass="off"] .form-select{
+  background: var(--g-surface-solid);
+}
+
 .g-glass-surface,
 .card,
 .dropdown-menu,
@@ -62,7 +176,7 @@ a:hover{ text-decoration: underline; }
 .list-group-item,
 .accordion-item,
 .table{
-  background: var(--g-surface);
+  background: color-mix(in srgb, var(--g-surface) 78%, transparent);
   border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
   box-shadow: var(--g-shadow-sm);
   backdrop-filter: blur(var(--g-blur));
@@ -70,6 +184,14 @@ a:hover{ text-decoration: underline; }
 }
 
 html[data-glass="off"] .g-glass{
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-glass="off"] .g-surface,
+html[data-glass="off"] .g-bar,
+html[data-glass="off"] .g-input{
+  background: var(--g-surface-solid);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -92,7 +214,7 @@ html[data-glass="off"] .table{
 
 /* Bootstrap components modernization */
 .navbar{
-  background: var(--g-surface) !important;
+  background: color-mix(in srgb, var(--g-surface) 86%, transparent) !important;
   border-bottom: 1px solid var(--g-border) !important;
   box-shadow: var(--g-shadow-sm) !important;
   backdrop-filter: blur(var(--g-blur));
@@ -100,7 +222,7 @@ html[data-glass="off"] .table{
 }
 
 .g-navbar{
-  background: var(--g-surface) !important;
+  background: color-mix(in srgb, var(--g-surface) 86%, transparent) !important;
   border-bottom: 1px solid var(--g-border) !important;
   box-shadow: var(--g-shadow-sm) !important;
   color: var(--g-text);
@@ -184,11 +306,17 @@ html[data-theme="dark"] .g-navbar .navbar-toggler-icon{
 }
 
 .g-navbar .dropdown-menu{
-  background: var(--g-surface);
+  background: color-mix(in srgb, var(--g-surface) 86%, transparent);
 }
 
 html[data-glass="off"] .navbar{
   background: var(--g-surface-solid) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-glass="off"] .g-bottom-nav{
+  background: var(--g-surface-solid);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -203,9 +331,11 @@ html[data-glass="off"] .navbar{
   position: fixed;
   inset: auto 0 0 0;
   height: var(--g-bottomnav-h);
-  background: var(--g-surface);
+  background: color-mix(in srgb, var(--g-surface) 86%, transparent);
   border-top: 1px solid var(--g-border);
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(var(--g-blur));
+  -webkit-backdrop-filter: blur(var(--g-blur));
   display: none;
   z-index: 10;
 }
@@ -263,6 +393,12 @@ html[data-glass="off"] .navbar{
   padding: 0 6px;
 }
 
+.g-badge-soft{
+  background: color-mix(in srgb, var(--g-surface) 88%, transparent);
+  color: var(--g-text);
+  border: 1px solid var(--g-border);
+}
+
 @media (max-width: 991.98px) {
   .g-bottom-nav {
     display: block;
@@ -273,9 +409,20 @@ html[data-glass="off"] .navbar{
   border-radius: var(--g-radius-lg);
 }
 
-.card .card-header{
-  background: transparent;
+.card .card-header,
+.card .card-footer{
+  background: color-mix(in srgb, var(--g-surface) 86%, transparent);
   border-bottom: 1px solid var(--g-border);
+}
+
+.card .card-footer{
+  border-top: 1px solid var(--g-border);
+  border-bottom: 0;
+}
+
+html[data-glass="off"] .card .card-header,
+html[data-glass="off"] .card .card-footer{
+  background: var(--g-surface-solid);
 }
 
 .dropdown-menu{

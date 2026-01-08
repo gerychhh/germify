@@ -224,7 +224,7 @@
                     <div class="flex-grow-1 min-w-0">
                       <div class="d-flex align-items-center gap-2">
                         <a href="{% url 'user_profile' m.user.username %}" class="fw-semibold text-decoration-none text-truncate">{{ m.user.display_name|default:m.user.username }}</a>
-                        <span class="badge text-bg-light border">{{ m.role_label }}</span>
+                        <span class="badge g-badge-soft border">{{ m.role_label }}</span>
                       </div>
                       <div class="small text-secondary">@{{ m.user.username }}</div>
                     </div>
@@ -252,7 +252,7 @@
       <div class="modal-body">
         <div class="d-flex align-items-center gap-2 mb-3">
           <input type="search" class="form-control" id="participantsSearch" placeholder="Поиск участников..." aria-label="Поиск участников">
-          <span class="badge text-bg-light border" id="participantsTotal">{{ members_total }}</span>
+          <span class="badge g-badge-soft border" id="participantsTotal">{{ members_total }}</span>
         </div>
         <div id="participantsList" class="d-flex flex-column gap-2">
           {% include "core/partials/community_members_chunk.html" with memberships=memberships %}
