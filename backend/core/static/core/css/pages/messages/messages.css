@@ -26,6 +26,56 @@ body.messages-page main.container > .messages-layout {
   min-height: 0;
 }
 
+/* Messages glass tokens */
+body.messages-page .msg-glass-surface {
+  background: var(--g-surface);
+  border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
+  box-shadow: var(--g-shadow-sm);
+  backdrop-filter: blur(var(--g-blur));
+  -webkit-backdrop-filter: blur(var(--g-blur));
+}
+
+body.messages-page .msg-glass-bar {
+  background: color-mix(in srgb, var(--g-surface) 88%, transparent);
+  border-color: var(--g-border);
+  backdrop-filter: blur(var(--g-blur));
+  -webkit-backdrop-filter: blur(var(--g-blur));
+}
+
+html[data-glass="off"] body.messages-page .msg-glass-surface,
+html[data-glass="off"] body.messages-page .msg-glass-bar {
+  background: var(--g-surface-solid);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.messages-page .msg-glass-input {
+  background: color-mix(in srgb, var(--g-surface) 90%, transparent);
+  border: 1px solid var(--g-border);
+  color: var(--g-text);
+}
+
+body.messages-page .msg-glass-input::placeholder {
+  color: var(--g-muted);
+}
+
+body.messages-page .msg-icon-btn {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
+  background: color-mix(in srgb, var(--g-surface) 90%, transparent);
+  color: var(--g-text);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+body.messages-page .msg-icon-btn:hover {
+  background: color-mix(in srgb, var(--g-surface) 94%, transparent);
+  border-color: color-mix(in srgb, var(--g-border) 60%, var(--g-glass-border));
+}
+
+body.messages-page .msg-icon-btn:active {
+  background: color-mix(in srgb, var(--g-surface) 96%, transparent);
+}
+
 .messages-layout {
   min-height: calc(100dvh - var(--g-navbar-h));
 }
@@ -49,6 +99,12 @@ body.messages-page main.container > .messages-layout {
   min-height: calc(100dvh - var(--g-navbar-h));
 }
 
+.messages-sidebar-card .card-header,
+.messages-chat-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--g-border);
+}
+
 /* Composer */
 .messages-form {
   --messages-input-size: 44px;
@@ -56,6 +112,8 @@ body.messages-page main.container > .messages-layout {
 
 .messages-composer-row {
   align-items: stretch !important;
+  padding: 6px;
+  border-radius: 16px;
 }
 
 .messages-form textarea.form-control {
@@ -63,10 +121,13 @@ body.messages-page main.container > .messages-layout {
   min-height: var(--messages-input-size) !important;
   max-height: var(--messages-input-size) !important;
   resize: none;
-  padding: 10px 12px;
+  padding: 8px 10px;
   box-sizing: border-box;
   line-height: 1.35;
   margin: 0;
+  border: 1px solid var(--g-border);
+  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  color: var(--g-text);
 }
 
 @media (max-width: 575.98px) {
@@ -88,6 +149,7 @@ body.messages-page main.container > .messages-layout {
 
 .messages-composer {
   border-top: 1px solid var(--g-border);
+  padding: 10px 12px;
 }
 
 .messages-list {
@@ -188,15 +250,15 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
     position: sticky;
     top: 0;
     z-index: 5;
-    background: var(--g-surface);
+    background: color-mix(in srgb, var(--g-surface) 88%, transparent);
   }
 
   .messages-composer {
     position: sticky;
     bottom: calc(var(--g-bottomnav-h) + env(safe-area-inset-bottom));
     z-index: 5;
-    background: var(--g-surface);
-    box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.08);
+    background: color-mix(in srgb, var(--g-surface) 88%, transparent);
+    box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.16);
   }
 
   .messages-thread-members,
@@ -221,7 +283,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border-radius: calc(var(--g-radius) / 2);
   border: 1px solid transparent;
   background: transparent;
@@ -229,7 +291,8 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
 /* Active dialog when switching chats without full page reload */
 .dialog-item.is-active {
-  background: rgba(0, 0, 0, 0.04);
+  background: color-mix(in srgb, var(--g-primary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--g-primary) 20%, var(--g-border));
 }
 
 .dialog-item.is-active .dialog-main-link {
@@ -237,12 +300,12 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 }
 
 .dialog-item:hover {
-  background: var(--g-surface-2);
+  background: color-mix(in srgb, var(--g-surface) 88%, transparent);
 }
 
 .dialog-item.has-unread {
-  border-color: rgba(var(--g-primary-rgb), 0.25);
-  background: rgba(var(--g-primary-rgb), 0.04);
+  border-color: color-mix(in srgb, var(--g-primary) 35%, var(--g-border));
+  background: color-mix(in srgb, var(--g-primary) 10%, transparent);
 }
 
 .dialog-main-link {
@@ -321,7 +384,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   font-size: 18px;
   line-height: 1;
 }
-.dialog-menu-toggle:hover { background: var(--g-surface-2); color: var(--g-text); }
+.dialog-menu-toggle:hover { background: color-mix(in srgb, var(--g-surface) 88%, transparent); color: var(--g-text); }
 
 .dialog-menu {
   position: absolute;
@@ -329,7 +392,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   top: 28px;
   min-width: 160px;
   background: var(--g-surface);
-  border: 1px solid var(--g-border);
+  border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
   border-radius: calc(var(--g-radius) / 2);
   padding: 6px 0;
   box-shadow: var(--g-shadow-sm);
@@ -348,7 +411,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   text-align: left;
   cursor: pointer;
 }
-.dialog-menu-item:hover { background: var(--g-surface-2); }
+.dialog-menu-item:hover { background: color-mix(in srgb, var(--g-surface) 88%, transparent); }
 .dialog-menu-item--delete { color: var(--g-danger-strong); }
 
 /* Чат */
@@ -356,7 +419,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 .messages-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   overflow-x: hidden !important;
 }
 
@@ -382,17 +445,18 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   max-width: min(560px, 76%);
   min-width: 0;
   border-radius: 18px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   font-size: 13px;
   line-height: 1.45;
-  border: 1px solid var(--g-border);
-  background: var(--g-surface-2);
+  border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
+  background: color-mix(in srgb, var(--g-surface) 86%, transparent);
   color: var(--g-text);
 }
 
 .message-item.me .message-body {
-  background: rgba(var(--g-primary-rgb), 0.12);
-  border-color: rgba(var(--g-primary-rgb), 0.20);
+  background: color-mix(in srgb, var(--g-primary) 12%, var(--g-surface));
+  border-color: color-mix(in srgb, var(--g-primary) 26%, var(--g-border));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .message-meta {
@@ -443,9 +507,9 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   position: absolute;
   right: 16px;
   bottom: 92px; /* над полем ввода */
-  border: 1px solid var(--g-border);
+  border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
   border-radius: 999px;
-  background: var(--g-surface);
+  background: color-mix(in srgb, var(--g-surface) 90%, transparent);
   color: var(--g-text);
   font-size: 14px;
   padding: 7px 10px;
@@ -457,7 +521,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   z-index: 30;
 }
 
-.scroll-bottom-btn:hover { background: var(--g-surface-2); }
+.scroll-bottom-btn:hover { background: color-mix(in srgb, var(--g-surface) 94%, transparent); }
 
 .scroll-bottom-unread {
   min-width: 18px;

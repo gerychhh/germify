@@ -2,14 +2,14 @@
 {# core/partials/messages_thread_chat.html #}
 
 <div id="messagesChatCard"
-     class="card messages-chat-card messages-chat d-flex flex-column"
+     class="card messages-chat-card msg-glass-surface messages-chat d-flex flex-column"
      data-chat-id="{{ chat.id }}"
      data-me-id="{{ request.user.id }}"
      data-username="{% if other_user %}{{ other_user.username }}{% endif %}"
      data-kind="{{ chat.kind }}"
      data-header-url="{% url 'messages_chat_header' chat.id %}">
 
-    <div id="messagesChatHeader" class="card-header messages-chat-header d-flex align-items-center justify-content-between">
+    <div id="messagesChatHeader" class="card-header msg-glass-bar messages-chat-header d-flex align-items-center justify-content-between">
         {% include "core/partials/messages_thread_header.html" %}
     </div>
 
@@ -32,7 +32,7 @@
         <span id="scroll-bottom-unread" class="scroll-bottom-unread hidden">0</span>
     </button>
 
-    <div class="card-footer messages-composer">
+    <div class="card-footer msg-glass-bar messages-composer">
         <form id="messageForm"
               class="messages-form"
               method="post"
@@ -40,16 +40,16 @@
               data-send-url="{% if other_user %}{% url 'messages_send' other_user.username %}{% else %}{% url 'messages_chat_send' chat.id %}{% endif %}">
             {% csrf_token %}
 
-            <div class="d-flex gap-2 align-items-center messages-composer-row">
+            <div class="d-flex gap-2 align-items-center messages-composer-row msg-glass-surface">
                 <button type="button"
-                        class="btn btn-light border messages-attach-btn"
+                        class="btn msg-icon-btn messages-attach-btn"
                         id="messages-attach-btn"
                         title="Прикрепить файлы">
                     <img src="{% static 'core/icons/paperclip.svg' %}" alt="" class="icon icon--16">
                 </button>
 
                 <button type="button"
-                        class="btn btn-light border voice-record-btn"
+                        class="btn msg-icon-btn voice-record-btn"
                         id="chat-voice-record-btn"
                         title="Записать голосовое">
                     <img src="{% static 'core/icons/mic.svg' %}" alt="" class="icon icon--16">
@@ -73,7 +73,7 @@
 
                 <input type="file" id="message-attachments-input" name="attachments" multiple class="d-none" />
 
-                <button type="submit" class="btn btn-primary messages-send-btn" title="Отправить">
+                <button type="submit" class="btn msg-icon-btn messages-send-btn" title="Отправить">
                     <img src="{% static 'core/icons/send.svg' %}" alt="" class="icon icon--16">
                     <span class="visually-hidden">Отправить</span>
                 </button>
