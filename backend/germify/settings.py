@@ -34,7 +34,12 @@ ALLOWED_HOSTS = [h.strip() for h in (_hosts_env or _hosts_fallback).split(",") i
 
 # CSRF
 _csrf_env = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").strip()
-_csrf_fallback = "https://germify.ddns.net,http://germify.ddns.net,http://127.0.0.1,http://localhost,http://79.170.108.244,https://79.170.108.244"
+_csrf_fallback = (
+    "https://germify.ddns.net,http://germify.ddns.net,"
+    "https://www.germify.ddns.net,http://www.germify.ddns.net,"
+    "http://127.0.0.1,http://localhost,"
+    "http://79.170.108.244,https://79.170.108.244"
+)
 CSRF_TRUSTED_ORIGINS = [u.strip() for u in (_csrf_env or _csrf_fallback).split(",") if u.strip()]
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
