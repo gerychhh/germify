@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="2d5614a6-939c-4f99-a314-b1c6afd6ce92" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/germify/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/germify/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,7 +23,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="db85de4b32625d2bb135ba38ac32ea24f1828e5d" />
+        <entry key="$PROJECT_DIR$" value="restructure" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -41,7 +40,7 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;restructure&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;codex/refactor-community-page-layout-and-features&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/gerychhh_/germify/germify/backend/core/static/icons&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
@@ -125,7 +124,9 @@
       <workItem from="1767366694205" duration="2547000" />
       <workItem from="1767385343625" duration="6283000" />
       <workItem from="1767489857636" duration="10047000" />
-      <workItem from="1767544940421" duration="910000" />
+      <workItem from="1767544940421" duration="8472000" />
+      <workItem from="1767906401582" duration="1108000" />
+      <workItem from="1767909284804" duration="784000" />
     </task>
     <servers />
   </component>
