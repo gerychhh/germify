@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from difflib import SequenceMatcher
+import json
 
 from typing import Any, List, TypedDict
 
@@ -55,6 +56,7 @@ from .models import (
     Community,
     CommunityMembership,
     CommunityJoinRequest,
+    CommunityModeratorRequest,
 )
 
 
@@ -1976,8 +1978,14 @@ def community_detail(request, slug):
 
     staff_members = members_qs.filter(role__in=["owner", "admin", "moderator"]).select_related("user")
     join_request = None
-    if request.user.is_authenticated and not is_member:
-        join_request = CommunityJoinRequest.objects.filter(community=community, user=request.user).first()
+    moderator_request = None
+    if request.user.is_authenticated:
+        if not is_member:
+            join_request = CommunityJoinRequest.objects.filter(community=community, user=request.user).first()
+        elif not is_admin:
+            moderator_request = CommunityModeratorRequest.objects.filter(
+                community=community, user=request.user
+            ).first()
 
     settings_form = CommunityForm(instance=community) if is_admin else None
 
@@ -1994,6 +2002,7 @@ def community_detail(request, slug):
         "post_form": post_form,
         "staff_members": staff_members,
         "join_request": join_request,
+        "moderator_request": moderator_request,
         "settings_form": settings_form,
         **state,
     })
@@ -2176,6 +2185,7 @@ def community_members_api(request, slug):
             "avatar_url": u.avatar.url if u.avatar else "",
             "role": m.role,
             "role_label": m.role_label,
+            "permissions": m.moderator_permissions,
         })
 
     return JsonResponse({
@@ -2201,8 +2211,6 @@ def community_settings_api(request, slug):
             "tags": community.tags,
             "links": community.links,
             "rules": community.rules,
-            "visibility": community.visibility,
-            "join_policy": community.join_policy,
             "post_policy": community.post_policy,
             "post_requires_approval": community.post_requires_approval,
             "comments_enabled": community.comments_enabled,
@@ -2216,6 +2224,23 @@ def community_settings_api(request, slug):
         form.save()
         return JsonResponse({"success": True})
     return JsonResponse({"errors": form.errors}, status=400)
+
+
+@login_required
+def community_delete(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    membership = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not membership or membership.role != "owner":
+        return JsonResponse({"error": "forbidden"}, status=403)
+
+    if request.method != "POST":
+        return JsonResponse({"error": "method"}, status=405)
+
+    community.delete()
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "redirect": reverse("communities")})
+    messages.success(request, "Сообщество удалено")
+    return redirect("communities")
 
 
 @login_required
@@ -2235,8 +2260,25 @@ def community_member_role(request, slug, user_id):
         return JsonResponse({"error": "insufficient"}, status=403)
 
     membership.role = new_role
+    permissions_raw = request.POST.get("permissions")
+    if permissions_raw:
+        try:
+            incoming = json.loads(permissions_raw)
+        except Exception:
+            incoming = {}
+        allowed = membership.default_permissions()
+        normalized = membership.default_permissions()
+        for key in allowed:
+            if key in incoming:
+                normalized[key] = bool(incoming[key])
+        membership.permissions = normalized
     membership.save()
-    return JsonResponse({"success": True, "role": membership.role, "role_label": membership.role_label})
+    return JsonResponse({
+        "success": True,
+        "role": membership.role,
+        "role_label": membership.role_label,
+        "permissions": membership.moderator_permissions,
+    })
 
 
 @login_required
@@ -2319,4 +2361,82 @@ def community_join_request_action(request, slug, request_id, action):
     else:
         return JsonResponse({"error": "bad_action"}, status=400)
 
+    return JsonResponse({"success": True, "members": community.memberships.count()})
+
+
+@login_required
+def community_moderator_request(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    membership = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not membership or membership.can_moderate():
+        return JsonResponse({"error": "forbidden"}, status=403)
+    if request.method != "POST":
+        return _redirect_back(request, "community_detail", slug=community.slug)
+
+    req, _created = CommunityModeratorRequest.objects.update_or_create(
+        community=community,
+        user=request.user,
+        defaults={"status": "pending"},
+    )
+
+    return JsonResponse({"status": req.status})
+
+
+@login_required
+def community_moderator_requests(request, slug):
+    community = get_object_or_404(Community, slug=slug)
+    me = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not me or not me.can_moderate():
+        return JsonResponse({"error": "forbidden"}, status=403)
+
+    q = request.GET.get("q", "").strip()
+    qs = CommunityModeratorRequest.objects.filter(community=community, status="pending").select_related("user")
+    if q:
+        qs = qs.filter(Q(user__username__icontains=q) | Q(user__display_name__icontains=q))
+
+    results = []
+    for item in qs[:50]:
+        u = item.user
+        results.append({
+            "id": item.id,
+            "user_id": u.id,
+            "username": u.username,
+            "display_name": u.display_name or u.username,
+            "avatar_url": u.avatar.url if u.avatar else "",
+            "created_at": item.created_at.isoformat(),
+        })
+
+    return JsonResponse({"results": results})
+
+
+@login_required
+def community_moderator_request_action(request, slug, request_id, action):
+    community = get_object_or_404(Community, slug=slug)
+    me = CommunityMembership.objects.filter(community=community, user=request.user).first()
+    if not me or not me.can_moderate():
+        return JsonResponse({"error": "forbidden"}, status=403)
+    if request.method != "POST":
+        return JsonResponse({"error": "method"}, status=405)
+
+    mr = get_object_or_404(CommunityModeratorRequest, pk=request_id, community=community)
+    if mr.status != "pending":
+        return JsonResponse({"error": "already_processed"}, status=400)
+
+    if action == "approve":
+        membership, _ = CommunityMembership.objects.get_or_create(
+            community=community,
+            user=mr.user,
+            defaults={"role": "moderator", "is_admin": True, "permissions": CommunityMembership.default_permissions()},
+        )
+        membership.role = "moderator"
+        membership.is_admin = True
+        membership.permissions = membership.default_permissions()
+        membership.save()
+        mr.status = "approved"
+    elif action == "deny":
+        mr.status = "denied"
+    else:
+        return JsonResponse({"error": "bad_action"}, status=400)
+
+    mr.save()
     return JsonResponse({"success": True, "members": community.memberships.count()})

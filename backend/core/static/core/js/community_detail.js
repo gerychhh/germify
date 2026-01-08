@@ -16,11 +16,18 @@
     return '';
   }
 
+  function autoResizeTextarea(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 420)}px`;
+  }
+
   function renderMemberCard(m) {
     const badge = `<span class="badge text-bg-light border">${m.role_label || m.role || ''}</span>`;
+    const avatarLetter = (m.display_name || m.username || '?')[0].toUpperCase();
     const avatar = m.avatar_url
-      ? `<img src="${m.avatar_url}" alt="${m.display_name}" class="avatar avatar-sm">`
-      : `<div class="avatar avatar-sm avatar-fallback">${(m.display_name || m.username || '?')[0].toUpperCase()}</div>`;
+      ? `<span class="avatar avatar--sm"><img src="${m.avatar_url}" alt="${m.display_name}"></span>`
+      : `<span class="avatar avatar--sm"><span class="avatar-initial">${avatarLetter}</span></span>`;
     return `<div class="community-member" data-member-item>
       <div class="d-flex align-items-center gap-2">
         <div class="avatar-stack">${avatar}</div>
@@ -36,9 +43,10 @@
   }
 
   function renderJoinRequest(item, approveUrl, denyUrl) {
+    const avatarLetter = (item.display_name || item.username || '?')[0].toUpperCase();
     const avatar = item.avatar_url
-      ? `<img src="${item.avatar_url}" alt="${item.display_name}" class="avatar avatar-sm">`
-      : `<div class="avatar avatar-sm avatar-fallback">${(item.display_name || item.username || '?')[0].toUpperCase()}</div>`;
+      ? `<span class="avatar avatar--sm"><img src="${item.avatar_url}" alt="${item.display_name}"></span>`
+      : `<span class="avatar avatar--sm"><span class="avatar-initial">${avatarLetter}</span></span>`;
     return `<div class="d-flex align-items-center gap-2" data-request-id="${item.id}">
       ${avatar}
       <div class="flex-grow-1 min-w-0">
@@ -52,6 +60,26 @@
     </div>`;
   }
 
+  function renderModeratorRequest(item, actionUrl) {
+    const avatarLetter = (item.display_name || item.username || '?')[0].toUpperCase();
+    const avatar = item.avatar_url
+      ? `<span class="avatar avatar--sm"><img src="${item.avatar_url}" alt="${item.display_name}"></span>`
+      : `<span class="avatar avatar--sm"><span class="avatar-initial">${avatarLetter}</span></span>`;
+    const approveUrl = actionUrl.replace('/0/', '/' + item.id + '/');
+    const denyUrl = approveUrl.replace('/approve/', '/deny/');
+    return `<div class="d-flex align-items-center gap-2" data-mod-request-id="${item.id}">
+      ${avatar}
+      <div class="flex-grow-1 min-w-0">
+        <div class="fw-semibold text-truncate">${item.display_name || item.username}</div>
+        <div class="small text-secondary">@${item.username}</div>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-success btn-sm" data-mod-approve="${approveUrl}">Назначить</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-mod-deny="${denyUrl}">Отклонить</button>
+      </div>
+    </div>`;
+  }
+
   domReady(function () {
     const page = document.getElementById('communityPage');
     if (!page) return;
@@ -61,14 +89,82 @@
     const leaveUrl = page.dataset.leaveUrl;
     const settingsUrl = page.dataset.settingsUrl;
     const joinRequestsUrl = page.dataset.joinRequestsUrl;
+    const moderatorRequestUrl = page.dataset.moderatorRequestUrl;
+    const moderatorRequestsUrl = page.dataset.moderatorRequestsUrl;
+    const moderatorActionUrl = page.dataset.moderatorActionUrl;
     const membersCountEl = document.getElementById('communityMembersCount');
-    const membersBadge = document.getElementById('membersCountBadge');
+    const shareButtons = document.querySelectorAll('[data-share-trigger]');
+    const moderatorRequestBtn = document.querySelector('[data-moderator-request]');
+    const postForm = document.querySelector('.community-post-form');
+    const postTextarea = postForm?.querySelector('.community-post-text');
+
+    shareButtons.forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const payload = { url: window.location.href, title: document.title };
+        if (navigator.share) {
+          try {
+            await navigator.share(payload);
+          } catch (err) {
+            // ignore
+          }
+          return;
+        }
+        if (navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(window.location.href);
+            btn.textContent = 'Ссылка скопирована';
+            setTimeout(() => (btn.textContent = 'Поделиться'), 2000);
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      });
+    });
+
+    if (postTextarea) {
+      autoResizeTextarea(postTextarea);
+      postTextarea.addEventListener('input', () => autoResizeTextarea(postTextarea));
+      postTextarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          postForm?.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      });
+    }
+
+    if (moderatorRequestBtn && moderatorRequestUrl) {
+      moderatorRequestBtn.addEventListener('click', async () => {
+        moderatorRequestBtn.disabled = true;
+        try {
+          const resp = await fetch(moderatorRequestUrl, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken'),
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (resp.ok && data.status === 'pending') {
+            moderatorRequestBtn.textContent = 'Заявка отправлена';
+          } else {
+            moderatorRequestBtn.disabled = false;
+          }
+        } catch (err) {
+          moderatorRequestBtn.disabled = false;
+        }
+      });
+    }
 
     function updateCounts(count) {
       if (membersCountEl) membersCountEl.textContent = count;
-      if (membersBadge) membersBadge.textContent = count;
       const totalEl = document.getElementById('participantsTotal');
       if (totalEl) totalEl.textContent = count;
+      document.querySelectorAll('[data-preview-members]').forEach((el) => {
+        el.textContent = `${count} участников`;
+      });
+      document.querySelectorAll('[data-preview-members-count]').forEach((el) => {
+        el.textContent = count;
+      });
     }
 
     // Membership (join/leave) fetch
@@ -117,9 +213,6 @@
     const participantsLoadMore = document.getElementById('participantsLoadMore');
     const participantsEmpty = document.getElementById('participantsEmpty');
     const participantsError = document.getElementById('participantsError');
-    const sidebarList = document.getElementById('community-members-list');
-    const sidebarSearch = document.getElementById('community-members-search');
-    const sidebarMore = document.getElementById('community-members-more');
 
     let membersPage = 1;
     let membersQuery = '';
@@ -183,50 +276,77 @@
       });
     }
 
-    // Sidebar filtering (client-side) and lazy load
-    function filterSidebar() {
-      if (!sidebarList || !sidebarSearch) return;
-      const q = sidebarSearch.value.trim().toLowerCase();
-      const items = sidebarList.querySelectorAll('[data-member-item]');
-      let visible = 0;
-      items.forEach((el) => {
-        const text = (el.dataset.search || '').toLowerCase();
-        const match = !q || text.includes(q);
-        el.style.display = match ? '' : 'none';
-        if (match) visible += 1;
-      });
-      const empty = document.getElementById('community-members-empty');
-      if (empty) empty.style.display = visible ? 'none' : '';
-    }
+    // Appearance live preview
+    const appearancePreview = document.getElementById('communityAppearancePreview');
+    if (appearancePreview) {
+      const nameInput = document.getElementById('communityNameInput');
+      const descriptionInput = document.getElementById('communityDescriptionInput');
+      const accentInput = document.getElementById('communityAccentInput');
+      const avatarVisual = appearancePreview.querySelector('.appearance-preview__avatar-visual');
+      const cover = document.getElementById('appearanceCover');
+      const nameTarget = appearancePreview.querySelector('[data-preview-name]');
+      const descTarget = appearancePreview.querySelector('[data-preview-description]');
+      const initialAvatar = avatarVisual?.querySelector('img')?.src || '';
+      const initialCover = cover?.style.backgroundImage || '';
+      const fallbackLetter = (nameInput?.value?.trim() || page.dataset.communitySlug || '?')[0].toUpperCase();
 
-    if (sidebarSearch) {
-      sidebarSearch.addEventListener('input', filterSidebar);
-    }
-
-    if (sidebarMore) {
-      sidebarMore.addEventListener('click', async () => {
-        const url = sidebarMore.dataset.url;
-        if (!url || !sidebarList) return;
-        const offset = Number(sidebarList.dataset.offset || '0');
-        const params = new URLSearchParams({ offset: String(offset) });
-        sidebarMore.disabled = true;
-        try {
-          const resp = await fetch(`${url}?${params.toString()}`);
-          if (!resp.ok) throw new Error('fail');
-          const data = await resp.json();
-          sidebarList.insertAdjacentHTML('beforeend', data.html);
-          sidebarList.dataset.offset = data.next_offset;
-          if (!data.has_more) sidebarMore.remove();
-          filterSidebar();
-          if (typeof data.total === 'number') updateCounts(data.total);
-        } catch (err) {
-          console.error(err);
-          sidebarMore.disabled = false;
+      const setAvatar = (src) => {
+        if (!avatarVisual) return;
+        if (src) {
+          avatarVisual.innerHTML = `<img src="${src}" alt="">`;
+        } else {
+          avatarVisual.innerHTML = `<span>${fallbackLetter}</span>`;
         }
-      });
-    }
+      };
 
-    filterSidebar();
+      const setCover = (src) => {
+        if (!cover) return;
+        cover.style.backgroundImage = src ? `url('${src}')` : initialCover;
+      };
+
+      const updateText = () => {
+        if (nameTarget && nameInput) nameTarget.textContent = nameInput.value || 'Сообщество';
+        if (descTarget && descriptionInput) descTarget.textContent = descriptionInput.value.trim() || 'Добавьте описание';
+      };
+
+      const updateAccent = () => {
+        if (!appearancePreview || !accentInput) return;
+        appearancePreview.style.setProperty('--accent-color', accentInput.value || '#3366ff');
+      };
+
+      const handleFilePreview = (input) => {
+        if (!input?.files?.length) {
+          const type = input?.dataset.previewType;
+          if (type === 'icon') setAvatar(initialAvatar);
+          if (type === 'cover') setCover(initialCover.replace(/^url\(['"]?(.+?)['"]?\)$/i, '$1'));
+          return;
+        }
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const result = ev.target?.result;
+          if (input.dataset.previewType === 'icon') setAvatar(String(result));
+          if (input.dataset.previewType === 'cover') setCover(String(result));
+        };
+        reader.readAsDataURL(file);
+      };
+
+      nameInput?.addEventListener('input', updateText);
+      descriptionInput?.addEventListener('input', updateText);
+      accentInput?.addEventListener('input', updateAccent);
+      document.querySelectorAll('input[data-preview-type]').forEach((input) => {
+        input.addEventListener('change', () => handleFilePreview(input));
+      });
+      document.querySelectorAll('[data-file-trigger]').forEach((btn) => {
+        const targetId = btn.dataset.fileTrigger;
+        if (!targetId) return;
+        const input = document.getElementById(targetId);
+        if (!input) return;
+        btn.addEventListener('click', () => input.click());
+      });
+      updateText();
+      updateAccent();
+    }
 
     // Settings form
     const settingsForm = document.getElementById('communitySettingsForm');
@@ -251,33 +371,50 @@
       });
     }
 
-    // Staff role updates
+    // Staff role updates and permissions
     const staffList = document.getElementById('staffList');
+    const collectPermissions = (item) => {
+      const perms = {};
+      item.querySelectorAll('.staff-permission').forEach((input) => {
+        perms[input.value] = input.checked;
+      });
+      return perms;
+    };
+
+    const updateStaff = async (item, trigger) => {
+      if (!staffList) return;
+      const userId = item?.dataset.userId;
+      const baseUrl = staffList.dataset.roleUrl;
+      if (!userId || !baseUrl) return;
+      const url = baseUrl.replace('/0/', '/' + userId + '/');
+      trigger && (trigger.disabled = true);
+      const roleSelect = item.querySelector('.staff-role-select');
+      const body = new URLSearchParams();
+      if (roleSelect) body.append('role', roleSelect.value);
+      body.append('permissions', JSON.stringify(collectPermissions(item)));
+      try {
+        await fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body,
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        trigger && (trigger.disabled = false);
+      }
+    };
+
     if (staffList) {
-      staffList.addEventListener('change', async (e) => {
-        const select = e.target.closest('.staff-role-select');
+      staffList.addEventListener('change', (e) => {
+        const select = e.target.closest('.staff-role-select, .staff-permission');
         if (!select) return;
         const item = select.closest('.staff-item');
         if (!item) return;
-        const userId = item.dataset.userId;
-        const baseUrl = staffList.dataset.roleUrl;
-        if (!userId || !baseUrl) return;
-        const url = baseUrl.replace('/0/', '/' + userId + '/');
-        select.disabled = true;
-        try {
-          await fetch(url, {
-            method: 'POST',
-            headers: {
-              'X-CSRFToken': getCookie('csrftoken'),
-              'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: new URLSearchParams({ role: select.value }),
-          });
-        } catch (err) {
-          console.error(err);
-        } finally {
-          select.disabled = false;
-        }
+        updateStaff(item, select);
       });
 
       staffList.addEventListener('click', async (e) => {
@@ -312,6 +449,8 @@
     // Join requests
     const joinRequestsList = document.getElementById('joinRequestsList');
     const loadJoinRequestsBtn = document.getElementById('loadJoinRequests');
+    const moderatorRequestsList = document.getElementById('moderatorRequestsList');
+    const loadModeratorRequestsBtn = document.getElementById('loadModeratorRequests');
     function attachJoinActions() {
       if (!joinRequestsList) return;
       joinRequestsList.querySelectorAll('button[data-approve],button[data-deny]').forEach((btn) => {
@@ -357,6 +496,87 @@
 
     if (loadJoinRequestsBtn) {
       loadJoinRequestsBtn.addEventListener('click', loadJoinRequests);
+    }
+
+    function attachModeratorActions() {
+      if (!moderatorRequestsList) return;
+      moderatorRequestsList.querySelectorAll('button[data-mod-approve],button[data-mod-deny]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const url = btn.dataset.modApprove || btn.dataset.modDeny;
+          if (!url) return;
+          btn.disabled = true;
+          try {
+            const resp = await fetch(url, {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest',
+              },
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (resp.ok) {
+              btn.closest('[data-mod-request-id]')?.remove();
+              if (typeof data.members === 'number') updateCounts(data.members);
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        });
+      });
+    }
+
+    async function loadModeratorRequests() {
+      if (!moderatorRequestsUrl || !moderatorRequestsList) return;
+      moderatorRequestsList.innerHTML = '<div class="text-body-secondary">Загрузка...</div>';
+      try {
+        const resp = await fetch(moderatorRequestsUrl);
+        if (!resp.ok) throw new Error('fail');
+        const data = await resp.json();
+        if (!data.results || !data.results.length) {
+          moderatorRequestsList.innerHTML = '<div class="text-body-secondary">Нет активных заявок</div>';
+          return;
+        }
+        const baseAction = moderatorRequestsList.dataset.actionUrl || '';
+        moderatorRequestsList.innerHTML = data.results.map((item) => renderModeratorRequest(item, baseAction)).join('');
+        attachModeratorActions();
+      } catch (err) {
+        moderatorRequestsList.innerHTML = '<div class="text-danger">Не удалось загрузить заявки</div>';
+      }
+    }
+
+    if (loadModeratorRequestsBtn) {
+      loadModeratorRequestsBtn.addEventListener('click', loadModeratorRequests);
+    }
+
+    // Delete community (owner only)
+    const deleteForm = document.getElementById('communityDeleteForm');
+    if (deleteForm) {
+      const deleteBtn = deleteForm.querySelector('[data-delete-community]');
+      deleteForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!confirm('Удалить сообщество без возможности восстановления?')) return;
+        deleteBtn && (deleteBtn.disabled = true);
+        const formData = new FormData(deleteForm);
+        try {
+          const resp = await fetch(deleteForm.action, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken'),
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: formData,
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (resp.ok) {
+            window.location.href = data.redirect || '/communities/';
+            return;
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          deleteBtn && (deleteBtn.disabled = false);
+        }
+      });
     }
   });
 })();

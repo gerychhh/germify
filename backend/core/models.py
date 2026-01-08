@@ -126,11 +126,23 @@ class Community(models.Model):
         membership = self.memberships.filter(user=user).first()
         role = getattr(membership, "role", "guest") if membership else "guest"
 
+        # Owners and admins всегда могут публиковать.
+        if role in {"owner", "admin"}:
+            return True
+
+        if self.post_policy != "anyone" and not membership:
+            return False
+
+        if role == "moderator":
+            perms = membership.moderator_permissions if membership else {}
+            if not perms.get("manage_posts", False):
+                return False
+
         if self.post_policy == "anyone":
             return True
         if self.post_policy == "members":
-            return role in {"member", "moderator", "admin", "owner"}
-        return role in {"moderator", "admin", "owner"}
+            return role in {"member", "moderator"}
+        return role == "moderator"
 
 
 class CommunityMembership(models.Model):
@@ -155,6 +167,7 @@ class CommunityMembership(models.Model):
     )
 
     role = models.CharField("Роль", max_length=16, choices=ROLE_CHOICES, default="member")
+    permissions = models.JSONField("Права модератора", default=dict, blank=True)
     is_admin = models.BooleanField("Администратор", default=False)
     joined_at = models.DateTimeField("Вступил", auto_now_add=True)
 
@@ -166,11 +179,34 @@ class CommunityMembership(models.Model):
         role = self.role or ("admin" if self.is_admin else "member")
         return f"{self.user} in {self.community} ({role})"
 
+    @staticmethod
+    def default_permissions():
+        return {
+            "manage_posts": True,
+            "manage_members": True,
+            "edit_appearance": False,
+        }
+
+    @property
+    def moderator_permissions(self):
+        base = self.default_permissions()
+        incoming = self.permissions or {}
+        for key in base:
+            if key in incoming:
+                base[key] = bool(incoming[key])
+        return base
+
     def save(self, *args, **kwargs):
         if self.role in {"owner", "admin", "moderator"}:
             self.is_admin = True
         elif self.role == "guest":
             self.is_admin = False
+        if not self.permissions:
+            self.permissions = self.default_permissions()
+        else:
+            normalized = self.default_permissions()
+            normalized.update({k: bool(v) for k, v in (self.permissions or {}).items() if k in normalized})
+            self.permissions = normalized
         super().save(*args, **kwargs)
 
     @property
@@ -212,6 +248,38 @@ class CommunityJoinRequest(models.Model):
 
     def __str__(self):
         return f"JoinRequest({self.user} -> {self.community}, {self.status})"
+
+
+class CommunityModeratorRequest(models.Model):
+    community = models.ForeignKey(
+        Community,
+        on_delete=models.CASCADE,
+        related_name="moderator_requests",
+        verbose_name="Сообщество",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="community_moderator_requests",
+        verbose_name="Пользователь",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=12,
+        choices=(
+            ("pending", "В ожидании"),
+            ("approved", "Принята"),
+            ("denied", "Отклонена"),
+        ),
+        default="pending",
+    )
+
+    class Meta:
+        unique_together = ("community", "user")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"ModRequest({self.user} -> {self.community}, {self.status})"
 
 
 class User(AbstractUser):
