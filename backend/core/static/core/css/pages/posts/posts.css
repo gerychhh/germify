@@ -827,6 +827,22 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   background: rgba(15, 23, 42, 0.02);
 }
 
+.post-card.is-editing .post-edit-block{
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.post-card.is-editing .post-menu-wrapper{
+  display: none;
+}
+
+.post-card.is-editing .post-edit-close{
+  display: inline-flex !important;
+}
+
 .post-edit-attachment-item.is-removed {
   opacity: 0.55;
   filter: grayscale(0.4);

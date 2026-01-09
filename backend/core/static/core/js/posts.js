@@ -2212,8 +2212,10 @@ document.addEventListener("DOMContentLoaded", function () {
             const menu = postCard.querySelector(".post-menu");
             if (menu) menu.classList.add("hidden");
 
-            if (viewBlock) viewBlock.classList.toggle("hidden");
-            editBlock.classList.toggle("hidden");
+            const isOpen = !editBlock.classList.contains("hidden");
+            if (viewBlock) viewBlock.classList.remove("hidden");
+            editBlock.classList.toggle("hidden", isOpen);
+            postCard.classList.toggle("is-editing", !isOpen);
 
             const ta = editBlock.querySelector(".post-edit-textarea");
             const counter = editBlock.querySelector(".post-edit-counter");
@@ -2228,14 +2230,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // ----- ОТМЕНА РЕДАКТИРОВАНИЯ -----
         const editCancel = e.target.closest(".post-edit-cancel");
-        if (editCancel) {
-            const postCard = editCancel.closest(".post-card");
+        const editClose = e.target.closest(".post-edit-close");
+        if (editCancel || editClose) {
+            const postCard = (editCancel || editClose).closest(".post-card");
             if (!postCard) return;
 
             const viewBlock = postCard.querySelector(".post-view-block");
             const editBlock = postCard.querySelector(".post-edit-block");
             if (viewBlock) viewBlock.classList.remove("hidden");
             if (editBlock) editBlock.classList.add("hidden");
+            postCard.classList.remove("is-editing");
 
             const ta = postCard.querySelector(".post-edit-textarea");
             if (ta) {

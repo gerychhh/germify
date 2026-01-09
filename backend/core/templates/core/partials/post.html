@@ -82,6 +82,13 @@
             {{ post.created_at|time_ago }}
           </a>
 
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary post-edit-close hidden"
+                  data-post-id="{{ post.id }}"
+                  aria-label="Закрыть форму">
+            <img src="{% static 'core/icons/close.svg' %}" alt="">
+          </button>
+
           <div class="post-menu-wrapper position-relative">
             <button type="button"
                     class="btn btn-sm btn-outline-secondary post-menu-toggle"
