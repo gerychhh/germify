@@ -541,9 +541,9 @@ html[data-glass="off"] .g-bottom-nav{
 .g-bottom-nav__list {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  align-items: center;
+  align-items: flex-end;
   margin: 0;
-  padding: 2px 6px;
+  padding: 2px 6px 0;
   list-style: none;
   gap: 4px;
 }
@@ -560,7 +560,7 @@ html[data-glass="off"] .g-bottom-nav{
   flex-direction: column;
   gap: 4px;
   border-radius: var(--g-radius-sm);
-  padding: 2px 4px;
+  padding: 2px 4px 0;
   text-decoration: none;
   color: color-mix(in srgb, var(--g-text) 78%, var(--g-muted));
   transition: background-color 0.15s ease, color 0.15s ease;

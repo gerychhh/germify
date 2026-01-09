@@ -196,6 +196,8 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   height: 100%;
   object-fit: cover;
   display: block;
+  position: relative;
+  z-index: 1;
 }
 
 .composer__media-remove{
@@ -211,6 +213,8 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   display: grid;
   place-items: center;
   color: var(--g-text);
+  font-size: 18px;
+  line-height: 1;
 }
 
 .composer__media-remove:hover{
