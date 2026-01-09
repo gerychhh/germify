@@ -39,7 +39,7 @@ body {
   }
 
   .posts-list {
-    padding-bottom: calc(var(--g-bottomnav-h) + env(safe-area-inset-bottom));
+    padding-bottom: var(--g-bottomnav-h);
   }
 }
 
