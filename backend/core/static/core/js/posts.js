@@ -857,6 +857,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (textarea) {
             textarea.classList.add("composer__textarea");
             textarea.setAttribute("rows", "1");
+            textarea.removeAttribute("required");
+            textarea.required = false;
         }
 
         let files = [];
@@ -1068,6 +1070,16 @@ document.addEventListener("DOMContentLoaded", function () {
             window.addEventListener("load", updateTextareaSize);
             updateTextareaSize();
         }
+
+        form.addEventListener("submit", (event) => {
+            const textValue = (textarea?.value || "").trim();
+            const hasText = textValue.length > 0;
+            const hasFiles = (fileInput?.files?.length || 0) > 0;
+            if (!hasText && !hasFiles) {
+                event.preventDefault();
+                alert("Добавьте текст или вложение перед публикацией.");
+            }
+        });
     }
 
     function isMobile() {
