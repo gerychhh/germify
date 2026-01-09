@@ -35,7 +35,7 @@ body {
 @media (max-width: 991.98px) {
   /* чтобы fixed-bottom меню не перекрывало контент на мобилках */
   body {
-    padding-bottom: calc(var(--g-bottomnav-h) + 10px);
+    padding-bottom: calc(var(--g-bottomnav-h) + env(safe-area-inset-bottom) + 16px);
   }
 }
 

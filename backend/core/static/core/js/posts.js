@@ -423,7 +423,7 @@ function closeVkPostModal() {
     __vkModalState.placeholderEl = null;
 }
 
-function openVkPostModal(postId, focusForm = true) {
+function openVkPostModal(postId, focusForm = false) {
     const modal = getVkPostModal();
     if (!modal) return;
 
@@ -2416,7 +2416,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const commentAction = e.target.closest(".post-action-comment");
         if (commentAction) {
             const postId = commentAction.dataset.postId;
-            openVkPostModal(postId, true);
+            openVkPostModal(postId, false);
             return;
         }
 

@@ -706,7 +706,7 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
 
 .vk-modal-left{
   overflow: auto;
-  padding: 0;
+  padding: 6px 8px;
   background: var(--g-surface-solid);
   min-width: 0;
   min-height: 0;
@@ -892,13 +892,13 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
 .vk-modal-right-scroll{
   flex: 1 1 auto;
   overflow: auto;
-  padding: 12px 14px;
+  padding: 10px 12px;
   min-height: 0;
 }
 
 .vk-modal-right-composer{
   flex: 0 0 auto;
-  padding: 10px 14px;
+  padding: 10px 12px;
   border-top: 1px solid var(--g-border);
   background: color-mix(in srgb, var(--g-surface) 94%, transparent);
 }
@@ -932,6 +932,7 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   height: var(--vk-compose-size);
   min-height: var(--vk-compose-size);
   max-height: 160px;
+  font-size: 16px;
   padding-top: 10px;
   padding-bottom: 10px;
   border-radius: 999px;
