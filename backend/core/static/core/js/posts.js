@@ -74,10 +74,12 @@ function _vkDetachAutoReveal() {
 
 function _vkAutoGrowTextarea(textarea, maxPx = 140) {
     if (!textarea) return;
+    const basePx = 44;
     const resize = () => {
         textarea.style.height = 'auto';
         const next = Math.min(textarea.scrollHeight, maxPx);
         textarea.style.height = next + 'px';
+        textarea.classList.toggle('is-expanded', next > basePx + 2);
     };
     resize();
     textarea.addEventListener('input', resize);

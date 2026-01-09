@@ -920,7 +920,7 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
 .vk-compose-row{
   --vk-compose-size: 44px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
   flex-direction: row !important; /* на случай, если где-то было row-reverse */
 }
@@ -939,6 +939,10 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   background: color-mix(in srgb, var(--g-surface) 92%, transparent);
   color: var(--g-text);
   overflow: hidden;
+}
+
+.vk-compose-row .comment-input.is-expanded{
+  border-radius: 14px;
 }
 
 .vk-compose-row .comment-input:focus{
@@ -1029,13 +1033,13 @@ body.vk-modal-open{
 .vk-modal-left{
   overflow: visible !important;
   min-height: 0;
-  padding: 14px;
+  padding: 0;
   background: transparent;
 }
 
 .vk-modal-comments{
-  padding: 12px 14px 14px;
-  border-top: 1px solid var(--g-border);
+  padding: 0 14px 14px;
+  border-top: 0;
 }
 
 .vk-modal-comments-header{
@@ -1046,13 +1050,22 @@ body.vk-modal-open{
 .vk-modal-comments-list{
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
+}
+
+.vk-modal-comments .comment-item{
+  margin-top: 0 !important;
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+  border-top: 1px solid var(--g-border);
+  border-bottom: 1px solid var(--g-border);
 }
 
 .vk-modal-composer{
   flex: 0 0 auto;
-  padding: 10px 14px;
-  border-top: 1px solid var(--g-border);
+  padding: 0 14px 10px;
+  border-top: 0;
   background: color-mix(in srgb, var(--g-surface) 94%, transparent);
 }
 
