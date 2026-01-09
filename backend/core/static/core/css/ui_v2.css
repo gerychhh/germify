@@ -241,7 +241,7 @@ html[data-glass="off"] .form-select{
 .list-group-item,
 .accordion-item,
 .table{
-  background: color-mix(in srgb, var(--g-surface) 78%, transparent);
+  background: color-mix(in srgb, var(--g-surface) 64%, transparent);
   border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
   box-shadow: var(--g-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(var(--g-blur));
@@ -294,7 +294,7 @@ html[data-glass="off"] .form-select{
       rgba(255, 255, 255, 0.14),
       rgba(255, 255, 255, 0.02) 42%,
       transparent 60%);
-  opacity: 0.6;
+  opacity: 0.3;
 }
 
 html[data-glass="off"] .g-glass{
