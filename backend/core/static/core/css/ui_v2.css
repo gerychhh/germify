@@ -520,10 +520,6 @@ html[data-glass="off"] .g-bottom-nav{
 }
 
 @media (max-width: 991.98px) {
-  :root {
-    --g-bottomnav-h: 44px;
-  }
-
   .g-navbar {
     display: none;
   }
@@ -532,12 +528,13 @@ html[data-glass="off"] .g-bottom-nav{
 .g-bottom-nav {
   position: fixed;
   inset: auto 0 0 0;
-  height: var(--g-bottomnav-h);
+  height: auto;
   background: color-mix(in srgb, var(--g-surface) 86%, transparent);
   border-top: 1px solid var(--g-border);
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(var(--g-blur));
   -webkit-backdrop-filter: blur(var(--g-blur));
+  padding-bottom: env(safe-area-inset-bottom);
   display: none;
   z-index: 10;
 }
@@ -546,7 +543,6 @@ html[data-glass="off"] .g-bottom-nav{
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
-  height: 100%;
   margin: 0;
   padding: 0 6px;
   list-style: none;
