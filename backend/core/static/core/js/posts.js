@@ -1026,7 +1026,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (fileInput) {
             fileInput.addEventListener("change", () => {
                 addFiles(Array.from(fileInput.files || []));
-                fileInput.value = "";
             });
         }
 
@@ -1034,6 +1033,7 @@ document.addEventListener("DOMContentLoaded", function () {
             btn.addEventListener("click", () => {
                 if (!fileInput) return;
                 const accept = btn.getAttribute("data-accept") || "";
+                fileInput.value = "";
                 fileInput.setAttribute("accept", accept);
                 fileInput.click();
             });
