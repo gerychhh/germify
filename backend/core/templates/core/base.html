@@ -117,15 +117,17 @@
     </div>
 </nav>
 
-<main class="container py-4">
-    {% if messages %}
-        <div class="mb-3">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
-            {% endfor %}
-        </div>
-    {% endif %}
-    {% block content %}{% endblock %}
+<main class="g-main">
+    <div class="container g-container">
+        {% if messages %}
+            <div class="mb-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </div>
 </main>
 
 <nav class="g-bottom-nav d-lg-none" aria-label="Основная навигация">

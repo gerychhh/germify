@@ -13,7 +13,7 @@ body.messages-page {
   flex-direction: column;
 }
 
-body.messages-page main.container {
+body.messages-page main.g-main .g-container {
   flex: 1;
   min-height: calc(100dvh - var(--g-navbar-h));
   display: flex;
@@ -21,7 +21,7 @@ body.messages-page main.container {
   padding: 0;
 }
 
-body.messages-page main.container > .messages-layout {
+body.messages-page main.g-main .g-container > .messages-layout {
   flex: 1;
   min-height: 0;
 }
@@ -184,12 +184,12 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
     padding-bottom: 0;
   }
 
-  body.messages-page main.container {
+  body.messages-page main.g-main .g-container {
     min-height: calc(100dvh - var(--g-navbar-h));
     padding: 0 !important;
   }
 
-  body.messages-page main.container > .messages-layout {
+  body.messages-page main.g-main .g-container > .messages-layout {
     margin-left: 0;
     margin-right: 0;
   }

@@ -27,9 +27,9 @@
   --g-line-height: 1.5;
 
   /* ---- radii ---- */
-  --g-radius-sm: 10px;
-  --g-radius-md: 14px;
-  --g-radius-lg: 18px;
+  --g-radius-sm: 12px;
+  --g-radius-md: 16px;
+  --g-radius-lg: 20px;
 
   /* ---- spacing ---- */
   --g-space-1: 4px;

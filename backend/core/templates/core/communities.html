@@ -17,27 +17,31 @@
 <div class="g-page">
   <div class="d-flex flex-column gap-3">
 
-    <form method="get" action="{% url 'communities' %}" id="communities-search-form" class="g-search">
-      <div class="g-search__field g-input-icon g-search__pill">
-        <span class="g-input-icon__icon" aria-hidden="true">
-          <img src="{% static 'core/icons/search.svg' %}" alt="" class="icon icon--16">
-        </span>
-        <input type="text" id="communities-search-input" name="q" value="{{ q|default:'' }}" placeholder="Поиск сообществ…"
-               autocomplete="off" class="form-control g-search__input">
-      </div>
+    <div class="g-pagehead">
+      <div class="g-pagehead__title">Сообщества</div>
 
-      <div class="g-search__actions">
-        {% if user.is_authenticated %}
-          <a href="{% url 'community_create' %}" class="btn btn-primary g-icon-btn" aria-label="Создать сообщество">
-            <img src="{% static 'core/icons/plus.svg' %}" alt="" class="icon icon--16">
-          </a>
-        {% endif %}
+      <form method="get" action="{% url 'communities' %}" id="communities-search-form" class="g-search g-pagehead__search">
+        <div class="g-search__field g-input-icon g-search__pill">
+          <span class="g-input-icon__icon" aria-hidden="true">
+            <img src="{% static 'core/icons/search.svg' %}" alt="" class="icon icon--16">
+          </span>
+          <input type="text" id="communities-search-input" name="q" value="{{ q|default:'' }}" placeholder="Поиск сообществ…"
+                 autocomplete="off" class="form-control g-search__input">
+        </div>
 
-        {% if q %}
-          <a href="{% url 'communities' %}" class="btn btn-outline-secondary">Сбросить</a>
-        {% endif %}
-      </div>
-    </form>
+        <div class="g-search__actions g-pagehead__actions">
+          {% if user.is_authenticated %}
+            <a href="{% url 'community_create' %}" class="btn btn-primary g-icon-btn" aria-label="Создать сообщество">
+              <img src="{% static 'core/icons/plus.svg' %}" alt="" class="icon icon--16">
+            </a>
+          {% endif %}
+
+          {% if q %}
+            <a href="{% url 'communities' %}" class="btn btn-outline-secondary">Сбросить</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
 
     <div id="communities-list" class="d-flex flex-column gap-3">
     {% for c in communities %}
