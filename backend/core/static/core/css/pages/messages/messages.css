@@ -197,7 +197,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   }
 
   body.messages-page main.g-main .g-container {
-    min-height: calc(100dvh - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
+    min-height: calc(100dvh - var(--g-bottomnav-h));
     padding: 0 !important;
   }
 
@@ -227,7 +227,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   }
 
   .messages-layout {
-    min-height: calc(100dvh - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
+    min-height: calc(100dvh - var(--g-bottomnav-h));
   }
 
   .messages-sidebar-col {
@@ -248,13 +248,13 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
   .messages-sidebar-card,
   .messages-chat-card {
-    height: calc(100dvh - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
-    min-height: calc(100dvh - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
+    height: calc(100dvh - var(--g-bottomnav-h));
+    min-height: calc(100dvh - var(--g-bottomnav-h));
   }
 
   .messages-list {
-    padding-bottom: calc(var(--g-bottomnav-h) + env(safe-area-inset-bottom) + 100px);
-    scroll-padding-bottom: calc(var(--g-bottomnav-h) + env(safe-area-inset-bottom) + 100px);
+    padding-bottom: calc(var(--g-bottomnav-h) + 100px);
+    scroll-padding-bottom: calc(var(--g-bottomnav-h) + 100px);
   }
 
   .messages-chat-card {
