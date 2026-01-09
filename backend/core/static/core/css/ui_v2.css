@@ -101,48 +101,45 @@ body::after{
 
 body::before{
   background:
-    radial-gradient(90px 70px at 8% 14%, rgba(255, 255, 255, 0.7), transparent 72%),
-    radial-gradient(80px 60px at 18% 28%, rgba(255, 255, 255, 0.6), transparent 72%),
-    radial-gradient(110px 80px at 32% 12%, rgba(255, 255, 255, 0.65), transparent 74%),
-    radial-gradient(70px 90px at 48% 22%, rgba(255, 255, 255, 0.55), transparent 74%),
-    radial-gradient(100px 70px at 62% 16%, rgba(255, 255, 255, 0.6), transparent 75%),
-    radial-gradient(85px 65px at 78% 28%, rgba(255, 255, 255, 0.58), transparent 74%),
-    radial-gradient(120px 90px at 88% 42%, rgba(255, 255, 255, 0.5), transparent 76%),
-    radial-gradient(90px 70px at 24% 68%, rgba(255, 255, 255, 0.55), transparent 76%),
-    radial-gradient(110px 80px at 46% 78%, rgba(255, 255, 255, 0.62), transparent 74%),
-    radial-gradient(80px 60px at 70% 80%, rgba(255, 255, 255, 0.55), transparent 76%),
-    radial-gradient(100px 70px at 84% 70%, rgba(255, 255, 255, 0.6), transparent 75%);
-  animation: float-glow-a 6s linear infinite;
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.05) 6%,
+      transparent 12%,
+      transparent 22%
+    ),
+    radial-gradient(140% 120% at 10% 20%, rgba(255, 255, 255, 0.25), transparent 55%),
+    radial-gradient(130% 110% at 90% 40%, rgba(255, 255, 255, 0.18), transparent 60%);
+  background-size: 320px 220px, 100% 100%, 100% 100%;
+  animation: float-glow-a 9s linear infinite;
 }
 
 body::after{
   background:
-    radial-gradient(70px 60px at 12% 42%, rgba(255, 255, 255, 0.45), transparent 75%),
-    radial-gradient(95px 70px at 26% 56%, rgba(255, 255, 255, 0.5), transparent 76%),
-    radial-gradient(80px 60px at 38% 48%, rgba(255, 255, 255, 0.42), transparent 78%),
-    radial-gradient(100px 70px at 56% 62%, rgba(255, 255, 255, 0.48), transparent 76%),
-    radial-gradient(85px 65px at 72% 54%, rgba(255, 255, 255, 0.46), transparent 78%),
-    radial-gradient(75px 55px at 86% 46%, rgba(255, 255, 255, 0.5), transparent 77%),
-    radial-gradient(95px 70px at 68% 84%, rgba(255, 255, 255, 0.46), transparent 78%);
-  opacity: 0.75;
-  animation: float-glow-b 7s linear infinite;
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.04) 8%,
+      transparent 16%,
+      transparent 28%
+    ),
+    radial-gradient(120% 110% at 20% 80%, rgba(255, 255, 255, 0.2), transparent 62%),
+    radial-gradient(140% 120% at 80% 70%, rgba(255, 255, 255, 0.14), transparent 65%);
+  background-size: 280px 200px, 100% 100%, 100% 100%;
+  opacity: 0.7;
+  animation: float-glow-b 11s linear infinite;
 }
 
 @keyframes float-glow-a{
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  20% { transform: translate3d(2%, -1%, 0) scale(1.03); }
-  40% { transform: translate3d(-3%, 2%, 0) scale(1.01); }
-  60% { transform: translate3d(1%, 3%, 0) scale(1.04); }
-  80% { transform: translate3d(-2%, -2%, 0) scale(1.02); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
+  0% { transform: translate3d(0, 0, 0) scale(1); background-position: 0 0, 0 0, 0 0; }
+  50% { transform: translate3d(1%, -2%, 0) scale(1.02); background-position: 140px 80px, 0 0, 0 0; }
+  100% { transform: translate3d(0, 0, 0) scale(1); background-position: 280px 160px, 0 0, 0 0; }
 }
 
 @keyframes float-glow-b{
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  25% { transform: translate3d(-2%, 2%, 0) scale(1.03); }
-  50% { transform: translate3d(3%, -1%, 0) scale(1.01); }
-  75% { transform: translate3d(-1%, -3%, 0) scale(1.04); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
+  0% { transform: translate3d(0, 0, 0) scale(1); background-position: 0 0, 0 0, 0 0; }
+  50% { transform: translate3d(-1%, 2%, 0) scale(1.02); background-position: -120px 120px, 0 0, 0 0; }
+  100% { transform: translate3d(0, 0, 0) scale(1); background-position: -240px 240px, 0 0, 0 0; }
 }
 
 .app-body{
