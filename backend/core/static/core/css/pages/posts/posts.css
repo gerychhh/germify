@@ -1034,7 +1034,7 @@ body.vk-modal-open{
 .vk-modal-left{
   overflow: visible !important;
   min-height: 0;
-  padding: 0;
+  padding: 12px 12px 0;
   background: transparent;
 }
 
@@ -1064,7 +1064,7 @@ body.vk-modal-open{
 
 .vk-modal-composer{
   flex: 0 0 auto;
-  padding: 0 14px 10px;
+  padding: 10px 12px 12px;
   border-top: 0;
   background: color-mix(in srgb, var(--g-surface) 94%, transparent);
 }
