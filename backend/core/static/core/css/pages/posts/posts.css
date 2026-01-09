@@ -31,6 +31,7 @@
   padding: 10px 14px;
   resize: none;
   line-height: 1.4;
+  overflow: hidden;
 }
 
 .feed-composer__input::placeholder{
@@ -41,6 +42,10 @@
   outline: none;
   border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-primary) 25%, transparent);
+}
+
+.feed-composer__input.is-expanded{
+  border-radius: 14px;
 }
 
 .feed-composer__icon-btn,

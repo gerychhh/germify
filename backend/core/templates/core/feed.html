@@ -352,9 +352,12 @@
 
   const textarea = form.querySelector(".feed-composer__input");
   if (textarea) {
+    const baseHeight = textarea.offsetHeight || 40;
     const resize = () => {
       textarea.style.height = "auto";
       textarea.style.height = `${textarea.scrollHeight}px`;
+      const isExpanded = textarea.scrollHeight > baseHeight + 2;
+      textarea.classList.toggle("is-expanded", isExpanded);
     };
     textarea.addEventListener("input", resize);
     window.addEventListener("load", resize);
