@@ -127,26 +127,50 @@
         <div class="tab-pane fade show active" id="tab-posts" role="tabpanel">
           {% if posts_visible %}
             {% if post_form %}
-              <div class="card g-glass mb-3 community-post-card">
-                <div class="card-body">
-                  <form method="post" action="{% url 'community_create_post' community.slug %}" class="community-post-form">
-                    {% csrf_token %}
-                    <div class="d-flex align-items-start gap-2 community-post-row">
-                      <div class="flex-grow-1">
-                        {{ post_form.text }}
-                        {% if is_admin %}
-                          <div class="form-check mt-2 small text-body-secondary">
-                            {{ post_form.post_as_community }}
-                            <label class="form-check-label" for="{{ post_form.post_as_community.id_for_label }}">Опубликовать от лица сообщества</label>
-                          </div>
-                        {% endif %}
-                      </div>
-                      <button type="submit" class="btn btn-primary community-post-send" aria-label="Опубликовать">
-                        <img src="{% static 'core/icons/send.svg' %}" alt="" class="icon icon--18" aria-hidden="true">
-                      </button>
+              <div class="composer composer--community mb-3">
+                <form method="post"
+                      action="{% url 'community_create_post' community.slug %}"
+                      class="community-post-form composer__form"
+                      enctype="multipart/form-data">
+                  {% csrf_token %}
+
+                  <div class="composer__row">
+                    <input type="file" name="attachments" multiple hidden>
+
+                    <button type="button"
+                            class="composer__attach"
+                            data-composer-attach
+                            data-accept=""
+                            title="Вложение"
+                            aria-label="Вложение">
+                      <img class="composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
+                    </button>
+
+                    {{ post_form.text }}
+
+                    <button type="submit"
+                            class="composer__send composer__send--accent"
+                            aria-label="Опубликовать">
+                      <img src="{% static 'core/icons/send.svg' %}" alt="" class="composer__icon" aria-hidden="true">
+                    </button>
+                  </div>
+
+                  <div class="composer__attachments hidden"
+                       data-composer-attachments
+                       data-icon-doc="{% static 'core/icons/file-doc.svg' %}"
+                       data-icon-zip="{% static 'core/icons/file-zip.svg' %}"
+                       data-icon-generic="{% static 'core/icons/file-generic.svg' %}">
+                    <div class="composer__media-grid" data-composer-media></div>
+                    <div class="composer__file-list" data-composer-files></div>
+                  </div>
+
+                  {% if is_admin %}
+                    <div class="form-check mt-2 small text-body-secondary">
+                      {{ post_form.post_as_community }}
+                      <label class="form-check-label" for="{{ post_form.post_as_community.id_for_label }}">Опубликовать от лица сообщества</label>
                     </div>
-                  </form>
-                </div>
+                  {% endif %}
+                </form>
               </div>
             {% endif %}
 

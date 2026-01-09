@@ -797,22 +797,264 @@ document.addEventListener("DOMContentLoaded", function () {
     const REPLIES_BATCH_SIZE = 3;
 
     // ==========================================================
-    //           ПОДДЕРЖКА ВЛОЖЕНИЙ ДЛЯ НОВОГО ПОСТА
+    //           COMPOSER ATTACHMENTS (FEED + COMMUNITY)
     // ==========================================================
 
     const MAX_FILE_SIZE = 25 * 1024 * 1024;      // 25 MB на файл
     const MAX_TOTAL_SIZE = 250 * 1024 * 1024;    // 250 MB суммарно
     const MAX_FILE_COUNT = parseInt(document.body?.dataset?.attachMax || "10", 10); // максимум файлов
 
-    const fileInput = document.querySelector(".new-post-form input[name='attachments']");
-    const previewBox = document.getElementById("file-preview");
-    const dropZone = document.getElementById("drop-zone");
-    const fileCountEl = document.getElementById("file-count");
-    const fileSizeEl = document.getElementById("file-size");
-    const uploadProgress = document.getElementById("upload-progress");
-    const uploadProgressBar = document.getElementById("upload-progress-bar");
+    function formatSize(bytes) {
+        if (bytes < 1024 * 1024) {
+            return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+        }
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
 
-    let selectedFiles = [];
+    function formatDuration(seconds) {
+        if (!Number.isFinite(seconds)) return "0:00";
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${String(s).padStart(2, "0")}`;
+    }
+
+    function isMediaFile(file) {
+        return (file.type || "").startsWith("image/") || (file.type || "").startsWith("video/");
+    }
+
+    function getFileIcon(file, container) {
+        const name = (file.name || "").toLowerCase();
+        const ext = name.split(".").pop();
+        const isDoc = ["pdf", "doc", "docx", "rtf", "txt"].includes(ext);
+        const isZip = ["zip", "rar", "7z"].includes(ext);
+        if (isDoc && container?.dataset?.iconDoc) return container.dataset.iconDoc;
+        if (isZip && container?.dataset?.iconZip) return container.dataset.iconZip;
+        return container?.dataset?.iconGeneric || "";
+    }
+
+    function initComposer(form) {
+        const fileInput = form.querySelector('input[name="attachments"]');
+        const attachButtons = form.querySelectorAll("[data-composer-attach]");
+        const attachments = form.querySelector("[data-composer-attachments]");
+        const mediaGrid = attachments?.querySelector("[data-composer-media]");
+        const fileList = attachments?.querySelector("[data-composer-files]");
+        const textarea = form.querySelector('textarea[name="text"]');
+
+        if (textarea) {
+            textarea.classList.add("composer__textarea");
+            textarea.setAttribute("rows", "1");
+        }
+
+        let files = [];
+        let objectUrls = [];
+
+        function resetObjectUrls() {
+            objectUrls.forEach((url) => URL.revokeObjectURL(url));
+            objectUrls = [];
+        }
+
+        function updateInputFiles() {
+            if (!fileInput) return;
+            const dt = new DataTransfer();
+            files.forEach((file) => dt.items.add(file));
+            fileInput.files = dt.files;
+        }
+
+        function updateTextareaSize() {
+            if (!textarea) return;
+            const baseHeight = 44;
+            const maxHeight = 160;
+            textarea.style.height = "auto";
+            const scrollHeight = textarea.scrollHeight;
+            const nextHeight = Math.min(scrollHeight, maxHeight);
+            textarea.style.height = `${nextHeight}px`;
+            const isExpanded = nextHeight > baseHeight + 2;
+            textarea.classList.toggle("is-expanded", isExpanded);
+            textarea.classList.toggle("is-scrollable", scrollHeight > maxHeight + 1);
+        }
+
+        function renderAttachments() {
+            if (!attachments || !mediaGrid || !fileList) return;
+            resetObjectUrls();
+            attachments.classList.toggle("hidden", files.length === 0);
+            mediaGrid.innerHTML = "";
+            fileList.innerHTML = "";
+
+            const media = [];
+            const others = [];
+
+            files.forEach((file, index) => {
+                if (isMediaFile(file)) {
+                    media.push({ file, index });
+                } else {
+                    others.push({ file, index });
+                }
+            });
+
+            if (media.length) {
+                mediaGrid.dataset.count = String(Math.min(media.length, 4));
+            } else {
+                mediaGrid.removeAttribute("data-count");
+            }
+
+            const visibleMedia = media.slice(0, 4);
+            const overflowCount = Math.max(0, media.length - visibleMedia.length);
+
+            visibleMedia.forEach((item, idx) => {
+                const tile = document.createElement("div");
+                tile.className = "composer__media-tile";
+
+                const url = URL.createObjectURL(item.file);
+                objectUrls.push(url);
+
+                if ((item.file.type || "").startsWith("video/")) {
+                    const video = document.createElement("video");
+                    video.src = url;
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.preload = "metadata";
+                    tile.appendChild(video);
+
+                    const play = document.createElement("div");
+                    play.className = "composer__video-play";
+                    play.innerHTML = "<span></span>";
+                    tile.appendChild(play);
+
+                    const duration = document.createElement("div");
+                    duration.className = "composer__video-duration";
+                    duration.textContent = "0:00";
+                    tile.appendChild(duration);
+
+                    video.addEventListener("loadedmetadata", () => {
+                        duration.textContent = formatDuration(video.duration);
+                    });
+                } else {
+                    const img = document.createElement("img");
+                    img.src = url;
+                    img.alt = item.file.name || "image";
+                    tile.appendChild(img);
+                }
+
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.className = "composer__media-remove";
+                remove.dataset.removeIndex = String(item.index);
+                remove.innerHTML = "&times;";
+                tile.appendChild(remove);
+
+                const progress = document.createElement("div");
+                progress.className = "composer__media-progress";
+                progress.innerHTML = "<span></span>";
+                tile.appendChild(progress);
+
+                if (overflowCount > 0 && idx === visibleMedia.length - 1) {
+                    const overlay = document.createElement("div");
+                    overlay.className = "composer__media-overflow";
+                    overlay.textContent = `+${overflowCount}`;
+                    tile.appendChild(overlay);
+                }
+
+                mediaGrid.appendChild(tile);
+            });
+
+            others.forEach((item) => {
+                const row = document.createElement("div");
+                row.className = "composer__file-row";
+
+                const icon = document.createElement("img");
+                icon.className = "composer__file-icon";
+                icon.src = getFileIcon(item.file, attachments);
+                icon.alt = "";
+
+                const meta = document.createElement("div");
+                meta.className = "composer__file-meta";
+
+                const name = document.createElement("div");
+                name.className = "composer__file-name";
+                name.textContent = item.file.name || "file";
+
+                const size = document.createElement("div");
+                size.className = "composer__file-size";
+                size.textContent = formatSize(item.file.size || 0);
+
+                const progress = document.createElement("div");
+                progress.className = "composer__file-progress";
+                progress.innerHTML = "<span></span>";
+
+                meta.appendChild(name);
+                meta.appendChild(size);
+                meta.appendChild(progress);
+
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.className = "composer__file-remove";
+                remove.dataset.removeIndex = String(item.index);
+                remove.innerHTML = "&times;";
+
+                row.appendChild(icon);
+                row.appendChild(meta);
+                row.appendChild(remove);
+                fileList.appendChild(row);
+            });
+        }
+
+        function addFiles(list) {
+            if (!list?.length) return;
+            let totalSize = files.reduce((sum, f) => sum + (f.size || 0), 0);
+
+            list.forEach((file) => {
+                if (files.length >= MAX_FILE_COUNT) {
+                    alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
+                    return;
+                }
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`Файл "${file.name}" превышает 25MB`);
+                    return;
+                }
+                if (totalSize + file.size > MAX_TOTAL_SIZE) {
+                    alert("Превышен общий лимит размера файлов (250MB)");
+                    return;
+                }
+                files.push(file);
+                totalSize += file.size;
+            });
+
+            updateInputFiles();
+            renderAttachments();
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener("change", () => {
+                addFiles(Array.from(fileInput.files || []));
+                fileInput.value = "";
+            });
+        }
+
+        attachButtons.forEach((btn) => {
+            btn.addEventListener("click", () => {
+                if (!fileInput) return;
+                const accept = btn.getAttribute("data-accept") || "";
+                fileInput.setAttribute("accept", accept);
+                fileInput.click();
+            });
+        });
+
+        attachments?.addEventListener("click", (event) => {
+            const target = event.target;
+            const btn = target?.closest?.("[data-remove-index]");
+            if (!btn) return;
+            const index = Number(btn.dataset.removeIndex);
+            files = files.filter((_, idx) => idx !== index);
+            updateInputFiles();
+            renderAttachments();
+        });
+
+        if (textarea) {
+            textarea.addEventListener("input", updateTextareaSize);
+            window.addEventListener("load", updateTextareaSize);
+            updateTextareaSize();
+        }
+    }
 
     function isMobile() {
         return window.matchMedia("(max-width: 576px)").matches;
@@ -834,6 +1076,8 @@ document.addEventListener("DOMContentLoaded", function () {
     function pxFromLines(textEl, lines) {
         return Math.round(getLineHeightPx(textEl) * lines);
     }
+
+    document.querySelectorAll(".new-post-form, .community-post-form").forEach(initComposer);
 
     // ==========================================================
     //          ОГРАНИЧЕНИЕ СИМВОЛОВ В ПОСТЕ (UI)
@@ -892,164 +1136,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         out.textContent = "Добавится: " + files.map(f => f.name).join(", ");
     });
-
-    function formatSize(bytes) {
-        const mb = bytes / (1024 * 1024);
-        return mb.toFixed(1);
-    }
-
-    function updateFileInfo() {
-        const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0);
-        if (fileCountEl) fileCountEl.textContent = "Файлы: " + selectedFiles.length;
-        if (fileSizeEl) fileSizeEl.textContent = "Размер: " + formatSize(totalSize) + " MB";
-    }
-
-    // ----- Отрисовка предпросмотра -----
-    function renderPreview() {
-        if (!previewBox) return;
-        previewBox.innerHTML = "";
-
-        previewBox.classList.add("file-preview");
-        previewBox.classList.toggle("hidden", selectedFiles.length === 0);
-
-        selectedFiles.forEach((file, index) => {
-            const wrapper = document.createElement("div");
-            const isImage = (file.type || "").startsWith("image/");
-            wrapper.className = "preview-item " + (isImage ? "preview-item--image" : "preview-item--file");
-
-            if (isImage) {
-                const img = document.createElement("img");
-                img.className = "preview-img";
-                const url = URL.createObjectURL(file);
-                img.src = url;
-                img.alt = file.name || "image";
-                img.onload = () => URL.revokeObjectURL(url);
-                wrapper.appendChild(img);
-            } else {
-                const row = document.createElement("div");
-                row.className = "file-preview-item";
-
-                const icon = document.createElement("span");
-                icon.className = "file-preview-icon";
-                icon.textContent = "📎";
-
-                const name = document.createElement("span");
-                name.className = "file-preview-name";
-                name.textContent = file.name || "file";
-
-                row.appendChild(icon);
-                row.appendChild(name);
-                wrapper.appendChild(row);
-            }
-
-            const del = document.createElement("button");
-            del.type = "button";
-            del.className = "remove-file-btn";
-            del.setAttribute("aria-label", "Удалить файл");
-            del.innerHTML = "&times;";
-            del.onclick = () => removeFile(index);
-
-            wrapper.appendChild(del);
-            previewBox.appendChild(wrapper);
-        });
-
-        updateFileInfo();
-    }
-
-    function removeFile(index) {
-        selectedFiles.splice(index, 1);
-        renderPreview();
-
-        if (selectedFiles.length === 0 && dropZone) {
-            dropZone.classList.add("hidden");
-        }
-    }
-
-    function addFiles(files) {
-        let totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0);
-
-        for (const file of files) {
-            if (selectedFiles.length >= MAX_FILE_COUNT) {
-                alert("Максимум файлов в одном посте: " + MAX_FILE_COUNT);
-                break;
-            }
-
-            if (file.size > MAX_FILE_SIZE) {
-                alert(`Файл "${file.name}" превышает 25MB`);
-                continue;
-            }
-
-            if (totalSize + file.size > MAX_TOTAL_SIZE) {
-                alert("Превышен общий лимит размера файлов (250MB)");
-                break;
-            }
-
-            selectedFiles.push(file);
-            totalSize += file.size;
-        }
-
-        renderPreview();
-    }
-
-    function clearFilePreview() {
-        if (previewBox) previewBox.innerHTML = "";
-        selectedFiles = [];
-        if (fileInput) fileInput.value = "";
-        updateFileInfo();
-    }
-
-    if (fileInput) {
-        fileInput.addEventListener("change", function () {
-            if (!fileInput.files.length) return;
-            addFiles(fileInput.files);
-            fileInput.value = "";
-        });
-    }
-
-    // ==========================================================
-    //       ПОКАЗАТЬ DROP-ZONE ПРИ DRAG'N'DROP
-    // ==========================================================
-    document.addEventListener("dragenter", function (e) {
-        if (!e.dataTransfer || !e.dataTransfer.types.includes("Files")) return;
-        if (dropZone) dropZone.classList.remove("hidden");
-    });
-
-    document.addEventListener("dragleave", function (e) {
-        if (e.clientX === 0 && e.clientY === 0) {
-            if (selectedFiles.length === 0 && dropZone) {
-                dropZone.classList.add("hidden");
-            }
-        }
-    });
-
-    if (dropZone) {
-        dropZone.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            dropZone.classList.add("dragover");
-        });
-
-        dropZone.addEventListener("dragleave", (e) => {
-            e.preventDefault();
-            dropZone.classList.remove("dragover");
-
-            if (selectedFiles.length === 0) {
-                dropZone.classList.add("hidden");
-            }
-        });
-
-        dropZone.addEventListener("drop", (e) => {
-            e.preventDefault();
-            dropZone.classList.remove("dragover");
-
-            if (e.dataTransfer.files.length) {
-                addFiles(e.dataTransfer.files);
-            }
-
-            if (selectedFiles.length === 0) {
-                dropZone.classList.add("hidden");
-            }
-        });
-    }
 
     // На старте прячем все формы комментариев и ответов
     document.querySelectorAll(".comment-form, .reply-form").forEach(function (f) {

@@ -79,107 +79,8 @@
       text-decoration: none;
     }
 
-    /* ---------- Composer ---------- */
-    .feed-composer{
-      border-radius: var(--g-radius-lg);
-      padding: 12px;
-    }
-
-    .feed-composer__row{
-      display:flex;
-      gap: 12px;
-      align-items:flex-start;
-    }
-
-    .feed-composer__avatar{
-      padding-top: 2px;
-      flex: 0 0 auto;
-    }
-
-    .feed-composer__input-wrap{
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
-    .feed-composer__bubble{
-      border: 1px solid var(--g-border);
-      background: var(--g-surface-2);
-      border-radius: 18px;
-      padding: 10px 12px;
-    }
-
-    .feed-composer__bubble:focus-within{
-      border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
-      box-shadow: 0 0 0 4px color-mix(in srgb, var(--g-primary) 18%, transparent);
-      background: var(--g-surface);
-    }
-
-    .feed-composer__textarea{
-      width:100%;
-      border:0 !important;
-      outline:0 !important;
-      background:transparent !important;
-      box-shadow:none !important;
-      resize:none;
-      padding:0;
-      margin:0;
-      min-height: 42px;
-      max-height: 220px;
-      overflow:auto;
-      color: var(--g-text);
-      font-size: 15px;
-      line-height: 1.45;
-    }
-
-    .feed-composer__footer{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      padding-top: 10px;
-    }
-
-    .feed-composer__left{
-      display:flex;
-      align-items:center;
-      gap: 8px;
-      flex-wrap: wrap;
-      min-width: 0;
-    }
-
-    .feed-composer__btn{
-      width: 38px;
-      height: 34px;
-      padding: 0;
-      display:grid;
-      place-items:center;
-      border-radius: 12px;
-      color: var(--g-muted);
-    }
-
-    .feed-composer__btn:hover{
-      color: var(--g-text);
-    }
-
-    .feed-composer__send{
-      width: 44px;
-      height: 44px;
-      padding: 0;
-      border-radius: 999px;
-      display:grid;
-      place-items:center;
-      flex: 0 0 auto;
-    }
-
-    .feed-composer__status{
-      color: var(--g-muted);
-      min-height: 18px;
-    }
-
     @media (max-width: 576px){
       .feed-search{ padding: 10px; }
-      .feed-composer{ padding: 10px; }
-      .feed-composer__send{ width: 42px; height: 42px; }
     }
   </style>
 {% endblock %}
@@ -271,42 +172,49 @@
   </section>
 
   <!-- Форма нового поста (как на примере) -->
-  <section class="feed-composer g-glass">
+  <section class="composer">
     <form method="post"
           action="{% url 'create_post' %}"
-          class="new-post-form feed-composer__form"
+          class="new-post-form composer__form"
           enctype="multipart/form-data"
           data-authenticated="{% if user.is_authenticated %}1{% else %}0{% endif %}"
           data-login-url="{% url 'login' %}?next={{ request.path }}">
       {% csrf_token %}
 
-      <div class="feed-composer__inline">
+      <div class="composer__row">
         <input id="newPostFiles" type="file" name="attachments" multiple hidden>
 
         <button type="button"
-                class="feed-composer__icon-btn"
-                data-feed-attach
+                class="composer__attach"
+                data-composer-attach
                 data-accept=""
                 title="Вложение"
                 aria-label="Вложение">
-          <img class="feed-composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
+          <img class="composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
         </button>
 
         <textarea
           name="text"
-          class="feed-composer__input"
+          class="composer__textarea"
           rows="1"
           placeholder="{% if user.is_authenticated %}Что нового, {{ user.display_name|default:user.username }}?{% else %}Войдите, чтобы написать пост…{% endif %}">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
 
         <button type="submit"
-                class="feed-composer__send feed-composer__send--accent"
+                class="composer__send composer__send--accent"
                 title="Опубликовать"
                 aria-label="Опубликовать">
-          <img class="feed-composer__icon" src="{% static 'core/icons/send.svg' %}" alt="">
+          <img class="composer__icon" src="{% static 'core/icons/send.svg' %}" alt="">
         </button>
       </div>
 
-      <div class="feed-composer__attachments file-preview hidden" id="file-preview"></div>
+      <div class="composer__attachments hidden"
+           data-composer-attachments
+           data-icon-doc="{% static 'core/icons/file-doc.svg' %}"
+           data-icon-zip="{% static 'core/icons/file-zip.svg' %}"
+           data-icon-generic="{% static 'core/icons/file-generic.svg' %}">
+        <div class="composer__media-grid" data-composer-media></div>
+        <div class="composer__file-list" data-composer-files></div>
+      </div>
     </form>
   </section>
 
@@ -335,36 +243,4 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-(function () {
-  const form = document.querySelector(".new-post-form");
-  if (!form) return;
-
-  // Attach buttons -> single file input
-  const fileInput = form.querySelector("input[name='attachments']");
-  form.querySelectorAll("[data-feed-attach]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const accept = btn.getAttribute("data-accept") || "";
-      if (!fileInput) return;
-      fileInput.setAttribute("accept", accept);
-      fileInput.click();
-    });
-  });
-
-  const textarea = form.querySelector(".feed-composer__input");
-  if (textarea) {
-    const baseHeight = textarea.offsetHeight || 40;
-    const resize = () => {
-      textarea.style.height = "auto";
-      textarea.style.height = `${textarea.scrollHeight}px`;
-      const isExpanded = textarea.scrollHeight > baseHeight + 2;
-      textarea.classList.toggle("is-expanded", isExpanded);
-    };
-    textarea.addEventListener("input", resize);
-    window.addEventListener("load", resize);
-    resize();
-  }
-})();
-</script>
-{% endblock %}
+{% block extra_js %}{% endblock %}
