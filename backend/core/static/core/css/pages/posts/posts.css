@@ -23,12 +23,14 @@
 .feed-composer__input{
   flex: 1 1 auto;
   min-width: 0;
-  height: 40px;
+  min-height: 40px;
   border-radius: 999px;
   border: 1px solid var(--g-border);
   background: color-mix(in srgb, var(--g-surface) 92%, transparent);
   color: var(--g-text);
-  padding: 0 14px;
+  padding: 10px 14px;
+  resize: none;
+  line-height: 1.4;
 }
 
 .feed-composer__input::placeholder{
@@ -59,6 +61,20 @@
 .feed-composer__send:hover{
   background: color-mix(in srgb, var(--g-primary) 10%, var(--g-surface));
   border-color: color-mix(in srgb, var(--g-primary) 35%, var(--g-border));
+}
+
+.feed-composer__send--accent{
+  background: var(--g-primary);
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+}
+
+.feed-composer__send--accent:hover{
+  background: color-mix(in srgb, var(--g-primary) 85%, var(--g-primary-2));
+  border-color: color-mix(in srgb, var(--g-primary) 65%, var(--g-border));
+}
+
+.feed-composer__send--accent .feed-composer__icon{
+  filter: brightness(0) invert(1);
 }
 
 .feed-composer__icon{

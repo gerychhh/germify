@@ -292,15 +292,14 @@
           <img class="feed-composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
         </button>
 
-        <input
-          type="text"
+        <textarea
           name="text"
           class="feed-composer__input"
-          placeholder="{% if user.is_authenticated %}Что нового, {{ user.display_name|default:user.username }}?{% else %}Войдите, чтобы написать пост…{% endif %}"
-          value="{% if form.text.value %}{{ form.text.value }}{% endif %}">
+          rows="1"
+          placeholder="{% if user.is_authenticated %}Что нового, {{ user.display_name|default:user.username }}?{% else %}Войдите, чтобы написать пост…{% endif %}">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
 
         <button type="submit"
-                class="feed-composer__send"
+                class="feed-composer__send feed-composer__send--accent"
                 title="Опубликовать"
                 aria-label="Опубликовать">
           <img class="feed-composer__icon" src="{% static 'core/icons/send.svg' %}" alt="">
@@ -350,6 +349,17 @@
       fileInput.click();
     });
   });
+
+  const textarea = form.querySelector(".feed-composer__input");
+  if (textarea) {
+    const resize = () => {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    };
+    textarea.addEventListener("input", resize);
+    window.addEventListener("load", resize);
+    resize();
+  }
 })();
 </script>
 {% endblock %}
