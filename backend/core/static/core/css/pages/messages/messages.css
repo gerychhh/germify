@@ -191,8 +191,12 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
     padding-bottom: 0;
   }
 
+  body.messages-page main.g-main {
+    padding: 0;
+  }
+
   body.messages-page main.g-main .g-container {
-    min-height: calc(100dvh - var(--g-navbar-h));
+    min-height: calc(100dvh - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
     padding: 0 !important;
   }
 
@@ -208,7 +212,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   }
 
   .messages-layout {
-    min-height: calc(100dvh - var(--g-navbar-h) - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
+    min-height: calc(100dvh - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
   }
 
   .messages-sidebar-col {
@@ -229,8 +233,8 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
   .messages-sidebar-card,
   .messages-chat-card {
-    height: calc(100dvh - var(--g-navbar-h) - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
-    min-height: calc(100dvh - var(--g-navbar-h) - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
+    height: calc(100dvh - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
+    min-height: calc(100dvh - var(--g-bottomnav-h) - env(safe-area-inset-bottom));
   }
 
   .messages-list {
