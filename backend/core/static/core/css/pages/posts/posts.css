@@ -912,7 +912,8 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   resize: none;
   height: 44px;
   min-height: 44px;
-  max-height: 44px;
+  max-height: 160px;
+  overflow: hidden;
 }
 
 /* ===== VK composer row (кнопка отправки справа) ===== */
@@ -930,9 +931,20 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   margin: 0 !important;
   height: var(--vk-compose-size);
   min-height: var(--vk-compose-size);
-  max-height: var(--vk-compose-size);
+  max-height: 160px;
   padding-top: 10px;
   padding-bottom: 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--g-border) 90%, transparent);
+  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  color: var(--g-text);
+  overflow: hidden;
+}
+
+.vk-compose-row .comment-input:focus{
+  outline: none;
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-primary) 25%, transparent);
 }
 
 .vk-compose-row .vk-send-btn{
@@ -941,18 +953,24 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   width: var(--vk-compose-size);
   height: var(--vk-compose-size);
   padding: 0;
-  border: 1px solid var(--g-border);
+  border: 1px solid color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
   border-radius: 14px;
-  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  background: var(--g-primary);
   display: grid;
   place-items: center;
   cursor: pointer;
+}
+
+.vk-compose-row .vk-send-btn:hover{
+  background: color-mix(in srgb, var(--g-primary) 85%, var(--g-primary-2));
+  border-color: color-mix(in srgb, var(--g-primary) 65%, var(--g-border));
 }
 
 .vk-compose-row .vk-send-btn img{
   width: 18px;
   height: 18px;
   display: block;
+  filter: brightness(0) invert(1);
 }
 
 /* чтобы карточка поста в модалке занимала всю ширину колонки */
