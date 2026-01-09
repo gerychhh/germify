@@ -9,7 +9,7 @@ type GlassCardProps = {
 };
 
 export const GlassCard = ({ className, children }: GlassCardProps) => (
-  <div className={cn(GLASS_SURFACE, "overflow-hidden", className)}>
+  <div className={cn(GLASS_SURFACE, className)}>
     {children}
   </div>
 );
