@@ -280,94 +280,30 @@
           data-login-url="{% url 'login' %}?next={{ request.path }}">
       {% csrf_token %}
 
-      <div class="feed-composer__row">
-        <div class="feed-composer__avatar">
-          {% include "core/partials/avatar.html" with user_obj=user size="md" %}
-        </div>
+      <div class="feed-composer__inline">
+        <input id="newPostFiles" type="file" name="attachments" multiple hidden>
 
-        <div class="feed-composer__input-wrap">
-          <div class="feed-composer__bubble">
-            <textarea
-              name="text"
-              class="feed-composer__textarea"
-              rows="1"
-              placeholder="{% if user.is_authenticated %}Что нового, {{ user.display_name|default:user.username }}?{% else %}Войдите, чтобы написать пост…{% endif %}">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
-          </div>
+        <button type="button"
+                class="feed-composer__icon-btn"
+                data-feed-attach
+                data-accept=""
+                title="Вложение"
+                aria-label="Вложение">
+          <img class="feed-composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
+        </button>
 
-          <!-- PREVIEW -->
-          <div class="file-preview mt-2" id="file-preview"></div>
-
-          <!-- PREVIEW голосового -->
-          <audio id="voice-preview"
-                 class="voice-preview hidden mt-2 w-100"
-                 controls></audio>
-
-          <!-- DRAG & DROP ZONE -->
-          <div id="drop-zone" class="drop-zone hidden mt-2 p-3 rounded text-center">
-            Перетащи файлы сюда или нажми на кнопку вложений
-          </div>
-
-          <!-- INFO + PROGRESS -->
-          <div class="file-info small text-muted mt-2 d-flex gap-2 flex-wrap">
-            <span id="file-count">Файлы: 0</span>
-            <span id="file-size">Размер: 0 MB</span>
-          </div>
-
-          <div class="upload-progress hidden mt-2" id="upload-progress">
-            <div class="upload-progress-bar" id="upload-progress-bar"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="feed-composer__footer">
-        <div class="feed-composer__left">
-          <!-- Один input (как было), но открываем его кнопками -->
-          <input id="newPostFiles" type="file" name="attachments" multiple hidden>
-
-          <button type="button"
-                  class="btn btn-outline-secondary feed-composer__btn"
-                  data-feed-attach
-                  data-accept="image/*"
-                  title="Фото"
-                  aria-label="Фото">
-            <svg class="feed-ic" aria-hidden="true"><use href="#ic-image"></use></svg>
-          </button>
-
-          <button type="button"
-                  class="btn btn-outline-secondary feed-composer__btn"
-                  data-feed-attach
-                  data-accept="video/*"
-                  title="Видео"
-                  aria-label="Видео">
-            <svg class="feed-ic" aria-hidden="true"><use href="#ic-video"></use></svg>
-          </button>
-
-          <button type="button"
-                  class="btn btn-outline-secondary feed-composer__btn"
-                  data-feed-attach
-                  data-accept=""
-                  title="Файлы"
-                  aria-label="Файлы">
-            <svg class="feed-ic" aria-hidden="true"><use href="#ic-file"></use></svg>
-          </button>
-
-          <!-- Голосовой ввод (оставил, но теперь SVG) -->
-          <button type="button"
-                  id="voice-record-btn"
-                  class="btn btn-outline-secondary feed-composer__btn voice-record-btn"
-                  title="Голос"
-                  aria-label="Голос">
-            <svg class="feed-ic" aria-hidden="true"><use href="#ic-mic"></use></svg>
-          </button>
-
-          <span id="voice-record-status" class="feed-composer__status small"></span>
-        </div>
+        <input
+          type="text"
+          name="text"
+          class="feed-composer__input"
+          placeholder="{% if user.is_authenticated %}Что нового, {{ user.display_name|default:user.username }}?{% else %}Войдите, чтобы написать пост…{% endif %}"
+          value="{% if form.text.value %}{{ form.text.value }}{% endif %}">
 
         <button type="submit"
-                class="btn btn-primary feed-composer__send primary-button"
+                class="feed-composer__send"
                 title="Опубликовать"
                 aria-label="Опубликовать">
-          <img class="feed-ic" src="{% static 'core/icons/send.svg' %}" alt="">
+          <img class="feed-composer__icon" src="{% static 'core/icons/send.svg' %}" alt="">
         </button>
       </div>
     </form>
@@ -414,18 +350,6 @@
       fileInput.click();
     });
   });
-
-  // Auto-resize textarea (compact like in mock)
-  const ta = form.querySelector("textarea[name='text']");
-  if (ta) {
-    const resize = () => {
-      ta.style.height = "auto";
-      ta.style.height = Math.min(ta.scrollHeight, 220) + "px";
-    };
-    ta.addEventListener("input", resize);
-    window.addEventListener("load", resize);
-    resize();
-  }
 })();
 </script>
 {% endblock %}

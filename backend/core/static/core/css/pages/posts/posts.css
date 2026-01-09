@@ -3,6 +3,71 @@
    Общие компоненты (hidden, upload, text-collapse) — в app.css.
 */
 
+/* ===== ФОРМА НОВОГО ПОСТА ===== */
+.feed-composer{
+  padding: 12px 14px;
+  border-radius: var(--g-radius-lg);
+}
+
+.feed-composer__form{
+  margin: 0;
+}
+
+.feed-composer__inline{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.feed-composer__input{
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--g-border);
+  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  color: var(--g-text);
+  padding: 0 14px;
+}
+
+.feed-composer__input::placeholder{
+  color: color-mix(in srgb, var(--g-text) 55%, var(--g-muted));
+}
+
+.feed-composer__input:focus{
+  outline: none;
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-primary) 25%, transparent);
+}
+
+.feed-composer__icon-btn,
+.feed-composer__send{
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--g-border);
+  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.feed-composer__icon-btn:hover,
+.feed-composer__send:hover{
+  background: color-mix(in srgb, var(--g-primary) 10%, var(--g-surface));
+  border-color: color-mix(in srgb, var(--g-primary) 35%, var(--g-border));
+}
+
+.feed-composer__icon{
+  width: 18px;
+  height: 18px;
+  display: block;
+  filter: var(--g-icon-filter, none);
+}
+
 /* ===== ТЕКСТ ===== */
 .post-text {
   margin: 2px 0 0;
