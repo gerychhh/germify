@@ -175,6 +175,13 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   min-height: 160px;
 }
 
+@media (max-width: 576px) {
+  .composer__media-grid[data-count="1"] .composer__media-tile{
+    min-height: 160px;
+    max-height: 45vh;
+  }
+}
+
 .composer__media-grid[data-count="3"] .composer__media-tile:nth-child(1){
   grid-area: hero;
   min-height: 220px;
