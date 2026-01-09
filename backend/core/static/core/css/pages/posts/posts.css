@@ -735,6 +735,10 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   border-radius: 0;
 }
 
+.vk-modal-left .post-layout{
+  padding: 0;
+}
+
 .vk-modal-comments{
   border-top: 0;
   padding-top: 0;
