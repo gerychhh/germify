@@ -1093,18 +1093,9 @@ body.vk-modal-open{
   font-size: 12px;
 }
 
-/* Comment like button: use same SVG as posts, show only number */
+/* Comment like button: match post like button */
 .comment-like-button{
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 4px;
-  border-radius: 10px;
-}
-.comment-like-button .like-icon{
-  width: 18px;
-  height: 18px;
-  display: block;
+  font-size: 18px;
 }
 .comment-like-count{
   font-variant-numeric: tabular-nums;

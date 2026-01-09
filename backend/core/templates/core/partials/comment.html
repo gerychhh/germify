@@ -54,7 +54,7 @@
                   class="comment-like-form m-0"
                   data-comment-id="{{ c.id }}">
                 {% csrf_token %}
-                <button class="comment-like-button btn btn-link p-0 text-decoration-none"
+                <button class="like-button comment-like-button"
                         type="submit"
                         aria-label="Лайк"
                         data-liked="{% if c.id in liked_comment_ids %}true{% else %}false{% endif %}">
@@ -65,11 +65,10 @@
                       data-src-liked="{% static 'core/icons/post-like-filled.svg' %}"
                       data-src-unliked="{% static 'core/icons/post-like.svg' %}"
                     >
+                    <span class="like-count comment-like-count" data-comment-id="{{ c.id }}">{{ c.likes.count }}</span>
                 </button>
             </form>
         {% endif %}
-
-        <span class="comment-like-count text-muted" data-comment-id="{{ c.id }}">{{ c.likes.count }}</span>
 
         {% if user.is_authenticated %}
             <button class="comment-reply-toggle comment-icon-btn"
