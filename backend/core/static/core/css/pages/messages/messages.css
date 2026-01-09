@@ -281,7 +281,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
   .messages-composer {
     position: sticky;
-    bottom: calc(var(--g-bottomnav-h) + env(safe-area-inset-bottom));
+    bottom: 0;
     z-index: 5;
     background: color-mix(in srgb, var(--g-surface) 88%, transparent);
     box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.16);
