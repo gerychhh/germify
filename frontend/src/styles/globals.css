@@ -23,7 +23,7 @@
 .chat-message p,
 .chat-bubble p {
   margin-top: 0;
-  margin-bottom: 0;
+  margin-bottom: 0 !important;
 }
 
 .chat-bubble:has(img, picture, video) {
