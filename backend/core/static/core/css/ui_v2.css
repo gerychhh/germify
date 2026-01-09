@@ -16,7 +16,7 @@ html, body{
 .g-main{
   position: relative;
   z-index: 1;
-  padding: 24px 0 36px;
+  padding: calc(var(--g-navbar-h) + 24px) 0 36px;
 }
 
 .g-container{
@@ -362,9 +362,11 @@ html[data-glass="off"] .popover::after{
   border-bottom: 1px solid var(--g-border) !important;
   box-shadow: var(--g-shadow-sm) !important;
   color: var(--g-text);
-  position: sticky !important;
+  position: fixed !important;
   top: 0;
-  z-index: 1040;
+  left: 0;
+  right: 0;
+  z-index: 1030;
 }
 
 .g-navbar .navbar-brand{
@@ -582,6 +584,7 @@ html[data-glass="off"] .card .card-footer{
   -webkit-backdrop-filter: blur(var(--g-blur));
   width: min(420px, calc(100vw - 20px));
   box-shadow: var(--g-shadow-lg);
+  z-index: 1100;
 }
 
 #uiSettings.offcanvas{
