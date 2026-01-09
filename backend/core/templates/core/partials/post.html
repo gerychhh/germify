@@ -52,35 +52,30 @@
             </div>
           {% endif %}
 
-          {% if user.is_authenticated and user != post.author and not post.is_community_post %}
-            <div class="ms-2">
-              {% if post.author.id in following_ids %}
-                <button type="button"
-                        class="btn btn-sm btn-outline-secondary follow-btn py-0 px-2"
-                        data-username="{{ post.author.username }}"
-                        data-following="1"
-                        data-follow-url="{% url 'follow_user' post.author.username %}"
-                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}">
-                  Вы подписаны
-                </button>
-              {% else %}
-                <button type="button"
-                        class="btn btn-sm btn-primary follow-btn py-0 px-2"
-                        data-username="{{ post.author.username }}"
-                        data-following="0"
-                        data-follow-url="{% url 'follow_user' post.author.username %}"
-                        data-unfollow-url="{% url 'unfollow_user' post.author.username %}">
-                  Подписаться
-                </button>
-              {% endif %}
-            </div>
-          {% endif %}
         </div>
 
         <div class="post-header-right d-flex align-items-center gap-2 ms-sm-auto">
-          <a href="{% url 'post_detail' post.id %}" class="post-date small">
-            {{ post.created_at|time_ago }}
-          </a>
+          {% if user.is_authenticated and user != post.author and not post.is_community_post %}
+            {% if post.author.id in following_ids %}
+              <button type="button"
+                      class="btn btn-sm btn-outline-secondary follow-btn py-0 px-2"
+                      data-username="{{ post.author.username }}"
+                      data-following="1"
+                      data-follow-url="{% url 'follow_user' post.author.username %}"
+                      data-unfollow-url="{% url 'unfollow_user' post.author.username %}">
+                Вы подписаны
+              </button>
+            {% else %}
+              <button type="button"
+                      class="btn btn-sm btn-primary follow-btn py-0 px-2"
+                      data-username="{{ post.author.username }}"
+                      data-following="0"
+                      data-follow-url="{% url 'follow_user' post.author.username %}"
+                      data-unfollow-url="{% url 'unfollow_user' post.author.username %}">
+                Подписаться
+              </button>
+            {% endif %}
+          {% endif %}
 
           <button type="button"
                   class="btn btn-sm btn-outline-secondary post-edit-close hidden"
@@ -349,6 +344,10 @@
                   data-post-url="{% url 'post_detail' post.id %}">
             <img src="{% static 'core/icons/post-repost.svg' %}" alt="" class="post-action-icon">
           </button>
+
+          <span class="post-time-ago small text-muted ms-auto">
+            {{ post.created_at|time_ago }}
+          </span>
         </div>
 
         {# комментарии рендерим в DOM, но открываем их теперь в модальном окне (VK-style) #}

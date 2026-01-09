@@ -1134,3 +1134,7 @@ body.vk-modal-open{
 
 /* Ensure actions never stretch across row */
 .post-vk-actions > *{ flex: 0 0 auto; }
+
+.post-time-ago{
+  margin-left: auto;
+}
