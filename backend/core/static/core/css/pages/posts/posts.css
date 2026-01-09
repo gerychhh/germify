@@ -729,6 +729,34 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
     height: auto !important;
 }
 
+/* В модалке: пост и форма комментариев должны выглядеть как единый блок */
+.vk-modal-left .post-card{
+  border-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.vk-modal-comments{
+  border-top: 0;
+  padding-top: 0;
+}
+
+.vk-modal-composer{
+  border-top: 0;
+  padding-top: 0;
+}
+
+.post-modal-close{
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+}
+
 /* v6: в модалке скрываем кнопку "Показать ещё" (раскрываем батчами автоматически по скроллу) */
 .vk-modal-right-scroll .comments-more-btn,
 .vk-modal-right-scroll .replies-more-btn {

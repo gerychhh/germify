@@ -460,6 +460,18 @@ function openVkPostModal(postId, focusForm = true) {
 
     // в клоне не нужны “скрытые источники комментариев” и блоки редактирования
     postClone.querySelectorAll('.post-comments-source, .post-edit-block').forEach(el => el.remove());
+
+    // В модалке вместо меню показываем кнопку закрытия
+    const menuWrapper = postClone.querySelector('.post-menu-wrapper');
+    if (menuWrapper) {
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'btn btn-sm btn-outline-secondary post-modal-close';
+        closeBtn.setAttribute('aria-label', 'Закрыть');
+        closeBtn.setAttribute('data-vk-modal-close', '');
+        closeBtn.innerHTML = '&times;';
+        menuWrapper.replaceWith(closeBtn);
+    }
     left.appendChild(postClone);
 
     // Переносим (НЕ копируем) комментарии в правую часть
