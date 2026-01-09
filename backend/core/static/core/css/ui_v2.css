@@ -101,45 +101,63 @@ body::after{
 
 body::before{
   background:
-    repeating-linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.18) 0%,
-      rgba(255, 255, 255, 0.05) 6%,
-      transparent 12%,
-      transparent 22%
+    repeating-radial-gradient(
+      circle at 18% 22%,
+      transparent 0 9px,
+      rgba(255, 255, 255, 0.85) 9px 11px,
+      transparent 11px 18px
     ),
-    radial-gradient(140% 120% at 10% 20%, rgba(255, 255, 255, 0.25), transparent 55%),
-    radial-gradient(130% 110% at 90% 40%, rgba(255, 255, 255, 0.18), transparent 60%);
-  background-size: 320px 220px, 100% 100%, 100% 100%;
-  animation: float-glow-a 9s linear infinite;
+    repeating-radial-gradient(
+      circle at 72% 16%,
+      transparent 0 12px,
+      rgba(255, 255, 255, 0.7) 12px 14px,
+      transparent 14px 22px
+    ),
+    repeating-radial-gradient(
+      circle at 38% 70%,
+      transparent 0 10px,
+      rgba(255, 255, 255, 0.8) 10px 12px,
+      transparent 12px 20px
+    );
+  background-size: 480px 360px, 520px 400px, 560px 420px;
+  animation: float-glow-a 8s linear infinite;
 }
 
 body::after{
   background:
-    repeating-linear-gradient(
-      45deg,
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0.04) 8%,
-      transparent 16%,
-      transparent 28%
+    repeating-radial-gradient(
+      circle at 82% 68%,
+      transparent 0 11px,
+      rgba(255, 255, 255, 0.65) 11px 13px,
+      transparent 13px 20px
     ),
-    radial-gradient(120% 110% at 20% 80%, rgba(255, 255, 255, 0.2), transparent 62%),
-    radial-gradient(140% 120% at 80% 70%, rgba(255, 255, 255, 0.14), transparent 65%);
-  background-size: 280px 200px, 100% 100%, 100% 100%;
-  opacity: 0.7;
-  animation: float-glow-b 11s linear infinite;
+    repeating-radial-gradient(
+      circle at 22% 78%,
+      transparent 0 13px,
+      rgba(255, 255, 255, 0.6) 13px 15px,
+      transparent 15px 24px
+    ),
+    repeating-radial-gradient(
+      circle at 52% 32%,
+      transparent 0 10px,
+      rgba(255, 255, 255, 0.7) 10px 12px,
+      transparent 12px 20px
+    );
+  background-size: 540px 420px, 600px 460px, 480px 360px;
+  opacity: 0.75;
+  animation: float-glow-b 10s linear infinite;
 }
 
 @keyframes float-glow-a{
   0% { transform: translate3d(0, 0, 0) scale(1); background-position: 0 0, 0 0, 0 0; }
-  50% { transform: translate3d(1%, -2%, 0) scale(1.02); background-position: 140px 80px, 0 0, 0 0; }
-  100% { transform: translate3d(0, 0, 0) scale(1); background-position: 280px 160px, 0 0, 0 0; }
+  50% { transform: translate3d(1%, -1%, 0) scale(1.015); background-position: 160px 120px, -120px 80px, 90px -100px; }
+  100% { transform: translate3d(0, 0, 0) scale(1); background-position: 320px 240px, -240px 160px, 180px -200px; }
 }
 
 @keyframes float-glow-b{
   0% { transform: translate3d(0, 0, 0) scale(1); background-position: 0 0, 0 0, 0 0; }
-  50% { transform: translate3d(-1%, 2%, 0) scale(1.02); background-position: -120px 120px, 0 0, 0 0; }
-  100% { transform: translate3d(0, 0, 0) scale(1); background-position: -240px 240px, 0 0, 0 0; }
+  50% { transform: translate3d(-1%, 1%, 0) scale(1.015); background-position: -140px 120px, 120px -140px, -80px 110px; }
+  100% { transform: translate3d(0, 0, 0) scale(1); background-position: -280px 240px, 240px -280px, -160px 220px; }
 }
 
 .app-body{
