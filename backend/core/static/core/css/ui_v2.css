@@ -521,7 +521,7 @@ html[data-glass="off"] .g-bottom-nav{
 
 @media (max-width: 991.98px) {
   :root {
-    --g-bottomnav-h: 54px;
+    --g-bottomnav-h: 44px;
   }
 
   .g-navbar {
@@ -546,6 +546,7 @@ html[data-glass="off"] .g-bottom-nav{
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
+  height: 100%;
   margin: 0;
   padding: 0 6px;
   list-style: none;
@@ -564,7 +565,7 @@ html[data-glass="off"] .g-bottom-nav{
   flex-direction: column;
   gap: 4px;
   border-radius: var(--g-radius-sm);
-  padding: 2px 4px 0;
+  padding: 0;
   text-decoration: none;
   color: color-mix(in srgb, var(--g-text) 78%, var(--g-muted));
   transition: background-color 0.15s ease, color 0.15s ease;
