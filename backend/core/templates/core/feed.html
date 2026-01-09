@@ -87,10 +87,6 @@
 
 {% block content %}
 <div class="feed-page">
-  <div class="g-pagehead">
-    <div class="g-pagehead__title">Лента</div>
-  </div>
-
   <!-- SVG sprite (inline) -->
   <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
     <symbol id="ic-search" viewBox="0 0 24 24">
@@ -158,10 +154,6 @@
         <button type="submit" class="visually-hidden">Найти</button>
       </div>
     </form>
-
-    <div class="feed-search__help text-muted small mt-2">
-      Ищите по тексту, авторам (<code>@user</code>), хэштегам (<code>#тема</code>) или названиям сообществ.
-    </div>
 
     {% if q_author %}
       <div class="small text-muted mt-2">
