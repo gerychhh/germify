@@ -86,16 +86,47 @@ body{
   z-index: 0;
 }
 
-body::before{
+body::before,
+body::after{
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -15% -10%;
   z-index: 0;
   pointer-events: none;
+  opacity: 0.6;
+  mix-blend-mode: screen;
+  filter: blur(10px);
+  transform: translate3d(0, 0, 0);
+}
+
+body::before{
   background:
-    radial-gradient(820px 520px at 85% 15%, color-mix(in srgb, var(--g-primary) 8%, transparent), transparent 70%),
-    radial-gradient(760px 560px at 15% 90%, color-mix(in srgb, var(--g-primary-4) 6%, transparent), transparent 72%);
+    radial-gradient(320px 320px at 15% 20%, color-mix(in srgb, var(--g-primary) 42%, transparent), transparent 65%),
+    radial-gradient(420px 420px at 85% 25%, color-mix(in srgb, var(--g-primary-2) 35%, transparent), transparent 68%),
+    radial-gradient(520px 520px at 40% 85%, color-mix(in srgb, var(--g-primary-4) 28%, transparent), transparent 70%);
+  animation: float-glow-a 18s ease-in-out infinite;
+}
+
+body::after{
+  background:
+    radial-gradient(360px 360px at 75% 70%, color-mix(in srgb, var(--g-accent-cyan) 32%, transparent), transparent 70%),
+    radial-gradient(520px 520px at 30% 60%, color-mix(in srgb, var(--g-accent-purple) 26%, transparent), transparent 72%);
   opacity: 0.45;
+  animation: float-glow-b 22s ease-in-out infinite;
+}
+
+@keyframes float-glow-a{
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  40% { transform: translate3d(2%, -3%, 0) scale(1.04); }
+  70% { transform: translate3d(-3%, 2%, 0) scale(1.02); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes float-glow-b{
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  35% { transform: translate3d(-2%, 3%, 0) scale(1.05); }
+  75% { transform: translate3d(3%, -2%, 0) scale(1.01); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
 }
 
 .app-body{
