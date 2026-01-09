@@ -267,8 +267,7 @@ html[data-glass="off"] .form-select{
     rgba(0, 0, 0, 0.03) 2px,
     rgba(0, 0, 0, 0.03) 3px
   );
-  opacity: 0.35;
-  mix-blend-mode: soft-light;
+  opacity: 0.1;
 }
 
 .g-glass-surface:hover,
