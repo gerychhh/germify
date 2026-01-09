@@ -19,3 +19,18 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
 }
+
+.chat-message p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.chat-bubble:has(img, picture, video) {
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.chat-bubble:has(img, picture, video):hover {
+  background-color: transparent;
+}

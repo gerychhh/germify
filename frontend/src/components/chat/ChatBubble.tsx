@@ -12,8 +12,8 @@ export const ChatBubble = ({ variant, message, time }: ChatBubbleProps) => {
 
   return (
     <div className={cn("flex", isOutgoing ? "justify-end" : "justify-start")}>
-      <div className={cn(isOutgoing ? BUBBLE_OUT : BUBBLE_IN)}>
-        <div className="leading-relaxed">{message}</div>
+      <div className={cn("chat-bubble", isOutgoing ? BUBBLE_OUT : BUBBLE_IN)}>
+        <div className="chat-message leading-relaxed">{message}</div>
         <div
           className={cn(
             TS,
