@@ -271,6 +271,21 @@
 
 <script src="{% static 'core/js/messages.js' %}"></script>
 <script src="{% static 'core/js/posts.js' %}?v=26"></script>
+<script>
+    (function () {
+        function updateBottomNavHeight() {
+            var nav = document.querySelector(".g-bottom-nav");
+            if (!nav || !document.documentElement) return;
+            var height = nav.offsetHeight;
+            if (height > 0) {
+                document.documentElement.style.setProperty("--g-bottomnav-h", height + "px");
+            }
+        }
+
+        window.addEventListener("load", updateBottomNavHeight);
+        window.addEventListener("resize", updateBottomNavHeight);
+    })();
+</script>
 {% block extra_js %}{% endblock %}
 
 </body>

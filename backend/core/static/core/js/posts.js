@@ -879,14 +879,12 @@ document.addEventListener("DOMContentLoaded", function () {
         function updateTextareaSize() {
             if (!textarea) return;
             const baseHeight = 44;
-            const maxHeight = 160;
             textarea.style.height = "auto";
             const scrollHeight = textarea.scrollHeight;
-            const nextHeight = Math.min(scrollHeight, maxHeight);
-            textarea.style.height = `${nextHeight}px`;
-            const isExpanded = nextHeight > baseHeight + 2;
+            textarea.style.height = `${scrollHeight}px`;
+            const isExpanded = scrollHeight > baseHeight + 2;
             textarea.classList.toggle("is-expanded", isExpanded);
-            textarea.classList.toggle("is-scrollable", scrollHeight > maxHeight + 1);
+            textarea.classList.remove("is-scrollable");
         }
 
         function renderAttachments() {
