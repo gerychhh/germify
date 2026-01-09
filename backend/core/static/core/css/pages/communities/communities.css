@@ -10,6 +10,11 @@
   transition: transform .15s ease, box-shadow .15s ease;
 }
 
+.community-card::before,
+.community-card::after{
+  content: none;
+}
+
 .community-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 .5rem 1.25rem rgba(0,0,0,.08);

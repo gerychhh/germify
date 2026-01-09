@@ -99,6 +99,13 @@ body.messages-page .msg-icon-btn:active {
   min-height: calc(100dvh - var(--g-navbar-h));
 }
 
+.messages-sidebar-card::before,
+.messages-sidebar-card::after,
+.messages-chat-card::before,
+.messages-chat-card::after{
+  content: none;
+}
+
 .messages-sidebar-card .card-header,
 .messages-chat-header {
   padding: 10px 12px;

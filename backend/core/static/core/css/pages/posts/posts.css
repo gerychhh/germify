@@ -3,6 +3,366 @@
    Общие компоненты (hidden, upload, text-collapse) — в app.css.
 */
 
+/* ===== SHARED POST SURFACE (COMPOSER/POSTS/SEARCH/MENUS) ===== */
+:root{
+  --post-surface-bg: color-mix(in srgb, var(--g-surface) 74%, transparent);
+  --post-surface-border: color-mix(in srgb, var(--g-border) 75%, transparent);
+  --post-surface-shadow: var(--g-shadow-sm);
+  --post-surface-blur: calc(var(--g-blur) + 6px);
+  --post-surface-saturate: 140%;
+}
+
+:is(.composer, .post-card, .feed-search, .post-menu){
+  background: var(--post-surface-bg);
+  border: 1px solid var(--post-surface-border);
+  box-shadow: var(--post-surface-shadow);
+  backdrop-filter: blur(var(--post-surface-blur)) saturate(var(--post-surface-saturate));
+  -webkit-backdrop-filter: blur(var(--post-surface-blur)) saturate(var(--post-surface-saturate));
+}
+
+html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--g-surface-solid);
+}
+
+.post-card::before,
+.post-card::after{
+  content: none;
+}
+
+/* ===== COMPOSER (POST CREATE) ===== */
+.composer{
+  padding: 16px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.composer__form{
+  margin: 0;
+}
+
+.composer__row{
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.composer__textarea{
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 160px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--g-border) 90%, transparent);
+  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  color: var(--g-text);
+  padding: 10px 12px;
+  resize: none;
+  line-height: 1.4;
+  overflow: hidden;
+}
+
+.composer__textarea::placeholder{
+  color: color-mix(in srgb, var(--g-text) 55%, var(--g-muted));
+}
+
+.composer__textarea:focus{
+  outline: none;
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-primary) 25%, transparent);
+}
+
+.composer__textarea.is-expanded{
+  border-radius: 14px;
+}
+
+.composer__textarea.is-scrollable{
+  overflow-y: auto;
+}
+
+.composer__attach,
+.composer__send{
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--g-border) 90%, transparent);
+  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: 0 0 auto;
+  align-self: flex-end;
+}
+
+.composer__attach:hover,
+.composer__send:hover{
+  background: color-mix(in srgb, var(--g-primary) 10%, var(--g-surface));
+  border-color: color-mix(in srgb, var(--g-primary) 35%, var(--g-border));
+}
+
+.composer__send--accent{
+  background: var(--g-primary);
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+}
+
+.composer__send--accent:hover{
+  background: color-mix(in srgb, var(--g-primary) 85%, var(--g-primary-2));
+  border-color: color-mix(in srgb, var(--g-primary) 65%, var(--g-border));
+}
+
+.composer__send--accent .composer__icon{
+  filter: brightness(0) invert(1);
+}
+
+.composer__icon{
+  width: 18px;
+  height: 18px;
+  display: block;
+  filter: var(--g-icon-filter, none);
+}
+
+.composer__attachments{
+  margin-top: 10px;
+}
+
+.composer__attachments.hidden{
+  display: none !important;
+}
+
+.composer__media-grid{
+  display: grid;
+  gap: 8px;
+}
+
+.composer__media-grid[data-count="1"]{
+  grid-template-columns: 1fr;
+}
+
+.composer__media-grid[data-count="2"]{
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.composer__media-grid[data-count="3"]{
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: repeat(2, 1fr);
+  grid-template-areas:
+    "hero side-a"
+    "hero side-b";
+}
+
+.composer__media-grid[data-count="4"]{
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.composer__media-tile{
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--g-surface) 88%, transparent);
+  min-height: 160px;
+}
+
+.composer__media-grid[data-count="1"] .composer__media-tile{
+  min-height: 220px;
+  aspect-ratio: 16 / 9;
+}
+
+.composer__media-grid[data-count="2"] .composer__media-tile{
+  min-height: 160px;
+}
+
+.composer__media-grid[data-count="3"] .composer__media-tile:nth-child(1){
+  grid-area: hero;
+  min-height: 220px;
+}
+
+.composer__media-grid[data-count="3"] .composer__media-tile:nth-child(2){
+  grid-area: side-a;
+  min-height: 108px;
+}
+
+.composer__media-grid[data-count="3"] .composer__media-tile:nth-child(3){
+  grid-area: side-b;
+  min-height: 108px;
+}
+
+.composer__media-tile img,
+.composer__media-tile video{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+.composer__media-remove{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--g-border) 80%, transparent);
+  background: color-mix(in srgb, var(--g-surface) 85%, transparent);
+  display: grid;
+  place-items: center;
+  color: var(--g-text);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.composer__media-remove:hover{
+  background: color-mix(in srgb, var(--g-primary) 10%, var(--g-surface));
+  border-color: color-mix(in srgb, var(--g-primary) 35%, var(--g-border));
+}
+
+.composer__media-progress{
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: color-mix(in srgb, var(--g-border) 55%, transparent);
+}
+
+.composer__media-progress span{
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--g-primary);
+}
+
+.composer__video-play{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.composer__video-play span{
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--g-surface) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--g-border) 80%, transparent);
+  display: grid;
+  place-items: center;
+}
+
+.composer__video-play span::before{
+  content: "";
+  border-style: solid;
+  border-width: 8px 0 8px 12px;
+  border-color: transparent transparent transparent var(--g-text);
+  margin-left: 2px;
+}
+
+.composer__video-duration{
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--g-surface) 85%, transparent);
+  color: var(--g-text);
+  font-size: 12px;
+}
+
+.composer__media-overflow{
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--g-text);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.composer__file-list{
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.composer__file-row{
+  display: grid;
+  grid-template-columns: 28px 1fr 24px;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--g-border) 90%, transparent);
+  background: color-mix(in srgb, var(--g-surface) 88%, transparent);
+}
+
+.composer__file-row:hover{
+  border-color: color-mix(in srgb, var(--g-primary) 25%, var(--g-border));
+  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+}
+
+.composer__file-icon{
+  width: 28px;
+  height: 28px;
+}
+
+.composer__file-meta{
+  min-width: 0;
+}
+
+.composer__file-name{
+  font-size: 13px;
+  color: var(--g-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composer__file-size{
+  font-size: 12px;
+  color: var(--g-muted);
+}
+
+.composer__file-progress{
+  margin-top: 6px;
+  height: 2px;
+  background: color-mix(in srgb, var(--g-border) 55%, transparent);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.composer__file-progress span{
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: var(--g-primary);
+}
+
+.composer__file-remove{
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--g-border) 80%, transparent);
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: var(--g-text);
+}
+
+.composer__file-remove:hover{
+  background: color-mix(in srgb, var(--g-primary) 10%, transparent);
+}
+
+
 /* ===== ТЕКСТ ===== */
 .post-text {
   margin: 2px 0 0;
@@ -85,8 +445,6 @@
   position: absolute;
   right: 0;
   top: 24px;
-  background: var(--g-surface);
-  border: 1px solid var(--g-border);
   border-radius: 8px;
   padding: 4px 0;
   min-width: 140px;
@@ -354,7 +712,7 @@
 
 .vk-modal-left{
   overflow: auto;
-  padding: 14px;
+  padding: 10px 12px;
   background: var(--g-surface-solid);
   min-width: 0;
   min-height: 0;
@@ -375,6 +733,38 @@
 
 .vk-modal-left > .post-card{
     height: auto !important;
+}
+
+/* В модалке: пост и форма комментариев должны выглядеть как единый блок */
+.vk-modal-left .post-card{
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.vk-modal-left .post-layout{
+  padding: 0 !important;
+}
+
+.vk-modal-comments{
+  border-top: 0;
+  padding-top: 0;
+}
+
+.vk-modal-composer{
+  border-top: 0;
+  padding-top: 0;
+}
+
+.post-modal-close{
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
 }
 
 /* v6: в модалке скрываем кнопку "Показать ещё" (раскрываем батчами автоматически по скроллу) */
@@ -475,6 +865,22 @@
   background: rgba(15, 23, 42, 0.02);
 }
 
+.post-card.is-editing .post-edit-block{
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.post-card.is-editing .post-menu-wrapper{
+  display: none;
+}
+
+.post-card.is-editing .post-edit-close{
+  display: inline-flex !important;
+}
+
 .post-edit-attachment-item.is-removed {
   opacity: 0.55;
   filter: grayscale(0.4);
@@ -492,13 +898,13 @@
 .vk-modal-right-scroll{
   flex: 1 1 auto;
   overflow: auto;
-  padding: 12px 14px;
+  padding: 10px 12px;
   min-height: 0;
 }
 
 .vk-modal-right-composer{
   flex: 0 0 auto;
-  padding: 10px 14px;
+  padding: 10px 12px;
   border-top: 1px solid var(--g-border);
   background: color-mix(in srgb, var(--g-surface) 94%, transparent);
 }
@@ -512,14 +918,15 @@
   resize: none;
   height: 44px;
   min-height: 44px;
-  max-height: 44px;
+  max-height: 160px;
+  overflow: hidden;
 }
 
 /* ===== VK composer row (кнопка отправки справа) ===== */
 .vk-compose-row{
   --vk-compose-size: 44px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
   flex-direction: row !important; /* на случай, если где-то было row-reverse */
 }
@@ -530,9 +937,25 @@
   margin: 0 !important;
   height: var(--vk-compose-size);
   min-height: var(--vk-compose-size);
-  max-height: var(--vk-compose-size);
+  max-height: 160px;
+  font-size: 16px;
   padding-top: 10px;
   padding-bottom: 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--g-border) 90%, transparent);
+  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  color: var(--g-text);
+  overflow: hidden;
+}
+
+.vk-compose-row .comment-input.is-expanded{
+  border-radius: 14px;
+}
+
+.vk-compose-row .comment-input:focus{
+  outline: none;
+  border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-primary) 25%, transparent);
 }
 
 .vk-compose-row .vk-send-btn{
@@ -541,18 +964,24 @@
   width: var(--vk-compose-size);
   height: var(--vk-compose-size);
   padding: 0;
-  border: 1px solid var(--g-border);
+  border: 1px solid color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
   border-radius: 14px;
-  background: color-mix(in srgb, var(--g-surface) 92%, transparent);
+  background: var(--g-primary);
   display: grid;
   place-items: center;
   cursor: pointer;
+}
+
+.vk-compose-row .vk-send-btn:hover{
+  background: color-mix(in srgb, var(--g-primary) 85%, var(--g-primary-2));
+  border-color: color-mix(in srgb, var(--g-primary) 65%, var(--g-border));
 }
 
 .vk-compose-row .vk-send-btn img{
   width: 18px;
   height: 18px;
   display: block;
+  filter: brightness(0) invert(1);
 }
 
 /* чтобы карточка поста в модалке занимала всю ширину колонки */
@@ -611,13 +1040,13 @@ body.vk-modal-open{
 .vk-modal-left{
   overflow: visible !important;
   min-height: 0;
-  padding: 14px;
+  padding: 12px 12px 0;
   background: transparent;
 }
 
 .vk-modal-comments{
-  padding: 12px 14px 14px;
-  border-top: 1px solid var(--g-border);
+  padding: 0 14px 14px;
+  border-top: 0;
 }
 
 .vk-modal-comments-header{
@@ -628,13 +1057,21 @@ body.vk-modal-open{
 .vk-modal-comments-list{
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
+}
+
+.vk-modal-comments .comment-item{
+  margin-top: 0 !important;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--g-border);
 }
 
 .vk-modal-composer{
   flex: 0 0 auto;
-  padding: 10px 14px;
-  border-top: 1px solid var(--g-border);
+  padding: 10px 12px 12px;
+  border-top: 0;
   background: color-mix(in srgb, var(--g-surface) 94%, transparent);
 }
 
@@ -693,18 +1130,9 @@ body.vk-modal-open{
   font-size: 12px;
 }
 
-/* Comment like button: use same SVG as posts, show only number */
+/* Comment like button: match post like button */
 .comment-like-button{
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 4px;
-  border-radius: 10px;
-}
-.comment-like-button .like-icon{
-  width: 18px;
-  height: 18px;
-  display: block;
+  font-size: 18px;
 }
 .comment-like-count{
   font-variant-numeric: tabular-nums;
@@ -713,3 +1141,7 @@ body.vk-modal-open{
 
 /* Ensure actions never stretch across row */
 .post-vk-actions > *{ flex: 0 0 auto; }
+
+.post-time-ago{
+  margin-left: auto;
+}

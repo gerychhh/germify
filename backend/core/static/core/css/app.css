@@ -35,7 +35,11 @@ body {
 @media (max-width: 991.98px) {
   /* чтобы fixed-bottom меню не перекрывало контент на мобилках */
   body {
-    padding-bottom: calc(var(--g-bottomnav-h) + 10px);
+    padding-bottom: 0;
+  }
+
+  .posts-list {
+    padding-bottom: var(--g-bottomnav-h);
   }
 }
 
@@ -918,4 +922,10 @@ html, body, *{
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* User cards: remove global glass overlays */
+.g-card::before,
+.g-card::after{
+  content: none;
 }

@@ -79,117 +79,14 @@
       text-decoration: none;
     }
 
-    /* ---------- Composer ---------- */
-    .feed-composer{
-      border-radius: var(--g-radius-lg);
-      padding: 12px;
-    }
-
-    .feed-composer__row{
-      display:flex;
-      gap: 12px;
-      align-items:flex-start;
-    }
-
-    .feed-composer__avatar{
-      padding-top: 2px;
-      flex: 0 0 auto;
-    }
-
-    .feed-composer__input-wrap{
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
-    .feed-composer__bubble{
-      border: 1px solid var(--g-border);
-      background: var(--g-surface-2);
-      border-radius: 18px;
-      padding: 10px 12px;
-    }
-
-    .feed-composer__bubble:focus-within{
-      border-color: color-mix(in srgb, var(--g-primary) 55%, var(--g-border));
-      box-shadow: 0 0 0 4px color-mix(in srgb, var(--g-primary) 18%, transparent);
-      background: var(--g-surface);
-    }
-
-    .feed-composer__textarea{
-      width:100%;
-      border:0 !important;
-      outline:0 !important;
-      background:transparent !important;
-      box-shadow:none !important;
-      resize:none;
-      padding:0;
-      margin:0;
-      min-height: 42px;
-      max-height: 220px;
-      overflow:auto;
-      color: var(--g-text);
-      font-size: 15px;
-      line-height: 1.45;
-    }
-
-    .feed-composer__footer{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      padding-top: 10px;
-    }
-
-    .feed-composer__left{
-      display:flex;
-      align-items:center;
-      gap: 8px;
-      flex-wrap: wrap;
-      min-width: 0;
-    }
-
-    .feed-composer__btn{
-      width: 38px;
-      height: 34px;
-      padding: 0;
-      display:grid;
-      place-items:center;
-      border-radius: 12px;
-      color: var(--g-muted);
-    }
-
-    .feed-composer__btn:hover{
-      color: var(--g-text);
-    }
-
-    .feed-composer__send{
-      width: 44px;
-      height: 44px;
-      padding: 0;
-      border-radius: 999px;
-      display:grid;
-      place-items:center;
-      flex: 0 0 auto;
-    }
-
-    .feed-composer__status{
-      color: var(--g-muted);
-      min-height: 18px;
-    }
-
     @media (max-width: 576px){
       .feed-search{ padding: 10px; }
-      .feed-composer{ padding: 10px; }
-      .feed-composer__send{ width: 42px; height: 42px; }
     }
   </style>
 {% endblock %}
 
 {% block content %}
 <div class="feed-page">
-  <div class="g-pagehead">
-    <div class="g-pagehead__title">Лента</div>
-  </div>
-
   <!-- SVG sprite (inline) -->
   <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
     <symbol id="ic-search" viewBox="0 0 24 24">
@@ -258,10 +155,6 @@
       </div>
     </form>
 
-    <div class="feed-search__help text-muted small mt-2">
-      Ищите по тексту, авторам (<code>@user</code>), хэштегам (<code>#тема</code>) или названиям сообществ.
-    </div>
-
     {% if q_author %}
       <div class="small text-muted mt-2">
         Фильтр по автору:
@@ -271,104 +164,48 @@
   </section>
 
   <!-- Форма нового поста (как на примере) -->
-  <section class="feed-composer g-glass">
+  <section class="composer">
     <form method="post"
           action="{% url 'create_post' %}"
-          class="new-post-form feed-composer__form"
+          class="new-post-form composer__form"
           enctype="multipart/form-data"
           data-authenticated="{% if user.is_authenticated %}1{% else %}0{% endif %}"
           data-login-url="{% url 'login' %}?next={{ request.path }}">
       {% csrf_token %}
 
-      <div class="feed-composer__row">
-        <div class="feed-composer__avatar">
-          {% include "core/partials/avatar.html" with user_obj=user size="md" %}
-        </div>
+      <div class="composer__row">
+        <input id="newPostFiles" type="file" name="attachments" multiple hidden>
 
-        <div class="feed-composer__input-wrap">
-          <div class="feed-composer__bubble">
-            <textarea
-              name="text"
-              class="feed-composer__textarea"
-              rows="1"
-              placeholder="{% if user.is_authenticated %}Что нового, {{ user.display_name|default:user.username }}?{% else %}Войдите, чтобы написать пост…{% endif %}">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
-          </div>
+        <button type="button"
+                class="composer__attach"
+                data-composer-attach
+                data-accept=""
+                title="Вложение"
+                aria-label="Вложение">
+          <img class="composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
+        </button>
 
-          <!-- PREVIEW -->
-          <div class="file-preview mt-2" id="file-preview"></div>
-
-          <!-- PREVIEW голосового -->
-          <audio id="voice-preview"
-                 class="voice-preview hidden mt-2 w-100"
-                 controls></audio>
-
-          <!-- DRAG & DROP ZONE -->
-          <div id="drop-zone" class="drop-zone hidden mt-2 p-3 rounded text-center">
-            Перетащи файлы сюда или нажми на кнопку вложений
-          </div>
-
-          <!-- INFO + PROGRESS -->
-          <div class="file-info small text-muted mt-2 d-flex gap-2 flex-wrap">
-            <span id="file-count">Файлы: 0</span>
-            <span id="file-size">Размер: 0 MB</span>
-          </div>
-
-          <div class="upload-progress hidden mt-2" id="upload-progress">
-            <div class="upload-progress-bar" id="upload-progress-bar"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="feed-composer__footer">
-        <div class="feed-composer__left">
-          <!-- Один input (как было), но открываем его кнопками -->
-          <input id="newPostFiles" type="file" name="attachments" multiple hidden>
-
-          <button type="button"
-                  class="btn btn-outline-secondary feed-composer__btn"
-                  data-feed-attach
-                  data-accept="image/*"
-                  title="Фото"
-                  aria-label="Фото">
-            <svg class="feed-ic" aria-hidden="true"><use href="#ic-image"></use></svg>
-          </button>
-
-          <button type="button"
-                  class="btn btn-outline-secondary feed-composer__btn"
-                  data-feed-attach
-                  data-accept="video/*"
-                  title="Видео"
-                  aria-label="Видео">
-            <svg class="feed-ic" aria-hidden="true"><use href="#ic-video"></use></svg>
-          </button>
-
-          <button type="button"
-                  class="btn btn-outline-secondary feed-composer__btn"
-                  data-feed-attach
-                  data-accept=""
-                  title="Файлы"
-                  aria-label="Файлы">
-            <svg class="feed-ic" aria-hidden="true"><use href="#ic-file"></use></svg>
-          </button>
-
-          <!-- Голосовой ввод (оставил, но теперь SVG) -->
-          <button type="button"
-                  id="voice-record-btn"
-                  class="btn btn-outline-secondary feed-composer__btn voice-record-btn"
-                  title="Голос"
-                  aria-label="Голос">
-            <svg class="feed-ic" aria-hidden="true"><use href="#ic-mic"></use></svg>
-          </button>
-
-          <span id="voice-record-status" class="feed-composer__status small"></span>
-        </div>
+        <textarea
+          name="text"
+          class="composer__textarea"
+          rows="1"
+          placeholder="{% if user.is_authenticated %}Что нового, {{ user.display_name|default:user.username }}?{% else %}Войдите, чтобы написать пост…{% endif %}">{% if form.text.value %}{{ form.text.value }}{% endif %}</textarea>
 
         <button type="submit"
-                class="btn btn-primary feed-composer__send primary-button"
+                class="composer__send composer__send--accent"
                 title="Опубликовать"
                 aria-label="Опубликовать">
-          <img class="feed-ic" src="{% static 'core/icons/send.svg' %}" alt="">
+          <img class="composer__icon" src="{% static 'core/icons/send.svg' %}" alt="">
         </button>
+      </div>
+
+      <div class="composer__attachments hidden"
+           data-composer-attachments
+           data-icon-doc="{% static 'core/icons/file-doc.svg' %}"
+           data-icon-zip="{% static 'core/icons/file-zip.svg' %}"
+           data-icon-generic="{% static 'core/icons/file-generic.svg' %}">
+        <div class="composer__media-grid" data-composer-media></div>
+        <div class="composer__file-list" data-composer-files></div>
       </div>
     </form>
   </section>
@@ -398,34 +235,4 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-(function () {
-  const form = document.querySelector(".new-post-form");
-  if (!form) return;
-
-  // Attach buttons -> single file input
-  const fileInput = form.querySelector("input[name='attachments']");
-  form.querySelectorAll("[data-feed-attach]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const accept = btn.getAttribute("data-accept") || "";
-      if (!fileInput) return;
-      fileInput.setAttribute("accept", accept);
-      fileInput.click();
-    });
-  });
-
-  // Auto-resize textarea (compact like in mock)
-  const ta = form.querySelector("textarea[name='text']");
-  if (ta) {
-    const resize = () => {
-      ta.style.height = "auto";
-      ta.style.height = Math.min(ta.scrollHeight, 220) + "px";
-    };
-    ta.addEventListener("input", resize);
-    window.addEventListener("load", resize);
-    resize();
-  }
-})();
-</script>
-{% endblock %}
+{% block extra_js %}{% endblock %}

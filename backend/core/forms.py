@@ -58,6 +58,7 @@ class PostForm(BootstrapFormMixin, forms.ModelForm):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
+        self.fields["text"].required = False
 
     def clean_text(self) -> str:
         text = (self.cleaned_data.get("text") or "").strip()
@@ -279,6 +280,7 @@ class CommunityPostForm(BootstrapFormMixin, forms.ModelForm):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.apply_bootstrap()
+        self.fields["text"].required = False
 
     def clean_text(self) -> str:
         text = (self.cleaned_data.get("text") or "").strip()

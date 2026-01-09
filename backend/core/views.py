@@ -281,6 +281,13 @@ def create_post(request):
             return JsonResponse({"success": False, "errors": form.errors}, status=400)
         # для не-AJAX просто возвращаемся в ленту
         return redirect("feed")
+    text_value = (form.cleaned_data.get("text") or "").strip()
+    if not text_value and not files:
+        msg = "Добавьте текст или вложение перед публикацией."
+        if is_ajax:
+            return JsonResponse({"success": False, "error": msg}, status=400)
+        messages.error(request, msg)
+        return redirect("feed")
 
     with transaction.atomic():
         post = form.save(commit=False)
@@ -2112,10 +2119,15 @@ def community_create_post(request, slug):
     if not form.is_valid():
         return redirect("community_detail", slug=community.slug)
 
+    text_value = (form.cleaned_data.get("text") or "").strip()
+    if not text_value:
+        messages.error(request, "Добавьте текст перед публикацией.")
+        return redirect("community_detail", slug=community.slug)
+
     post = Post.objects.create(
         author=request.user,
         community=community,
-        text=form.cleaned_data["text"],
+        text=text_value,
         as_community=bool(form.cleaned_data.get("post_as_community")) if member and member.is_admin else False,
     )
     return redirect("community_detail", slug=community.slug)

@@ -33,12 +33,12 @@ const messages = [
 ];
 
 export const ChatPage = () => (
-  <div className="min-h-screen bg-gradient-to-br from-[#0a0b10] via-[#0b0f1a] to-[#06070c] text-white">
-    <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-8">
-      <GlassCard className="w-full">
+  <div className="min-h-screen bg-[#0a0b10] text-white">
+    <div className="mx-auto flex min-h-screen max-w-3xl items-start px-4 py-6">
+      <GlassCard className="flex w-full min-h-[520px] h-[calc(100vh-3rem)] flex-col overflow-hidden">
         <div
           className={cn(
-            "flex items-center justify-between gap-4 px-4 py-3 border-b",
+            "flex items-center justify-between gap-4 border-b px-4 py-3",
             GLASS_BAR
           )}
         >
@@ -78,7 +78,7 @@ export const ChatPage = () => (
           </div>
         </div>
 
-        <div className="glass-scroll max-h-[520px] space-y-3 overflow-auto px-4 py-4">
+        <div className="glass-scroll flex-1 space-y-3 overflow-y-auto px-4 py-4">
           {messages.map((message) => (
             <ChatBubble key={message.id} {...message} />
           ))}

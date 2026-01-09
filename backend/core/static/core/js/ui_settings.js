@@ -14,7 +14,7 @@
   };
 
   const defaults = {
-    theme: "light",
+    theme: "dark",
     scale: "md",
     font: "system",
     accent: "blue",

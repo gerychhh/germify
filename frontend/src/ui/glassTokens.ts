@@ -1,5 +1,5 @@
 export const GLASS_SURFACE =
-  "rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_10px_28px_rgba(0,0,0,0.22)]";
+  "rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl";
 
 export const GLASS_BAR = "border-white/10 bg-black/20 backdrop-blur-xl";
 

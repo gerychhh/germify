@@ -3,7 +3,7 @@
 {% load time_ago %}
 
 {% with depth=level %}
-<div class="comment-item border rounded-3 p-2 bg-body mt-2
+<div class="comment-item mt-2
             {% if depth > 0 %}reply-item{% endif %}
             comment-depth-{% if depth > 3 %}3{% else %}{{ depth }}{% endif %}"
      data-comment-id="{{ c.id }}"
@@ -27,9 +27,6 @@
                     </span>
                 {% endif %}
 
-                <span class="comment-time small text-muted ms-auto">
-                    {{ c.created_at|time_ago }}
-                </span>
             </div>
         </div>
     </div>
@@ -54,7 +51,7 @@
                   class="comment-like-form m-0"
                   data-comment-id="{{ c.id }}">
                 {% csrf_token %}
-                <button class="comment-like-button btn btn-link p-0 text-decoration-none"
+                <button class="like-button comment-like-button"
                         type="submit"
                         aria-label="Лайк"
                         data-liked="{% if c.id in liked_comment_ids %}true{% else %}false{% endif %}">
@@ -65,11 +62,10 @@
                       data-src-liked="{% static 'core/icons/post-like-filled.svg' %}"
                       data-src-unliked="{% static 'core/icons/post-like.svg' %}"
                     >
+                    <span class="like-count comment-like-count" data-comment-id="{{ c.id }}">{{ c.likes.count }}</span>
                 </button>
             </form>
         {% endif %}
-
-        <span class="comment-like-count text-muted" data-comment-id="{{ c.id }}">{{ c.likes.count }}</span>
 
         {% if user.is_authenticated %}
             <button class="comment-reply-toggle comment-icon-btn"
@@ -102,6 +98,10 @@
                 </form>
             {% endif %}
         {% endif %}
+
+        <span class="comment-time small text-muted ms-auto">
+            {{ c.created_at|time_ago }}
+        </span>
     </div>
 
     {% if user.is_authenticated %}
