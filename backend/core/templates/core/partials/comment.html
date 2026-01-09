@@ -3,7 +3,7 @@
 {% load time_ago %}
 
 {% with depth=level %}
-<div class="comment-item border rounded-3 p-2 bg-body mt-2
+<div class="comment-item mt-2
             {% if depth > 0 %}reply-item{% endif %}
             comment-depth-{% if depth > 3 %}3{% else %}{{ depth }}{% endif %}"
      data-comment-id="{{ c.id }}"
@@ -27,9 +27,6 @@
                     </span>
                 {% endif %}
 
-                <span class="comment-time small text-muted ms-auto">
-                    {{ c.created_at|time_ago }}
-                </span>
             </div>
         </div>
     </div>
@@ -101,6 +98,10 @@
                 </form>
             {% endif %}
         {% endif %}
+
+        <span class="comment-time small text-muted ms-auto">
+            {{ c.created_at|time_ago }}
+        </span>
     </div>
 
     {% if user.is_authenticated %}

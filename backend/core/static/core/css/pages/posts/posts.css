@@ -1055,10 +1055,9 @@ body.vk-modal-open{
 
 .vk-modal-comments .comment-item{
   margin-top: 0 !important;
-  border-left: 0;
-  border-right: 0;
+  padding: 8px 10px;
+  border: 0;
   border-radius: 0;
-  border-top: 1px solid var(--g-border);
   border-bottom: 1px solid var(--g-border);
 }
 
