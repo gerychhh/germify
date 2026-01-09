@@ -26,6 +26,11 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   background: var(--g-surface-solid);
 }
 
+.post-card::before,
+.post-card::after{
+  content: none;
+}
+
 /* ===== COMPOSER (POST CREATE) ===== */
 .composer{
   padding: 16px;
