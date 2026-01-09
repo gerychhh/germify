@@ -29,6 +29,7 @@
   background-color: transparent;
   border-color: transparent;
   box-shadow: none;
+  padding: 0;
 }
 
 .chat-bubble:has(img, picture, video):hover {
