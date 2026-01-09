@@ -53,7 +53,7 @@ html[data-glass="off"] :is(.composer, .post-card, .feed-search, .post-menu){
   flex: 1 1 auto;
   min-width: 0;
   min-height: 44px;
-  max-height: 160px;
+  max-height: none;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--g-border) 90%, transparent);
   background: color-mix(in srgb, var(--g-surface) 92%, transparent);
