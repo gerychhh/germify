@@ -151,8 +151,8 @@ html[data-glass="off"]{
 
 /* ---- dark theme ---- */
 html[data-theme="dark"]{
-  --g-bg: #050608;
-  --g-bg-soft: #090c11;
+  --g-bg: #000000;
+  --g-bg-soft: #050608;
   --g-surface-solid: #0b0d12;
   --g-surface-glass: rgba(12, 14, 20, .44);
   --g-surface: var(--g-surface-glass);
