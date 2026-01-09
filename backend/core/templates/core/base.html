@@ -1,6 +1,6 @@
 {% load static %}
 <!doctype html>
-<html lang="ru" data-theme="light" data-theme-pref="light" data-scale="md" data-font="system" data-accent="blue" data-glass="on">
+<html lang="ru" data-theme="dark" data-theme-pref="dark" data-scale="md" data-font="system" data-accent="blue" data-glass="on">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,7 +10,7 @@
       (function () {
         try {
           const root = document.documentElement;
-          const prefTheme = localStorage.getItem("germify_ui_theme") || "light";
+          const prefTheme = localStorage.getItem("germify_ui_theme") || "dark";
           const scale = localStorage.getItem("germify_ui_scale") || "md";
           const font = localStorage.getItem("germify_ui_font") || "system";
           const accent = localStorage.getItem("germify_ui_accent") || "blue";
@@ -103,7 +103,7 @@
                             {{ user.username }}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="nav-link" href="{% url 'profile' %}">Профиль</a></li>
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">Профиль</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">Выход</a></li>
                         </ul>
@@ -117,15 +117,17 @@
     </div>
 </nav>
 
-<main class="container py-4">
-    {% if messages %}
-        <div class="mb-3">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
-            {% endfor %}
-        </div>
-    {% endif %}
-    {% block content %}{% endblock %}
+<main class="g-main">
+    <div class="container g-container">
+        {% if messages %}
+            <div class="mb-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </div>
 </main>
 
 <nav class="g-bottom-nav d-lg-none" aria-label="Основная навигация">

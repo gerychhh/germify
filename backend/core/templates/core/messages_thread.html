@@ -12,11 +12,11 @@
 <div class="row g-3 messages-layout is-chat-open" id="messages-layout" data-inbox-url="{% url 'messages_inbox' %}">
 
     <div class="col-12 col-lg-4 messages-sidebar-col">
-        <div class="card messages-sidebar-card d-flex flex-column">
-            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+        <div class="card messages-sidebar-card msg-glass-surface d-flex flex-column">
+            <div class="card-header msg-glass-bar d-flex align-items-center justify-content-between">
                 <span class="fw-semibold">Сообщения</span>
                 <div class="dropdown messages-new-dropdown">
-                    <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                    <button class="btn btn-sm btn-outline-primary msg-icon-btn d-inline-flex align-items-center gap-1"
                             type="button"
                             data-bs-toggle="dropdown"
                             aria-expanded="false"
@@ -33,7 +33,7 @@
 
             <div class="p-2">
                 <input type="text"
-                       class="form-control form-control-sm"
+                       class="form-control form-control-sm msg-glass-input"
                        placeholder="Поиск по диалогам…"
                        id="dialogs-search">
             </div>
