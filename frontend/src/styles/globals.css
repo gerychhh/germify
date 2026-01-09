@@ -20,7 +20,8 @@
   scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
 }
 
-.chat-message p {
+.chat-message p,
+.chat-bubble p {
   margin-top: 0;
   margin-bottom: 0;
 }
