@@ -543,7 +543,7 @@ html[data-glass="off"] .g-bottom-nav{
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
   margin: 0;
-  padding: 4px 6px;
+  padding: 2px 6px;
   list-style: none;
   gap: 4px;
 }
@@ -560,7 +560,7 @@ html[data-glass="off"] .g-bottom-nav{
   flex-direction: column;
   gap: 4px;
   border-radius: var(--g-radius-sm);
-  padding: 6px 4px;
+  padding: 2px 4px;
   text-decoration: none;
   color: color-mix(in srgb, var(--g-text) 78%, var(--g-muted));
   transition: background-color 0.15s ease, color 0.15s ease;
