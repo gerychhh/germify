@@ -910,6 +910,7 @@ document.addEventListener("DOMContentLoaded", function () {
         previewBox.innerHTML = "";
 
         previewBox.classList.add("file-preview");
+        previewBox.classList.toggle("hidden", selectedFiles.length === 0);
 
         selectedFiles.forEach((file, index) => {
             const wrapper = document.createElement("div");
