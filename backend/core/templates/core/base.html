@@ -103,7 +103,7 @@
                             {{ user.username }}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="nav-link" href="{% url 'profile' %}">Профиль</a></li>
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">Профиль</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">Выход</a></li>
                         </ul>

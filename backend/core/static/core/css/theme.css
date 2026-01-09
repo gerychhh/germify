@@ -154,14 +154,14 @@ html[data-theme="dark"]{
   --g-bg: #050608;
   --g-bg-soft: #090c11;
   --g-surface-solid: #0b0d12;
-  --g-surface-glass: rgba(12, 14, 20, .48);
+  --g-surface-glass: rgba(12, 14, 20, .44);
   --g-surface: var(--g-surface-glass);
-  --g-surface-2: rgba(12, 14, 20, .34);
+  --g-surface-2: rgba(12, 14, 20, .30);
 
   --g-text: #f1f5fb;
   --g-muted: rgba(198, 206, 222, .72);
   --g-border: rgba(255, 255, 255, .12);
-  --g-glass-border: rgba(255, 255, 255, .24);
+  --g-glass-border: rgba(255, 255, 255, .26);
 
   --g-surface-strong: #0b1120;
   --g-surface-stronger: #020617;

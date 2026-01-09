@@ -194,6 +194,27 @@ html[data-glass="off"] .form-select{
   overflow: hidden;
 }
 
+.g-glass-surface::after,
+.card::after,
+.dropdown-menu::after,
+.modal-content::after,
+.toast::after,
+.popover::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.03),
+    rgba(255, 255, 255, 0.03) 1px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 3px
+  );
+  opacity: 0.35;
+  mix-blend-mode: soft-light;
+}
+
 .g-glass-surface:hover,
 .card:hover,
 .list-group-item:hover{
@@ -260,6 +281,15 @@ html[data-glass="off"] .popover::before{
   opacity: 0.18;
 }
 
+html[data-glass="off"] .g-glass-surface::after,
+html[data-glass="off"] .card::after,
+html[data-glass="off"] .dropdown-menu::after,
+html[data-glass="off"] .modal-content::after,
+html[data-glass="off"] .toast::after,
+html[data-glass="off"] .popover::after{
+  opacity: 0.12;
+}
+
 /* Bootstrap components modernization */
 .navbar{
   background: color-mix(in srgb, var(--g-surface) 86%, transparent) !important;
@@ -274,6 +304,9 @@ html[data-glass="off"] .popover::before{
   border-bottom: 1px solid var(--g-border) !important;
   box-shadow: var(--g-shadow-sm) !important;
   color: var(--g-text);
+  position: sticky;
+  top: 0;
+  z-index: 1040;
 }
 
 .g-navbar .navbar-brand{
@@ -476,6 +509,8 @@ html[data-glass="off"] .card .card-footer{
 .dropdown-menu{
   border-radius: var(--g-radius-lg);
   box-shadow: var(--g-shadow-md);
+  position: absolute;
+  z-index: 1050;
 }
 
 /* Offcanvas */
