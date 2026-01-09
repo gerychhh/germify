@@ -1768,6 +1768,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // ---------- СОЗДАНИЕ НОВОГО ПОСТА (AJAX) ----------
         if (form.classList.contains("new-post-form")) {
+            if (form.querySelector("[data-composer-attachments]")) {
+                return;
+            }
             e.preventDefault();
 
             const fd = new FormData(form);
