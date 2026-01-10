@@ -13,9 +13,6 @@
                     {{ other_user.display_name|default:other_user.username }}
                 </span>
                 <div class="dialog-top-right">
-                    <span class="dialog-date">
-                        {{ last_message.created_at|date:"d.m.Y H:i" }}
-                    </span>
                     {% if unread %}
                         <span class="dialog-unread-badge">
                             {{ unread }}

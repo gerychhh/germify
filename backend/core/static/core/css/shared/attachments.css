@@ -6,9 +6,7 @@
 .attachment-gallery {
     display: grid;
     gap: 4px;
-    border-radius: 12px;
     overflow: hidden;
-    margin-top: 6px;
 }
 
 .attachment-gallery[data-layout="one"] .gallery-item {
@@ -80,11 +78,10 @@
     width: auto;
     height: auto;
     max-width: 100%;
-    max-height: min(65vh, 560px); /* можешь менять высоту */
+    max-height: min(65vh, 560px);
     object-fit: contain;
     margin: 0 auto;
     background: transparent;
-    border-radius: 10px;          /* мягче внутри рамки */
 }
 
 
@@ -169,11 +166,6 @@
     aspect-ratio: 1 / 1;
 }
 
-.attachment-gallery {
-    border: 1px solid var(--g-border);
-    background: var(--g-surface-2);
-}
-
 @media (max-width: 640px) {
     .attachment-gallery {
         gap: 3px;
@@ -248,7 +240,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 12px;
-    margin-top: 8px;
+    margin-top: 0px;
     align-items: start;
 }
 
@@ -465,7 +457,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin: 8px 0;
+    margin: 0px 0;
 }
 
 .audio-wrapper {
