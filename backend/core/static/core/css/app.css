@@ -535,9 +535,7 @@ img[src*="/core/icons/"] {
   max-height: none !important;
 }
 
-/* таблица для нумерации строк */
 .codehilite table {
-  width: 100%;
   border-collapse: collapse;
 }
 
@@ -698,25 +696,22 @@ img[src*="/core/icons/"] {
   margin:.55rem 0;
   border-radius:14px;
   background:var(--g-surface-strong);
-  border:1px solid rgba(148,163,184,.14); /* одна рамка, без “внутренних” */
+  border:1px solid rgba(148,163,184,.14);
   overflow:hidden;
 }
 
-/* скролл только по X, без вертикального “ползунка” */
 .md-code__scroll{
   overflow-x:auto;
   overflow-y:hidden;
-  padding:10px 10px;
 }
 
-/* если есть бейдж языка — чуть места сверху */
 .md-code__scroll.has-lang{
   padding-top:34px;
 }
 
 .md-code__copy{
   position:absolute;
-  top:8px;
+  top:6px;
   right:8px;
   height:28px;
   padding:0 10px;

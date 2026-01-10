@@ -163,7 +163,7 @@ html[data-theme="dark"]{
   --g-border: rgba(255, 255, 255, .12);
   --g-glass-border: rgba(255, 255, 255, .26);
 
-  --g-surface-strong: #0b1120;
+  --g-surface-strong: #000000;
   --g-surface-stronger: #020617;
   --g-surface-muted: #1f2937;
   --g-surface-muted-2: #1e293b;

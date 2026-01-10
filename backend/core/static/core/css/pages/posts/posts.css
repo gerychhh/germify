@@ -1083,8 +1083,6 @@ body.vk-modal-open{
 }
 
 @media (max-width: 980px){
-  /* Чтобы контент не залезал под кнопку закрытия */
-  .vk-modal-left{ padding-top: 52px; }
   .vk-modal-comments{ padding-bottom: 16px; }
   .vk-modal-close{ z-index: 999; }
 }

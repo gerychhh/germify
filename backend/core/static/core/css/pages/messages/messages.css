@@ -253,7 +253,6 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   }
 
   .messages-list {
-    padding-bottom: calc(var(--g-bottomnav-h) + 100px);
     scroll-padding-bottom: calc(var(--g-bottomnav-h) + 100px);
   }
 
@@ -601,7 +600,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
 /* Самый главный фикс: "one" (одна картинка) — не width:auto в сообщениях */
 .message-body .message-attachments .attachment-gallery[data-layout="one"] .gallery-item {
-  padding: 6px;              /* оставим "рамку" как в постах */
+  padding: 0px;              /* оставим "рамку" как в постах */
 }
 
 .message-body .message-attachments .attachment-gallery[data-layout="one"] .gallery-img {
@@ -616,4 +615,8 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 .message-body .message-attachments .audio-wrapper,
 .message-body .message-attachments .file-card {
   max-width: 100%;
+}
+p {
+    margin-top: 0;
+    margin-bottom: 0;
 }

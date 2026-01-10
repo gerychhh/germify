@@ -17,9 +17,6 @@
                             </span>
 
                             <div class="dialog-top-right">
-                                <span class="dialog-date">
-                                    {% if last_message %}{{ last_message.created_at|date:"d.m H:i" }}{% endif %}
-                                </span>
                                 {% if unread %}
                                     <span class="dialog-unread-badge">{{ unread }}</span>
                                 {% endif %}
@@ -79,9 +76,6 @@
                             </span>
 
                             <div class="dialog-top-right">
-                                <span class="dialog-date">
-                                    {% if last_message %}{{ last_message.created_at|date:"d.m H:i" }}{% endif %}
-                                </span>
                                 {% if unread %}
                                     <span class="dialog-unread-badge">{{ unread }}</span>
                                 {% endif %}
