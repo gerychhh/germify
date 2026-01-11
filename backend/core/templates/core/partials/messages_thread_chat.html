@@ -41,7 +41,7 @@
               data-send-url="{% if other_user %}{% url 'messages_send' other_user.username %}{% else %}{% url 'messages_chat_send' chat.id %}{% endif %}">
             {% csrf_token %}
 
-            <div class="d-flex gap-2 align-items-center messages-composer-row msg-glass-surface">
+            <div class="d-flex gap-2 align-items-center messages-composer-row">
                 <button type="button"
                         class="btn msg-icon-btn messages-attach-btn"
                         id="messages-attach-btn"
