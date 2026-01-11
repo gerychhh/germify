@@ -6,13 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="2d5614a6-939c-4f99-a314-b1c6afd6ce92" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/app.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/app.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/pages/messages/messages.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/pages/messages/messages.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/pages/posts/posts.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/pages/posts/posts.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/shared/attachments.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/shared/attachments.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/static/core/css/theme.css" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/static/core/css/theme.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/message_dialog_item.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/message_dialog_item.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/core/templates/core/partials/messages_inbox_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/core/templates/core/partials/messages_inbox_list.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +41,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "codex/remove-media-background-in-message-bubbles",
+    "git-widget-placeholder": "3cbbc4a2",
     "ignore.virus.scanning.warn.message": "true",
     "last_opened_file_path": "C:/gerychhh_/germify/germify/backend/core/static/icons",
     "node.js.detected.package.eslint": "true",
@@ -135,6 +129,7 @@
       <workItem from="1767906401582" duration="1108000" />
       <workItem from="1767909284804" duration="784000" />
       <workItem from="1767984884950" duration="10903000" />
+      <workItem from="1768096086344" duration="307000" />
     </task>
     <servers />
   </component>
