@@ -1202,11 +1202,12 @@
             renderMedia();
         }
 
-        document.addEventListener("click", function (e) {
+        const mediaClickHandler = function (e) {
             const media = e.target.closest(".gallery-media");
             if (!media) return;
 
             if (media.closest(".image-viewer")) return;
+            if (document.querySelector(".image-viewer")) return;
 
             const wrap = media.closest(".attachments");
             if (!wrap) return;
@@ -1221,7 +1222,8 @@
             if (index < 0) index = 0;
 
             openMediaViewer(items, index);
-        });
+        };
+        document.addEventListener("click", mediaClickHandler);
 
         initMessageMedia(document);
 
@@ -1467,6 +1469,7 @@
 			try { window.removeEventListener("germify:message_new", handler); } catch (e) {}
 			try { window.removeEventListener("germify:chat_event", chatHandler); } catch (e) {}
 			try { window.removeEventListener("germify:chat_read", readHandler); } catch (e) {}
+			try { document.removeEventListener("click", mediaClickHandler); } catch (e) {}
 			// Stop recorder if still active
 			try { if (recording) stopRecording(); } catch (e) {}
 		};
