@@ -136,72 +136,26 @@
                     <div class="gallery-item">
                       <img src="{{ att.file.url }}"
                            alt="{{ att.original_name }}"
-                           class="gallery-img"
+                           class="gallery-media"
+                           data-media="image"
                            data-full="{{ att.file.url }}">
                     </div>
-                  {% endif %}
-                {% endfor %}
-              </div>
-
-              <div class="attachment-videos">
-                {% for att in post.attachments.all %}
-                  {% with name=att.original_name|lower %}
-                    {% if ".mp4" in name or ".mov" in name %}
-                      <div class="video-wrapper">
-                        <div class="video-inner">
-                          <video class="video-player" preload="metadata">
+                  {% else %}
+                    {% with name=att.original_name|lower %}
+                      {% if ".mp4" in name or ".mov" in name %}
+                        <div class="gallery-item">
+                          <video class="gallery-media gallery-video"
+                                 data-media="video"
+                                 preload="metadata"
+                                 playsinline
+                                 muted
+                                 controls>
                             <source src="{{ att.file.url }}">
                           </video>
-
-                          {# Большая кнопка play (SVG) — до старта/в паузе #}
-                          <button type="button"
-                                  class="video-overlay-play"
-                                  aria-label="Play"
-                                  data-icon-play="{% static 'core/icons/media-play.svg' %}">
-                            <img class="video-overlay-icon" src="{% static 'core/icons/media-play.svg' %}" alt="">
-                          </button>
                         </div>
-                        <div class="video-controls">
-                          <button type="button"
-                                  class="video-btn video-play"
-                                  aria-label="Play/Pause"
-                                  data-icon-play="{% static 'core/icons/media-play.svg' %}"
-                                  data-icon-pause="{% static 'core/icons/media-pause.svg' %}">
-                            <img class="video-icon" src="{% static 'core/icons/media-play.svg' %}" alt="">
-                          </button>
-
-                          <div class="video-progress-bar">
-                            <div class="video-buffer"></div>
-                            <div class="video-progress"></div>
-                          </div>
-
-                          <div class="video-time">
-                            <span class="video-current">0:00</span> /
-                            <span class="video-duration">0:00</span>
-                          </div>
-
-                          <button type="button"
-                                  class="video-btn video-mute"
-                                  aria-label="Mute"
-                                  data-icon-on="{% static 'core/icons/media-volume.svg' %}"
-                                  data-icon-off="{% static 'core/icons/media-muted.svg' %}">
-                            <img class="video-icon" src="{% static 'core/icons/media-volume.svg' %}" alt="">
-                          </button>
-
-                          <button type="button" class="video-btn video-fullscreen" aria-label="Fullscreen">
-                            <img class="video-icon" src="{% static 'core/icons/media-fullscreen.svg' %}" alt="">
-                          </button>
-
-                          <a href="{{ att.file.url }}"
-                             download
-                             class="video-btn video-download"
-                             title="Скачать видео">
-                            <img class="video-icon" src="{% static 'core/icons/media-download.svg' %}" alt="">
-                          </a>
-                        </div>
-                      </div>
-                    {% endif %}
-                  {% endwith %}
+                      {% endif %}
+                    {% endwith %}
+                  {% endif %}
                 {% endfor %}
               </div>
 

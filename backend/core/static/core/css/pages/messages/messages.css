@@ -761,16 +761,18 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   position: absolute;
   right: max(16px, calc((100% - var(--messages-content-w)) / 2 + 16px));
   bottom: 24px;
+  width: 48px;
+  height: 48px;
   border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
   border-radius: 999px;
   background: color-mix(in srgb, var(--g-surface) 90%, transparent);
   color: var(--g-text);
   font-size: 14px;
-  padding: 7px 10px;
+  padding: 0;
   box-shadow: var(--g-shadow-sm);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
   cursor: pointer;
   z-index: 30;
 }
@@ -778,6 +780,9 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 .scroll-bottom-btn:hover { background: color-mix(in srgb, var(--g-surface) 94%, transparent); }
 
 .scroll-bottom-unread {
+  position: absolute;
+  top: -4px;
+  right: -4px;
   min-width: 18px;
   height: 18px;
   border-radius: 999px;
@@ -832,7 +837,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   padding: 0px;              /* оставим "рамку" как в постах */
 }
 
-.message-body .message-attachments .attachment-gallery[data-layout="one"] .gallery-img {
+.message-body .message-attachments .attachment-gallery[data-layout="one"] .gallery-media {
   width: 100%;               /* вместо auto */
   height: auto;
   max-height: min(65vh, 560px);

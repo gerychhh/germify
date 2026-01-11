@@ -596,9 +596,10 @@ document.addEventListener('focusin', function (e) {
 // ========================
 // SMART IMAGE GALLERIES (1–10)
 // ========================
-function _imgShape(img) {
-    const w = img.naturalWidth || 0;
-    const h = img.naturalHeight || 0;
+function _mediaShape(media) {
+    const isVideo = media?.tagName === "VIDEO";
+    const w = isVideo ? (media.videoWidth || 0) : (media.naturalWidth || 0);
+    const h = isVideo ? (media.videoHeight || 0) : (media.naturalHeight || 0);
     if (!w || !h) return null;
     const r = w / h;
     if (r >= 1.25) return "land";
@@ -637,8 +638,8 @@ function initSmartGalleries(root) {
     const scope = root || document;
     const galleries = scope.querySelectorAll?.(".attachment-gallery") || [];
     galleries.forEach((gallery) => {
-        const imgs = Array.from(gallery.querySelectorAll(".gallery-img"));
-        if (!imgs.length) {
+        const mediaItems = Array.from(gallery.querySelectorAll(".gallery-media"));
+        if (!mediaItems.length) {
             gallery.dataset.count = "0";
             gallery.dataset.layout = "one";
             gallery.dataset.firstShape = "land";
@@ -648,8 +649,8 @@ function initSmartGalleries(root) {
         // Ограничение отображения
         const maxVisible = 6;
 
-        imgs.forEach((img, idx) => {
-            const item = img.closest(".gallery-item");
+        mediaItems.forEach((media, idx) => {
+            const item = media.closest(".gallery-item");
             if (!item) return;
             if (idx >= maxVisible) item.classList.add("gallery-hidden");
             else item.classList.remove("gallery-hidden");
@@ -657,30 +658,34 @@ function initSmartGalleries(root) {
 
         // бейдж +N
         gallery.querySelectorAll(".gallery-more-badge").forEach((n) => n.remove());
-        if (imgs.length > maxVisible) {
-            const lastVisibleImg = imgs[maxVisible - 1];
-            const lastItem = lastVisibleImg?.closest(".gallery-item");
+        if (mediaItems.length > maxVisible) {
+            const lastVisibleMedia = mediaItems[maxVisible - 1];
+            const lastItem = lastVisibleMedia?.closest(".gallery-item");
             if (lastItem) {
                 const badge = document.createElement("div");
                 badge.className = "gallery-more-badge";
-                badge.textContent = "+" + (imgs.length - maxVisible);
+                badge.textContent = "+" + (mediaItems.length - maxVisible);
 
                 // ✅ кликабельный бейдж: открывает просмотрщик как клик по фото
                 badge.addEventListener("click", (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (lastVisibleImg) lastVisibleImg.click();
+                    const imageItems = Array.from(
+                        gallery.querySelectorAll(".gallery-media[data-media='image']")
+                    );
+                    const fallbackTarget = imageItems[0] || lastVisibleMedia;
+                    if (fallbackTarget) fallbackTarget.click();
                 });
 
                 lastItem.appendChild(badge);
             }
         }
 
-        const visibleCount = Math.min(imgs.length, maxVisible);
+        const visibleCount = Math.min(mediaItems.length, maxVisible);
         gallery.dataset.count = String(visibleCount);
 
         const applyLayout = () => {
-            const shapes = imgs.slice(0, visibleCount).map(_imgShape);
+            const shapes = mediaItems.slice(0, visibleCount).map(_mediaShape);
             const firstShape = shapes[0] || "land";
 
             gallery.dataset.firstShape = firstShape; // ✅ нужно для CSS (портрет по центру)
@@ -688,9 +693,16 @@ function initSmartGalleries(root) {
         };
 
         applyLayout();
-        imgs.slice(0, visibleCount).forEach((img) => {
-            if (img && !(img.complete && img.naturalWidth)) {
-                img.addEventListener("load", applyLayout, { once: true });
+        mediaItems.slice(0, visibleCount).forEach((media) => {
+            if (!media) return;
+            if (media.tagName === "VIDEO") {
+                if (!(media.videoWidth && media.videoHeight)) {
+                    media.addEventListener("loadedmetadata", applyLayout, { once: true });
+                }
+                return;
+            }
+            if (!(media.complete && media.naturalWidth)) {
+                media.addEventListener("load", applyLayout, { once: true });
             }
         });
     });
@@ -2664,13 +2676,13 @@ document.addEventListener("DOMContentLoaded", function () {
 // FULLSCREEN IMAGE VIEWER + SLIDES
 // ================================
 document.addEventListener("click", function (e) {
-    const img = e.target.closest(".gallery-img");
+    const img = e.target.closest(".gallery-media[data-media='image']");
     if (!img) return;
 
     const post = img.closest(".attachments");
     if (!post) return;
 
-    const images = [...post.querySelectorAll(".gallery-img")];
+    const images = [...post.querySelectorAll(".gallery-media[data-media='image']")];
     const urls = images.map(i => i.dataset.full || i.src);
     let index = images.indexOf(img);
 
@@ -2684,9 +2696,15 @@ function openViewer(urls, index) {
     overlay.className = "image-viewer";
     overlay.innerHTML = `
         <img class="viewer-img" src="${urls[current]}">
-        <div class="viewer-arrow prev">◀</div>
-        <div class="viewer-arrow next">▶</div>
-        <div class="viewer-close">✖</div>
+        <button type="button" class="viewer-arrow prev" aria-label="Назад">
+            <img class="viewer-icon" src="/static/core/icons/arrow-left.svg" alt="">
+        </button>
+        <button type="button" class="viewer-arrow next" aria-label="Вперёд">
+            <img class="viewer-icon" src="/static/core/icons/arrow-right.svg" alt="">
+        </button>
+        <button type="button" class="viewer-close" aria-label="Закрыть">
+            <img class="viewer-icon" src="/static/core/icons/close.svg" alt="">
+        </button>
     `;
 
     document.body.appendChild(overlay);

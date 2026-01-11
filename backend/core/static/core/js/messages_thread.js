@@ -722,9 +722,10 @@
         // ------------------------------
         // Media init for messages
         // ------------------------------
-        function _imgShape(img) {
-            const w = img.naturalWidth || 0;
-            const h = img.naturalHeight || 0;
+        function _mediaShape(media) {
+            const isVideo = media?.tagName === "VIDEO";
+            const w = isVideo ? (media.videoWidth || 0) : (media.naturalWidth || 0);
+            const h = isVideo ? (media.videoHeight || 0) : (media.naturalHeight || 0);
             if (!w || !h) return null;
             const r = w / h;
             if (r >= 1.25) return "land";
@@ -752,46 +753,53 @@
             const scope = root || document;
             const galleries = scope.querySelectorAll?.(".attachment-gallery") || [];
             galleries.forEach((gallery) => {
-                const imgs = Array.from(gallery.querySelectorAll(".gallery-img"));
-                if (!imgs.length) {
+                const mediaItems = Array.from(gallery.querySelectorAll(".gallery-media"));
+                if (!mediaItems.length) {
                     gallery.dataset.count = "0";
                     gallery.dataset.layout = "one";
                     return;
                 }
 
                 const maxVisible = 6;
-                imgs.forEach((img, idx) => {
-                    const item = img.closest(".gallery-item");
+                mediaItems.forEach((media, idx) => {
+                    const item = media.closest(".gallery-item");
                     if (!item) return;
                     if (idx >= maxVisible) item.classList.add("gallery-hidden");
                     else item.classList.remove("gallery-hidden");
                 });
 
                 gallery.querySelectorAll(".gallery-more-badge").forEach((n) => n.remove());
-                if (imgs.length > maxVisible) {
-                    const lastVisibleImg = imgs[maxVisible - 1];
-                    const lastItem = lastVisibleImg?.closest(".gallery-item");
+                if (mediaItems.length > maxVisible) {
+                    const lastVisibleMedia = mediaItems[maxVisible - 1];
+                    const lastItem = lastVisibleMedia?.closest(".gallery-item");
                     if (lastItem) {
                         const badge = document.createElement("div");
                         badge.className = "gallery-more-badge";
-                        badge.textContent = "+" + (imgs.length - maxVisible);
+                        badge.textContent = "+" + (mediaItems.length - maxVisible);
                         lastItem.appendChild(badge);
                     }
                 }
 
-                const visibleCount = Math.min(imgs.length, maxVisible);
+                const visibleCount = Math.min(mediaItems.length, maxVisible);
                 gallery.dataset.count = String(visibleCount);
 
                 const applyLayout = () => {
-                    const shapes = imgs.slice(0, visibleCount).map(_imgShape);
+                    const shapes = mediaItems.slice(0, visibleCount).map(_mediaShape);
                     const firstShape = shapes[0] || "land";
                     gallery.dataset.layout = _chooseGalleryLayout(visibleCount, firstShape, shapes);
                 };
 
                 applyLayout();
-                imgs.slice(0, visibleCount).forEach((img) => {
-                    if (img && !(img.complete && img.naturalWidth)) {
-                        img.addEventListener("load", applyLayout, { once: true });
+                mediaItems.slice(0, visibleCount).forEach((media) => {
+                    if (!media) return;
+                    if (media.tagName === "VIDEO") {
+                        if (!(media.videoWidth && media.videoHeight)) {
+                            media.addEventListener("loadedmetadata", applyLayout, { once: true });
+                        }
+                        return;
+                    }
+                    if (!(media.complete && media.naturalWidth)) {
+                        media.addEventListener("load", applyLayout, { once: true });
                     }
                 });
             });
@@ -1240,7 +1248,15 @@
             const wasAtBottom = recalcIsAtBottom();
             listInner?.insertAdjacentHTML("beforeend", detail.html);
 
-            if (detail.message_id) list.dataset.lastId = String(detail.message_id);
+            let insertedEl = null;
+            if (detail.message_id) {
+                list.dataset.lastId = String(detail.message_id);
+                insertedEl = listInner?.querySelector(`.message-item[data-id="${detail.message_id}"]`);
+            }
+            if (!insertedEl) {
+                insertedEl = listInner?.lastElementChild || null;
+            }
+            if (insertedEl) initMessageMedia(insertedEl);
 
             if (wasAtBottom) {
                 scrollToBottom({ smooth: true });
