@@ -11,6 +11,7 @@ body.messages-page {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  --g-navbar-h: 56px;
 }
 
 body.messages-page main.g-main {
@@ -209,6 +210,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 @media (max-width: 991.98px) {
   body.messages-page {
     padding-bottom: 0;
+    --g-navbar-h: 0px;
   }
 
   body.messages-page main.g-main {
