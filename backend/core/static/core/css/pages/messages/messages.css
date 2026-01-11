@@ -838,6 +838,70 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 .message-body .message-attachments .file-card {
   max-width: 100%;
 }
+
+body.messages-page .audio-wrapper--voice {
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+}
+
+body.messages-page .audio-wrapper--voice .audio-controls {
+  gap: 12px;
+}
+
+body.messages-page .audio-wrapper--voice .audio-play {
+  width: 42px;
+  height: 42px;
+  border: none;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+body.messages-page .audio-wrapper--voice .audio-icon {
+  width: 20px;
+  height: 20px;
+}
+
+body.messages-page .audio-wrapper--voice .audio-progress-bar {
+  height: 16px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+body.messages-page .audio-wrapper--voice .audio-progress-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.75) 0,
+    rgba(255, 255, 255, 0.75) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+  opacity: 0.7;
+}
+
+body.messages-page .audio-wrapper--voice .audio-progress {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+body.messages-page .audio-wrapper--voice .audio-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+body.messages-page .message-item.other .audio-wrapper--voice .audio-time {
+  color: var(--g-muted);
+}
+
+body.messages-page .audio-wrapper--voice .audio-separator {
+  display: none;
+}
+
+body.messages-page .audio-wrapper--voice .audio-download,
+body.messages-page .audio-wrapper--voice .audio-filename {
+  display: none;
+}
 p {
     margin-top: 0;
     margin-bottom: 0;

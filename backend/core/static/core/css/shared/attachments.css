@@ -571,6 +571,10 @@
     white-space: nowrap;
 }
 
+.audio-separator {
+    margin: 0 4px;
+}
+
 .audio-download {
     text-decoration: none;
     color: var(--g-text);

@@ -95,7 +95,11 @@
                 {% for att in message.attachments.all %}
                     {% with name=att.original_name|lower %}
                         {% if ".mp3" in name or ".wav" in name or ".ogg" in name or ".webm" in name %}
-                            <div class="audio-wrapper">
+                            {% if "voice" in name %}
+                                <div class="audio-wrapper audio-wrapper--voice">
+                            {% else %}
+                                <div class="audio-wrapper">
+                            {% endif %}
 
                                 <audio class="audio-player">
                                     <source src="{{ att.file.url }}">
@@ -117,16 +121,21 @@
                                     </div>
 
                                     <div class="audio-time">
-                                        <span class="audio-current">0:00</span> /
+                                        <span class="audio-current">0:00</span>
+                                        <span class="audio-separator">/</span>
                                         <span class="audio-duration">0:00</span>
                                     </div>
 
-                                    <a href="{{ att.file.url }}" download class="audio-download" aria-label="Download audio">
-                                        <img class="audio-icon" src="{% static 'core/icons/media-download.svg' %}" alt="">
-                                    </a>
+                                    {% if "voice" not in name %}
+                                        <a href="{{ att.file.url }}" download class="audio-download" aria-label="Download audio">
+                                            <img class="audio-icon" src="{% static 'core/icons/media-download.svg' %}" alt="">
+                                        </a>
+                                    {% endif %}
                                 </div>
 
-                                <div class="audio-filename">{{ att.original_name }}</div>
+                                {% if "voice" not in name %}
+                                    <div class="audio-filename">{{ att.original_name }}</div>
+                                {% endif %}
 
                             </div>
                         {% endif %}
