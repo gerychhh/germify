@@ -50,6 +50,23 @@
                 <div class="composer__file-list" data-composer-files></div>
             </div>
 
+            <div id="chat-voice-preview-wrap" class="voice-preview hidden mt-2" role="group" aria-label="Голосовое сообщение">
+                <button type="button" class="voice-preview__play" aria-label="Воспроизвести">
+                    <img class="voice-preview__icon" src="{% static 'core/icons/media-play.svg' %}" alt="">
+                </button>
+                <div class="voice-preview__body">
+                    <div class="voice-preview__time">
+                        <span id="chat-voice-preview-current">0:00</span>
+                        <span class="voice-preview__dot"></span>
+                        <span id="chat-voice-preview-duration">0:00</span>
+                    </div>
+                    <div class="voice-preview__wave" aria-hidden="true">
+                        <span class="voice-preview__progress" id="chat-voice-preview-progress"></span>
+                    </div>
+                </div>
+                <button type="button" class="voice-preview__remove" aria-label="Удалить голосовое">×</button>
+            </div>
+
             <div class="composer__row">
                 <input id="message-attachments-input" type="file" name="attachments" multiple hidden>
 
@@ -83,23 +100,6 @@
 
             <div class="d-flex align-items-center gap-2 mt-2">
                 <span id="chat-voice-record-status" class="small text-muted"></span>
-            </div>
-
-            <div id="chat-voice-preview-wrap" class="voice-preview hidden mt-2" role="group" aria-label="Голосовое сообщение">
-                <button type="button" class="voice-preview__play" aria-label="Воспроизвести">
-                    <img class="voice-preview__icon" src="{% static 'core/icons/media-play.svg' %}" alt="">
-                </button>
-                <div class="voice-preview__body">
-                    <div class="voice-preview__time">
-                        <span id="chat-voice-preview-current">0:00</span>
-                        <span class="voice-preview__dot"></span>
-                        <span id="chat-voice-preview-duration">0:00</span>
-                    </div>
-                    <div class="voice-preview__wave" aria-hidden="true">
-                        <span class="voice-preview__progress" id="chat-voice-preview-progress"></span>
-                    </div>
-                </div>
-                <button type="button" class="voice-preview__remove" aria-label="Удалить голосовое">×</button>
             </div>
 
             <audio id="chat-voice-preview" class="hidden" preload="metadata"></audio>

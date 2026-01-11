@@ -8,7 +8,9 @@
     {% if message.sender == request.user %}
         <div class="message-body">
     {% else %}
-        {% include "core/partials/avatar.html" with user_obj=message.sender size="sm" %}
+        {% if chat and chat.kind == "group" %}
+            {% include "core/partials/avatar.html" with user_obj=message.sender size="sm" %}
+        {% endif %}
         <div class="message-body">
     {% endif %}
 
@@ -189,7 +191,4 @@
             {% endif %}
         </div>
     </div>
-    {% if message.sender == request.user %}
-        {% include "core/partials/avatar.html" with user_obj=message.sender size="sm" %}
-    {% endif %}
 </div>
