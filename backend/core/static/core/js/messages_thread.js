@@ -1103,6 +1103,7 @@
                 stage.innerHTML = "";
 
                 if (item.type === "video") {
+                    if (btnFullscreen) btnFullscreen.style.display = "none";
                     const video = document.createElement("video");
                     video.className = "viewer-video";
                     video.src = item.url;
@@ -1117,6 +1118,7 @@
                         }
                     }
                 } else {
+                    if (btnFullscreen) btnFullscreen.style.display = "";
                     const img = document.createElement("img");
                     img.className = "viewer-img";
                     img.src = item.url;
