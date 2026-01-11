@@ -14,7 +14,7 @@ body.messages-page {
 }
 
 body.messages-page main.g-main {
-  padding: var(--g-navbar-h) 0 0;
+  padding: 0;
 }
 
 body.messages-page .messages-layout {
