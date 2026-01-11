@@ -151,27 +151,6 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
 
 .profile-bio--empty{ color: var(--g-muted-2); }
 
-.profile-social{
-  margin-top:12px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-  padding:10px 12px;
-  border:1px dashed var(--g-border);
-  border-radius: var(--g-radius-sm);
-  background: var(--g-surface-2);
-}
-
-.profile-social__label{
-  font-weight:600;
-  color: var(--g-text);
-}
-
-.profile-social__status{
-  font-size:13px;
-}
-
 .profile-edit-panel{
   margin-top:12px;
   padding:14px;

@@ -28,8 +28,6 @@ from django.test.client import RequestFactory
 from django.views.decorators.http import require_GET
 from core.consumers import user_group_name
 
-from allauth.socialaccount.models import SocialAccount
-
 from core.services.messages import (
     build_threads_for_user,
     get_or_create_dm_chat,
@@ -625,12 +623,6 @@ def user_profile(request, username):
                 return redirect("profile")
         else:
             form = ProfileForm(instance=profile_user)
-    google_connected = False
-    if is_owner:
-        google_connected = SocialAccount.objects.filter(
-            user=profile_user,
-            provider="google",
-        ).exists()
     communities_joined_count = CommunityMembership.objects.filter(
         user=profile_user, is_admin=False
     ).count()
@@ -649,7 +641,6 @@ def user_profile(request, username):
             "liked_posts_ids": state.get("liked_posts_ids", []),
             "liked_comment_ids": state.get("liked_comment_ids", []),
             "following_ids": state.get("following_ids", []),
-            "google_connected": google_connected,
             "communities_admin_count": communities_admin_count,
             "communities_joined_count": communities_joined_count,
             "has_next": page_obj.has_next(),

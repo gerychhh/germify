@@ -157,10 +157,12 @@ LOGOUT_REDIRECT_URL = "feed"
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = "none"
 SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_ADAPTER = "core.adapters.SocialAccountAdapter"
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"prompt": "select_account"},
     }
 }
 
