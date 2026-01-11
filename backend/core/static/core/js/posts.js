@@ -596,9 +596,10 @@ document.addEventListener('focusin', function (e) {
 // ========================
 // SMART IMAGE GALLERIES (1–10)
 // ========================
-function _imgShape(img) {
-    const w = img.naturalWidth || 0;
-    const h = img.naturalHeight || 0;
+function _mediaShape(media) {
+    const isVideo = media?.tagName === "VIDEO";
+    const w = isVideo ? (media.videoWidth || 0) : (media.naturalWidth || 0);
+    const h = isVideo ? (media.videoHeight || 0) : (media.naturalHeight || 0);
     if (!w || !h) return null;
     const r = w / h;
     if (r >= 1.25) return "land";
@@ -637,8 +638,8 @@ function initSmartGalleries(root) {
     const scope = root || document;
     const galleries = scope.querySelectorAll?.(".attachment-gallery") || [];
     galleries.forEach((gallery) => {
-        const imgs = Array.from(gallery.querySelectorAll(".gallery-img"));
-        if (!imgs.length) {
+        const mediaItems = Array.from(gallery.querySelectorAll(".gallery-media"));
+        if (!mediaItems.length) {
             gallery.dataset.count = "0";
             gallery.dataset.layout = "one";
             gallery.dataset.firstShape = "land";
@@ -648,8 +649,8 @@ function initSmartGalleries(root) {
         // Ограничение отображения
         const maxVisible = 6;
 
-        imgs.forEach((img, idx) => {
-            const item = img.closest(".gallery-item");
+        mediaItems.forEach((media, idx) => {
+            const item = media.closest(".gallery-item");
             if (!item) return;
             if (idx >= maxVisible) item.classList.add("gallery-hidden");
             else item.classList.remove("gallery-hidden");
@@ -657,30 +658,34 @@ function initSmartGalleries(root) {
 
         // бейдж +N
         gallery.querySelectorAll(".gallery-more-badge").forEach((n) => n.remove());
-        if (imgs.length > maxVisible) {
-            const lastVisibleImg = imgs[maxVisible - 1];
-            const lastItem = lastVisibleImg?.closest(".gallery-item");
+        if (mediaItems.length > maxVisible) {
+            const lastVisibleMedia = mediaItems[maxVisible - 1];
+            const lastItem = lastVisibleMedia?.closest(".gallery-item");
             if (lastItem) {
                 const badge = document.createElement("div");
                 badge.className = "gallery-more-badge";
-                badge.textContent = "+" + (imgs.length - maxVisible);
+                badge.textContent = "+" + (mediaItems.length - maxVisible);
 
                 // ✅ кликабельный бейдж: открывает просмотрщик как клик по фото
                 badge.addEventListener("click", (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (lastVisibleImg) lastVisibleImg.click();
+                    const imageItems = Array.from(
+                        gallery.querySelectorAll(".gallery-media[data-media='image']")
+                    );
+                    const fallbackTarget = imageItems[0] || lastVisibleMedia;
+                    if (fallbackTarget) fallbackTarget.click();
                 });
 
                 lastItem.appendChild(badge);
             }
         }
 
-        const visibleCount = Math.min(imgs.length, maxVisible);
+        const visibleCount = Math.min(mediaItems.length, maxVisible);
         gallery.dataset.count = String(visibleCount);
 
         const applyLayout = () => {
-            const shapes = imgs.slice(0, visibleCount).map(_imgShape);
+            const shapes = mediaItems.slice(0, visibleCount).map(_mediaShape);
             const firstShape = shapes[0] || "land";
 
             gallery.dataset.firstShape = firstShape; // ✅ нужно для CSS (портрет по центру)
@@ -688,9 +693,16 @@ function initSmartGalleries(root) {
         };
 
         applyLayout();
-        imgs.slice(0, visibleCount).forEach((img) => {
-            if (img && !(img.complete && img.naturalWidth)) {
-                img.addEventListener("load", applyLayout, { once: true });
+        mediaItems.slice(0, visibleCount).forEach((media) => {
+            if (!media) return;
+            if (media.tagName === "VIDEO") {
+                if (!(media.videoWidth && media.videoHeight)) {
+                    media.addEventListener("loadedmetadata", applyLayout, { once: true });
+                }
+                return;
+            }
+            if (!(media.complete && media.naturalWidth)) {
+                media.addEventListener("load", applyLayout, { once: true });
             }
         });
     });
@@ -2661,60 +2673,129 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 // ================================
-// FULLSCREEN IMAGE VIEWER + SLIDES
+// FULLSCREEN MEDIA VIEWER + SLIDES
 // ================================
 document.addEventListener("click", function (e) {
-    const img = e.target.closest(".gallery-img");
-    if (!img) return;
+    const media = e.target.closest(".gallery-media");
+    if (!media) return;
 
-    const post = img.closest(".attachments");
+    const post = media.closest(".attachments");
     if (!post) return;
 
-    const images = [...post.querySelectorAll(".gallery-img")];
-    const urls = images.map(i => i.dataset.full || i.src);
-    let index = images.indexOf(img);
+    const mediaItems = [...post.querySelectorAll(".gallery-media")];
+    const items = mediaItems.map((item) => ({
+        type: item.dataset.media || (item.tagName === "VIDEO" ? "video" : "image"),
+        url: item.dataset.full || item.currentSrc || item.src,
+    }));
 
-    openViewer(urls, index);
+    let index = mediaItems.indexOf(media);
+    if (index < 0) index = 0;
+
+    openMediaViewer(items, index);
 });
 
-function openViewer(urls, index) {
+function openMediaViewer(items, index) {
     let current = index;
+    const prefersTouch = window.matchMedia?.("(pointer: coarse)")?.matches;
 
     const overlay = document.createElement("div");
     overlay.className = "image-viewer";
     overlay.innerHTML = `
-        <img class="viewer-img" src="${urls[current]}">
-        <div class="viewer-arrow prev">◀</div>
-        <div class="viewer-arrow next">▶</div>
-        <div class="viewer-close">✖</div>
+        <div class="viewer-stage"></div>
+        <button type="button" class="viewer-arrow prev" aria-label="Назад">
+            <img class="viewer-icon" src="/static/core/icons/arrow-left.svg" alt="">
+        </button>
+        <button type="button" class="viewer-arrow next" aria-label="Вперёд">
+            <img class="viewer-icon" src="/static/core/icons/arrow-right.svg" alt="">
+        </button>
+        <button type="button" class="viewer-close" aria-label="Закрыть">
+            <img class="viewer-icon" src="/static/core/icons/close.svg" alt="">
+        </button>
+        <button type="button" class="viewer-fullscreen" aria-label="На весь экран">
+            <img class="viewer-icon" src="/static/core/icons/media-fullscreen.svg" alt="">
+        </button>
     `;
 
     document.body.appendChild(overlay);
 
-    const viewerImg = overlay.querySelector(".viewer-img");
+    const stage = overlay.querySelector(".viewer-stage");
     const btnPrev = overlay.querySelector(".prev");
     const btnNext = overlay.querySelector(".next");
     const btnClose = overlay.querySelector(".viewer-close");
+    const btnFullscreen = overlay.querySelector(".viewer-fullscreen");
+    const chromeButtons = [btnPrev, btnNext, btnClose, btnFullscreen].filter(Boolean);
+    let chromeTimer = null;
+
+    function setChromeVisible(isVisible) {
+        chromeButtons.forEach((btn) => {
+            btn.style.opacity = isVisible ? "" : "0";
+            btn.style.pointerEvents = isVisible ? "" : "none";
+        });
+    }
+
+    function bumpChromeVisibility() {
+        setChromeVisible(true);
+        if (chromeTimer) window.clearTimeout(chromeTimer);
+        chromeTimer = window.setTimeout(() => setChromeVisible(false), 1000);
+    }
+
+    function renderMedia() {
+        const item = items[current];
+        if (!item || !stage) return;
+        stage.innerHTML = "";
+
+        if (item.type === "video") {
+            if (btnFullscreen) btnFullscreen.style.display = "none";
+            const video = document.createElement("video");
+            video.className = "viewer-video";
+            video.src = item.url;
+            video.controls = true;
+            video.playsInline = true;
+            stage.appendChild(video);
+
+            if (prefersTouch) {
+                const fs = video.requestFullscreen || video.webkitEnterFullscreen;
+                if (fs) {
+                    try { fs.call(video); } catch (err) {}
+                }
+            }
+        } else {
+            if (btnFullscreen) btnFullscreen.style.display = "";
+            const img = document.createElement("img");
+            img.className = "viewer-img";
+            img.src = item.url;
+            stage.appendChild(img);
+        }
+    }
 
     function show(i) {
         current = i;
-        viewerImg.src = urls[current];
+        renderMedia();
     }
 
     btnPrev.onclick = () => {
-        if (current === 0) show(urls.length - 1);
+        if (current === 0) show(items.length - 1);
         else show(current - 1);
     };
 
     btnNext.onclick = () => {
-        if (current === urls.length - 1) show(0);
+        if (current === items.length - 1) show(0);
         else show(current + 1);
+    };
+
+    btnFullscreen.onclick = () => {
+        const media = stage?.querySelector(".viewer-video, .viewer-img");
+        if (!media) return;
+        const req = media.requestFullscreen || media.webkitEnterFullscreen;
+        if (req) {
+            try { req.call(media); } catch (err) {}
+        }
     };
 
     btnClose.onclick = () => overlay.remove();
 
-    overlay.addEventListener("click", (e) => {
-        if (e.target === overlay) overlay.remove();
+    overlay.addEventListener("click", (ev) => {
+        if (ev.target === overlay) overlay.remove();
     });
 
     function escHandler(ev) {
@@ -2729,6 +2810,7 @@ function openViewer(urls, index) {
 
     overlay.addEventListener("touchstart", (ev) => {
         touchStartX = ev.changedTouches[0].screenX;
+        bumpChromeVisibility();
     });
 
     overlay.addEventListener("touchend", (ev) => {
@@ -2739,4 +2821,10 @@ function openViewer(urls, index) {
             else btnNext.click();
         }
     });
+
+    overlay.addEventListener("mousemove", bumpChromeVisibility);
+    overlay.addEventListener("touchmove", bumpChromeVisibility);
+
+    bumpChromeVisibility();
+    renderMedia();
 }

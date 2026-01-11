@@ -50,41 +50,6 @@
                 <div class="composer__file-list" data-composer-files></div>
             </div>
 
-            <div class="composer__row">
-                <input id="message-attachments-input" type="file" name="attachments" multiple hidden>
-
-                <button type="button"
-                        class="composer__attach"
-                        id="messages-attach-btn"
-                        data-composer-attach
-                        data-accept=""
-                        title="Прикрепить файлы"
-                        aria-label="Прикрепить файлы">
-                    <img class="composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
-                </button>
-
-                <button type="button"
-                        class="composer__attach"
-                        id="chat-voice-record-btn"
-                        title="Записать голосовое"
-                        aria-label="Записать голосовое">
-                    <img class="composer__icon" src="{% static 'core/icons/mic.svg' %}" alt="">
-                </button>
-
-                {{ form.text }}
-
-                <button type="submit"
-                        class="composer__send composer__send--accent"
-                        title="Отправить"
-                        aria-label="Отправить">
-                    <img class="composer__icon" src="{% static 'core/icons/send.svg' %}" alt="">
-                </button>
-            </div>
-
-            <div class="d-flex align-items-center gap-2 mt-2">
-                <span id="chat-voice-record-status" class="small text-muted"></span>
-            </div>
-
             <div id="chat-voice-preview-wrap" class="voice-preview hidden mt-2" role="group" aria-label="Голосовое сообщение">
                 <button type="button" class="voice-preview__play" aria-label="Воспроизвести">
                     <img class="voice-preview__icon" src="{% static 'core/icons/media-play.svg' %}" alt="">
@@ -100,6 +65,35 @@
                     </div>
                 </div>
                 <button type="button" class="voice-preview__remove" aria-label="Удалить голосовое">×</button>
+            </div>
+
+            <div class="composer__row">
+                <input id="message-attachments-input" type="file" name="attachments" multiple hidden>
+
+                <button type="button"
+                        class="composer__attach"
+                        id="messages-attach-btn"
+                        data-composer-attach
+                        data-accept=""
+                        title="Прикрепить файлы"
+                        aria-label="Прикрепить файлы">
+                    <img class="composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
+                </button>
+
+                {{ form.text }}
+
+                <button type="submit"
+                        class="composer__send composer__send--accent"
+                        data-icon-send="{% static 'core/icons/send.svg' %}"
+                        data-icon-mic="{% static 'core/icons/mic.svg' %}"
+                        title="Отправить"
+                        aria-label="Отправить">
+                    <img class="composer__icon" src="{% static 'core/icons/mic.svg' %}" alt="">
+                </button>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <span id="chat-voice-record-status" class="small text-muted"></span>
             </div>
 
             <audio id="chat-voice-preview" class="hidden" preload="metadata"></audio>

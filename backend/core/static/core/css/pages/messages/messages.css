@@ -189,7 +189,7 @@ body.messages-page .voice-preview {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 18px;
   background: color-mix(in srgb, var(--g-primary) 65%, #6f60f5);
   color: #fff;
@@ -214,18 +214,20 @@ body.messages-page .voice-preview__play {
   display: grid;
   place-items: center;
   padding: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 body.messages-page .voice-preview__icon {
   width: 20px;
   height: 20px;
+  filter: brightness(0) saturate(100%);
 }
 
 body.messages-page .voice-preview__body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 body.messages-page .voice-preview__time {
@@ -233,6 +235,10 @@ body.messages-page .voice-preview__time {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+body.messages-page .voice-preview__time span:first-child {
+  display: none;
 }
 
 body.messages-page .voice-preview__dot {
@@ -244,7 +250,7 @@ body.messages-page .voice-preview__dot {
 
 body.messages-page .voice-preview__wave {
   position: relative;
-  height: 18px;
+  height: 12px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.2);
   overflow: hidden;
@@ -701,9 +707,10 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 }
 
 .message-item.me .message-body {
-  background: color-mix(in srgb, var(--g-primary) 12%, var(--g-surface));
-  border-color: color-mix(in srgb, var(--g-primary) 26%, var(--g-border));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--g-primary);
+  border-color: color-mix(in srgb, var(--g-primary) 70%, var(--g-border));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: var(--g-white);
 }
 
 .message-meta {
@@ -753,17 +760,19 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 .scroll-bottom-btn {
   position: absolute;
   right: max(16px, calc((100% - var(--messages-content-w)) / 2 + 16px));
-  bottom: 24px;
+  bottom: 96px;
+  width: 48px;
+  height: 48px;
   border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
   border-radius: 999px;
   background: color-mix(in srgb, var(--g-surface) 90%, transparent);
   color: var(--g-text);
   font-size: 14px;
-  padding: 7px 10px;
+  padding: 0;
   box-shadow: var(--g-shadow-sm);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
   cursor: pointer;
   z-index: 30;
 }
@@ -771,6 +780,9 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 .scroll-bottom-btn:hover { background: color-mix(in srgb, var(--g-surface) 94%, transparent); }
 
 .scroll-bottom-unread {
+  position: absolute;
+  top: -4px;
+  right: -4px;
   min-width: 18px;
   height: 18px;
   border-radius: 999px;
@@ -825,7 +837,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   padding: 0px;              /* оставим "рамку" как в постах */
 }
 
-.message-body .message-attachments .attachment-gallery[data-layout="one"] .gallery-img {
+.message-body .message-attachments .attachment-gallery[data-layout="one"] .gallery-media {
   width: 100%;               /* вместо auto */
   height: auto;
   max-height: min(65vh, 560px);
@@ -837,6 +849,76 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 .message-body .message-attachments .audio-wrapper,
 .message-body .message-attachments .file-card {
   max-width: 100%;
+}
+
+body.messages-page .audio-wrapper--voice {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+body.messages-page .audio-wrapper--voice .audio-controls {
+  gap: 10px;
+}
+
+body.messages-page .audio-wrapper--voice .audio-play {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+body.messages-page .audio-wrapper--voice .audio-icon {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) saturate(100%);
+}
+
+body.messages-page .audio-wrapper--voice .audio-progress-bar {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+body.messages-page .audio-wrapper--voice .audio-progress-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.75) 0,
+    rgba(255, 255, 255, 0.75) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+  opacity: 0.7;
+}
+
+body.messages-page .audio-wrapper--voice .audio-progress {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+body.messages-page .audio-wrapper--voice .audio-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  min-width: 32px;
+}
+
+body.messages-page .message-item.other .audio-wrapper--voice .audio-time {
+  color: var(--g-muted);
+}
+
+body.messages-page .audio-wrapper--voice .audio-separator {
+  display: none;
+}
+
+body.messages-page .audio-wrapper--voice .audio-current {
+  display: none;
+}
+
+body.messages-page .audio-wrapper--voice .audio-download,
+body.messages-page .audio-wrapper--voice .audio-filename {
+  display: none;
 }
 p {
     margin-top: 0;

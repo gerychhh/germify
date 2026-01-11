@@ -133,8 +133,11 @@
         const progWrap = document.getElementById("message-upload-progress");
         const progBar = document.getElementById("message-upload-progress-bar");
         const submitBtn = form.querySelector("button[type='submit']");
+        const submitIcon = submitBtn?.querySelector("img");
+        const submitIconSend = submitBtn?.dataset?.iconSend || "/static/core/icons/send.svg";
+        const submitIconMic = submitBtn?.dataset?.iconMic || "/static/core/icons/mic.svg";
 
-        const voiceBtn = document.getElementById("chat-voice-record-btn");
+        const voiceBtn = submitBtn;
         const voiceStatus = document.getElementById("chat-voice-record-status");
         const voicePreview = document.getElementById("chat-voice-preview");
         const voicePreviewWrap = document.getElementById("chat-voice-preview-wrap");
@@ -163,6 +166,20 @@
             const isExpanded = scrollHeight > baseHeight + 2;
             input.classList.toggle("is-expanded", isExpanded);
             input.classList.remove("is-scrollable");
+        }
+
+        function updateActionButtonMode() {
+            if (!submitBtn) return;
+            const hasText = Boolean((input?.value || "").trim());
+            const hasAttachments = selectedFiles.length > 0;
+            const mode = (hasText || hasAttachments) ? "send" : "mic";
+            submitBtn.dataset.mode = mode;
+            submitBtn.classList.toggle("composer__send--accent", mode === "send");
+            submitBtn.title = mode === "send" ? "Отправить" : "Записать голосовое";
+            submitBtn.setAttribute("aria-label", submitBtn.title);
+            if (submitIcon) {
+                submitIcon.src = mode === "send" ? submitIconSend : submitIconMic;
+            }
         }
 
         // ------------------------------
@@ -301,6 +318,8 @@
         const MAX_FILE_SIZE = 25 * 1024 * 1024;
         const MAX_TOTAL_SIZE = 250 * 1024 * 1024;
         const MAX_FILE_COUNT = parseInt(document.body?.dataset?.attachMax || "10", 10);
+
+        updateActionButtonMode();
 
         function formatSize(bytes) {
             if (bytes < 1024 * 1024) {
@@ -473,6 +492,7 @@
                     voicePreviewIcon.src = "/static/core/icons/media-play.svg";
                 }
             }
+            updateActionButtonMode();
         }
 
         function addFiles(filesList) {
@@ -518,6 +538,7 @@
             input.addEventListener("input", updateTextareaSize);
             window.addEventListener("load", updateTextareaSize);
             updateTextareaSize();
+            input.addEventListener("input", updateActionButtonMode);
         }
 
         attachments?.addEventListener("click", (event) => {
@@ -582,12 +603,17 @@
                     selectedFiles.push(file);
 
                     if (voicePreview) {
-                        voicePreview.src = URL.createObjectURL(blob);
-                        voicePreview.classList.remove("hidden");
-                        voicePreviewWrap?.classList.remove("hidden");
+                        voicePreview.src = "";
+                        voicePreview.classList.add("hidden");
+                        voicePreviewWrap?.classList.add("hidden");
                     }
 
                     renderSelectedFiles();
+                    updateActionButtonMode();
+
+                    if (form) {
+                        form.dispatchEvent(new Event("submit", { cancelable: true }));
+                    }
 
                     if (typeof stopPromiseResolve === "function") {
                         stopPromiseResolve();
@@ -599,7 +625,7 @@
                 recording = true;
 
                 if (voiceStatus) voiceStatus.textContent = "Запись… нажмите ещё раз чтобы остановить";
-                if (voiceBtn) voiceBtn.classList.add("btn-outline-danger");
+                if (voiceBtn) voiceBtn.classList.add("is-recording");
             } catch (e) {
                 console.error("voice record error", e);
                 alert("Не удалось получить доступ к микрофону. (Нужен HTTPS или localhost)");
@@ -617,11 +643,12 @@
             recording = false;
 
             if (voiceStatus) voiceStatus.textContent = "";
-            if (voiceBtn) voiceBtn.classList.remove("btn-outline-danger");
+            if (voiceBtn) voiceBtn.classList.remove("is-recording");
         }
 
         if (voiceBtn) {
             voiceBtn.addEventListener("click", (e) => {
+                if (submitBtn?.dataset?.mode !== "mic") return;
                 e.preventDefault();
                 e.stopPropagation();
                 if (recording) stopRecording();
@@ -695,9 +722,10 @@
         // ------------------------------
         // Media init for messages
         // ------------------------------
-        function _imgShape(img) {
-            const w = img.naturalWidth || 0;
-            const h = img.naturalHeight || 0;
+        function _mediaShape(media) {
+            const isVideo = media?.tagName === "VIDEO";
+            const w = isVideo ? (media.videoWidth || 0) : (media.naturalWidth || 0);
+            const h = isVideo ? (media.videoHeight || 0) : (media.naturalHeight || 0);
             if (!w || !h) return null;
             const r = w / h;
             if (r >= 1.25) return "land";
@@ -725,46 +753,53 @@
             const scope = root || document;
             const galleries = scope.querySelectorAll?.(".attachment-gallery") || [];
             galleries.forEach((gallery) => {
-                const imgs = Array.from(gallery.querySelectorAll(".gallery-img"));
-                if (!imgs.length) {
+                const mediaItems = Array.from(gallery.querySelectorAll(".gallery-media"));
+                if (!mediaItems.length) {
                     gallery.dataset.count = "0";
                     gallery.dataset.layout = "one";
                     return;
                 }
 
                 const maxVisible = 6;
-                imgs.forEach((img, idx) => {
-                    const item = img.closest(".gallery-item");
+                mediaItems.forEach((media, idx) => {
+                    const item = media.closest(".gallery-item");
                     if (!item) return;
                     if (idx >= maxVisible) item.classList.add("gallery-hidden");
                     else item.classList.remove("gallery-hidden");
                 });
 
                 gallery.querySelectorAll(".gallery-more-badge").forEach((n) => n.remove());
-                if (imgs.length > maxVisible) {
-                    const lastVisibleImg = imgs[maxVisible - 1];
-                    const lastItem = lastVisibleImg?.closest(".gallery-item");
+                if (mediaItems.length > maxVisible) {
+                    const lastVisibleMedia = mediaItems[maxVisible - 1];
+                    const lastItem = lastVisibleMedia?.closest(".gallery-item");
                     if (lastItem) {
                         const badge = document.createElement("div");
                         badge.className = "gallery-more-badge";
-                        badge.textContent = "+" + (imgs.length - maxVisible);
+                        badge.textContent = "+" + (mediaItems.length - maxVisible);
                         lastItem.appendChild(badge);
                     }
                 }
 
-                const visibleCount = Math.min(imgs.length, maxVisible);
+                const visibleCount = Math.min(mediaItems.length, maxVisible);
                 gallery.dataset.count = String(visibleCount);
 
                 const applyLayout = () => {
-                    const shapes = imgs.slice(0, visibleCount).map(_imgShape);
+                    const shapes = mediaItems.slice(0, visibleCount).map(_mediaShape);
                     const firstShape = shapes[0] || "land";
                     gallery.dataset.layout = _chooseGalleryLayout(visibleCount, firstShape, shapes);
                 };
 
                 applyLayout();
-                imgs.slice(0, visibleCount).forEach((img) => {
-                    if (img && !(img.complete && img.naturalWidth)) {
-                        img.addEventListener("load", applyLayout, { once: true });
+                mediaItems.slice(0, visibleCount).forEach((media) => {
+                    if (!media) return;
+                    if (media.tagName === "VIDEO") {
+                        if (!(media.videoWidth && media.videoHeight)) {
+                            media.addEventListener("loadedmetadata", applyLayout, { once: true });
+                        }
+                        return;
+                    }
+                    if (!(media.complete && media.naturalWidth)) {
+                        media.addEventListener("load", applyLayout, { once: true });
                     }
                 });
             });
@@ -1032,6 +1067,164 @@
             initAudioPlayers(rootEl);
         }
 
+        function openMediaViewer(items, index) {
+            let current = index;
+            const prefersTouch = window.matchMedia?.("(pointer: coarse)")?.matches;
+
+            const overlay = document.createElement("div");
+            overlay.className = "image-viewer";
+            overlay.innerHTML = `
+                <div class="viewer-stage"></div>
+                <button type="button" class="viewer-arrow prev" aria-label="Назад">
+                    <img class="viewer-icon" src="/static/core/icons/arrow-left.svg" alt="">
+                </button>
+                <button type="button" class="viewer-arrow next" aria-label="Вперёд">
+                    <img class="viewer-icon" src="/static/core/icons/arrow-right.svg" alt="">
+                </button>
+                <button type="button" class="viewer-close" aria-label="Закрыть">
+                    <img class="viewer-icon" src="/static/core/icons/close.svg" alt="">
+                </button>
+                <button type="button" class="viewer-fullscreen" aria-label="На весь экран">
+                    <img class="viewer-icon" src="/static/core/icons/media-fullscreen.svg" alt="">
+                </button>
+            `;
+
+            document.body.appendChild(overlay);
+
+            const stage = overlay.querySelector(".viewer-stage");
+            const btnPrev = overlay.querySelector(".prev");
+            const btnNext = overlay.querySelector(".next");
+            const btnClose = overlay.querySelector(".viewer-close");
+            const btnFullscreen = overlay.querySelector(".viewer-fullscreen");
+            const chromeButtons = [btnPrev, btnNext, btnClose, btnFullscreen].filter(Boolean);
+            let chromeTimer = null;
+
+            function setChromeVisible(isVisible) {
+                chromeButtons.forEach((btn) => {
+                    btn.style.opacity = isVisible ? "" : "0";
+                    btn.style.pointerEvents = isVisible ? "" : "none";
+                });
+            }
+
+            function bumpChromeVisibility() {
+                setChromeVisible(true);
+                if (chromeTimer) window.clearTimeout(chromeTimer);
+                chromeTimer = window.setTimeout(() => setChromeVisible(false), 1000);
+            }
+
+            function renderMedia() {
+                const item = items[current];
+                if (!item || !stage) return;
+                stage.innerHTML = "";
+
+                if (item.type === "video") {
+                    if (btnFullscreen) btnFullscreen.style.display = "none";
+                    const video = document.createElement("video");
+                    video.className = "viewer-video";
+                    video.src = item.url;
+                    video.controls = true;
+                    video.playsInline = true;
+                    stage.appendChild(video);
+
+                    if (prefersTouch) {
+                        const fs = video.requestFullscreen || video.webkitEnterFullscreen;
+                        if (fs) {
+                            try { fs.call(video); } catch (err) {}
+                        }
+                    }
+                } else {
+                    if (btnFullscreen) btnFullscreen.style.display = "";
+                    const img = document.createElement("img");
+                    img.className = "viewer-img";
+                    img.src = item.url;
+                    stage.appendChild(img);
+                }
+            }
+
+            function show(i) {
+                current = i;
+                renderMedia();
+            }
+
+            btnPrev.onclick = () => {
+                if (current === 0) show(items.length - 1);
+                else show(current - 1);
+            };
+
+            btnNext.onclick = () => {
+                if (current === items.length - 1) show(0);
+                else show(current + 1);
+            };
+
+            btnFullscreen.onclick = () => {
+                const media = stage?.querySelector(".viewer-video, .viewer-img");
+                if (!media) return;
+                const req = media.requestFullscreen || media.webkitEnterFullscreen;
+                if (req) {
+                    try { req.call(media); } catch (err) {}
+                }
+            };
+
+            btnClose.onclick = () => overlay.remove();
+
+            overlay.addEventListener("click", (ev) => {
+                if (ev.target === overlay) overlay.remove();
+            });
+
+            function escHandler(ev) {
+                if (ev.key === "Escape") {
+                    overlay.remove();
+                    document.removeEventListener("keydown", escHandler);
+                }
+            }
+            document.addEventListener("keydown", escHandler);
+
+            let touchStartX = 0;
+
+            overlay.addEventListener("touchstart", (ev) => {
+                touchStartX = ev.changedTouches[0].screenX;
+                bumpChromeVisibility();
+            });
+
+            overlay.addEventListener("touchend", (ev) => {
+                let diff = ev.changedTouches[0].screenX - touchStartX;
+
+                if (Math.abs(diff) > 50) {
+                    if (diff > 0) btnPrev.click();
+                    else btnNext.click();
+                }
+            });
+
+            overlay.addEventListener("mousemove", bumpChromeVisibility);
+            overlay.addEventListener("touchmove", bumpChromeVisibility);
+
+            bumpChromeVisibility();
+            renderMedia();
+        }
+
+        const mediaClickHandler = function (e) {
+            const media = e.target.closest(".gallery-media");
+            if (!media) return;
+
+            if (media.closest(".image-viewer")) return;
+            if (document.querySelector(".image-viewer")) return;
+
+            const wrap = media.closest(".attachments");
+            if (!wrap) return;
+
+            const mediaItems = [...wrap.querySelectorAll(".gallery-media")];
+            const items = mediaItems.map((item) => ({
+                type: item.dataset.media || (item.tagName === "VIDEO" ? "video" : "image"),
+                url: item.dataset.full || item.currentSrc || item.src,
+            }));
+
+            let index = mediaItems.indexOf(media);
+            if (index < 0) index = 0;
+
+            openMediaViewer(items, index);
+        };
+        document.addEventListener("click", mediaClickHandler);
+
         initMessageMedia(document);
 
         // ------------------------------
@@ -1180,12 +1373,15 @@
             selectedFiles = [];
             renderSelectedFiles();
             if (voicePreview) { voicePreview.classList.add("hidden"); voicePreview.src = ""; }
+            updateActionButtonMode();
         });
 
         if (input) {
             input.addEventListener("keydown", (e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
+                    const text = (input.value || "").trim();
+                    if (!text && !selectedFiles.length) return;
                     form.dispatchEvent(new Event("submit", { cancelable: true }));
                 }
             });
@@ -1210,7 +1406,15 @@
             const wasAtBottom = recalcIsAtBottom();
             listInner?.insertAdjacentHTML("beforeend", detail.html);
 
-            if (detail.message_id) list.dataset.lastId = String(detail.message_id);
+            let insertedEl = null;
+            if (detail.message_id) {
+                list.dataset.lastId = String(detail.message_id);
+                insertedEl = listInner?.querySelector(`.message-item[data-id="${detail.message_id}"]`);
+            }
+            if (!insertedEl) {
+                insertedEl = listInner?.lastElementChild || null;
+            }
+            if (insertedEl) initMessageMedia(insertedEl);
 
             if (wasAtBottom) {
                 scrollToBottom({ smooth: true });
@@ -1265,6 +1469,7 @@
 			try { window.removeEventListener("germify:message_new", handler); } catch (e) {}
 			try { window.removeEventListener("germify:chat_event", chatHandler); } catch (e) {}
 			try { window.removeEventListener("germify:chat_read", readHandler); } catch (e) {}
+			try { document.removeEventListener("click", mediaClickHandler); } catch (e) {}
 			// Stop recorder if still active
 			try { if (recording) stopRecording(); } catch (e) {}
 		};
