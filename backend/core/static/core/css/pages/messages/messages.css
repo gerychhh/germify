@@ -22,6 +22,7 @@ body.messages-page .messages-layout {
   --bs-gutter-x: 0;
   --bs-gutter-y: 0;
   row-gap: 0;
+  --messages-sidebar-w: 360px;
 }
 
 body.messages-page main.g-main .g-container {
@@ -471,11 +472,60 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
 .messages-list-inner {
   width: 100%;
-  max-width: 820px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+@media (min-width: 992px) {
+  body.messages-page .messages-layout {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  body.messages-page .messages-sidebar-col {
+    flex: 0 0 var(--messages-sidebar-w);
+    max-width: var(--messages-sidebar-w);
+  }
+
+  body.messages-page .messages-chat-col {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  body.messages-page .messages-resizer {
+    width: 6px;
+    cursor: col-resize;
+    position: relative;
+    flex: 0 0 6px;
+  }
+
+  body.messages-page .messages-resizer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    transition: background-color 0.15s ease;
+  }
+
+  body.messages-page .messages-resizer:hover::before,
+  body.messages-page .messages-resizer.is-active::before {
+    background: color-mix(in srgb, var(--g-border) 70%, transparent);
+  }
+
+  body.messages-page.is-resizing {
+    cursor: col-resize;
+    user-select: none;
+  }
+}
+
+@media (max-width: 991.98px) {
+  body.messages-page .messages-resizer {
+    display: none;
+  }
 }
 
 .message-item {

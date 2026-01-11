@@ -78,6 +78,61 @@
             setLayoutMode(hasChat ? "chat" : "sidebar");
         }
 
+        function initSidebarResize() {
+            if (!messagesLayout) return;
+            const resizer = messagesLayout.querySelector(".messages-resizer");
+            const sidebar = messagesLayout.querySelector(".messages-sidebar-col");
+            if (!resizer || !sidebar) return;
+
+            const storageKey = "germify_messages_sidebar_w";
+            const minWidth = 260;
+            const maxWidth = 520;
+
+            const saved = Number(window.localStorage.getItem(storageKey));
+            if (!Number.isNaN(saved) && saved >= minWidth && saved <= maxWidth) {
+                messagesLayout.style.setProperty("--messages-sidebar-w", `${saved}px`);
+            }
+
+            const applyWidth = (width) => {
+                const clamped = Math.max(minWidth, Math.min(maxWidth, width));
+                messagesLayout.style.setProperty("--messages-sidebar-w", `${clamped}px`);
+                window.localStorage.setItem(storageKey, String(clamped));
+            };
+
+            resizer.addEventListener("pointerdown", (event) => {
+                if (event.button !== 0) return;
+                const layoutRect = messagesLayout.getBoundingClientRect();
+                const startX = event.clientX;
+                const startWidth = sidebar.getBoundingClientRect().width;
+                const maxAllowed = Math.max(minWidth, layoutRect.width - 360);
+                const upperBound = Math.min(maxWidth, maxAllowed);
+
+                resizer.classList.add("is-active");
+                document.body.classList.add("is-resizing");
+                resizer.setPointerCapture(event.pointerId);
+
+                const onMove = (moveEvent) => {
+                    const delta = moveEvent.clientX - startX;
+                    const nextWidth = startWidth + delta;
+                    const clamped = Math.max(minWidth, Math.min(upperBound, nextWidth));
+                    messagesLayout.style.setProperty("--messages-sidebar-w", `${clamped}px`);
+                };
+
+                const onUp = () => {
+                    const currentWidth = sidebar.getBoundingClientRect().width;
+                    applyWidth(currentWidth);
+                    resizer.classList.remove("is-active");
+                    document.body.classList.remove("is-resizing");
+                    resizer.releasePointerCapture(event.pointerId);
+                    window.removeEventListener("pointermove", onMove);
+                    window.removeEventListener("pointerup", onUp);
+                };
+
+                window.addEventListener("pointermove", onMove);
+                window.addEventListener("pointerup", onUp, { once: true });
+            });
+        }
+
         // -------------------------
         // AJAX chat navigation (no full page reload)
         // -------------------------
@@ -261,6 +316,7 @@
         initAjaxChatNav();
 
         ensureLayoutMatchesPane();
+        initSidebarResize();
 
         document.addEventListener("click", (ev) => {
             const backBtn = ev.target && ev.target.closest ? ev.target.closest("#messages-back-to-list") : null;
