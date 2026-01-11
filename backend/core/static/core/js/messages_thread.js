@@ -137,6 +137,13 @@
         const voiceBtn = document.getElementById("chat-voice-record-btn");
         const voiceStatus = document.getElementById("chat-voice-record-status");
         const voicePreview = document.getElementById("chat-voice-preview");
+        const voicePreviewWrap = document.getElementById("chat-voice-preview-wrap");
+        const voicePreviewPlay = voicePreviewWrap?.querySelector(".voice-preview__play");
+        const voicePreviewIcon = voicePreviewWrap?.querySelector(".voice-preview__icon");
+        const voicePreviewRemove = voicePreviewWrap?.querySelector(".voice-preview__remove");
+        const voicePreviewCurrent = document.getElementById("chat-voice-preview-current");
+        const voicePreviewDuration = document.getElementById("chat-voice-preview-duration");
+        const voicePreviewProgress = document.getElementById("chat-voice-preview-progress");
 
         const sendUrl = form.dataset.sendUrl || null;
 
@@ -327,7 +334,6 @@
             if (!attachments || !mediaGrid || !fileList) return;
             objectUrls.forEach((url) => URL.revokeObjectURL(url));
             objectUrls = [];
-            attachments.classList.toggle("hidden", selectedFiles.length === 0);
             mediaGrid.innerHTML = "";
             fileList.innerHTML = "";
 
@@ -350,6 +356,8 @@
             } else {
                 mediaGrid.removeAttribute("data-count");
             }
+
+            attachments.classList.toggle("hidden", media.length + others.length === 0);
 
             const visibleMedia = media.slice(0, 4);
             const overflowCount = Math.max(0, media.length - visibleMedia.length);
@@ -450,6 +458,21 @@
                 row.appendChild(remove);
                 fileList.appendChild(row);
             });
+
+            const hasVoice = selectedFiles.some((file) => file.name === "voice.webm");
+            if (!hasVoice && voicePreviewWrap) {
+                voicePreviewWrap.classList.add("hidden");
+                if (voicePreview) {
+                    try { voicePreview.pause(); } catch (e) {}
+                    voicePreview.currentTime = 0;
+                }
+                if (voicePreviewProgress) voicePreviewProgress.style.width = "0%";
+                if (voicePreviewCurrent) voicePreviewCurrent.textContent = "0:00";
+                if (voicePreviewDuration) voicePreviewDuration.textContent = "0:00";
+                if (voicePreviewIcon) {
+                    voicePreviewIcon.src = "/static/core/icons/media-play.svg";
+                }
+            }
         }
 
         function addFiles(filesList) {
@@ -561,6 +584,7 @@
                     if (voicePreview) {
                         voicePreview.src = URL.createObjectURL(blob);
                         voicePreview.classList.remove("hidden");
+                        voicePreviewWrap?.classList.remove("hidden");
                     }
 
                     renderSelectedFiles();
@@ -602,6 +626,69 @@
                 e.stopPropagation();
                 if (recording) stopRecording();
                 else startRecording();
+            });
+        }
+
+        function formatTime(seconds) {
+            if (!Number.isFinite(seconds)) return "0:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${String(s).padStart(2, "0")}`;
+        }
+
+        function updateVoicePreview() {
+            if (!voicePreview || !voicePreviewProgress || !voicePreviewCurrent) return;
+            const duration = voicePreview.duration || 0;
+            const current = voicePreview.currentTime || 0;
+            const percent = duration ? (current / duration) * 100 : 0;
+            voicePreviewProgress.style.width = `${percent}%`;
+            voicePreviewCurrent.textContent = formatTime(current);
+        }
+
+        function syncVoiceIcon() {
+            if (!voicePreview || !voicePreviewIcon) return;
+            const icon = voicePreview.paused
+                ? "/static/core/icons/media-play.svg"
+                : "/static/core/icons/media-pause.svg";
+            voicePreviewIcon.src = icon;
+        }
+
+        if (voicePreview) {
+            voicePreview.addEventListener("loadedmetadata", () => {
+                if (voicePreviewDuration) {
+                    voicePreviewDuration.textContent = formatTime(voicePreview.duration || 0);
+                }
+                updateVoicePreview();
+            });
+
+            voicePreview.addEventListener("timeupdate", updateVoicePreview);
+            voicePreview.addEventListener("ended", () => {
+                syncVoiceIcon();
+                updateVoicePreview();
+            });
+            voicePreview.addEventListener("pause", syncVoiceIcon);
+            voicePreview.addEventListener("play", syncVoiceIcon);
+        }
+
+        if (voicePreviewPlay && voicePreview) {
+            voicePreviewPlay.addEventListener("click", () => {
+                if (voicePreview.paused) {
+                    voicePreview.play().catch(() => {});
+                } else {
+                    voicePreview.pause();
+                }
+            });
+        }
+
+        if (voicePreviewRemove) {
+            voicePreviewRemove.addEventListener("click", () => {
+                selectedFiles = selectedFiles.filter((file) => file.name !== "voice.webm");
+                if (voicePreview) {
+                    try { voicePreview.pause(); } catch (e) {}
+                    voicePreview.currentTime = 0;
+                    voicePreview.src = "";
+                }
+                renderSelectedFiles();
             });
         }
 

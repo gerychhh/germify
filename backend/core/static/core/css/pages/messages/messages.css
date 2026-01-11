@@ -185,6 +185,104 @@ body.messages-page .messages-composer .composer__media-grid[data-count="4"] .com
   min-height: 110px;
 }
 
+body.messages-page .voice-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--g-primary) 65%, #6f60f5);
+  color: #fff;
+  width: 100%;
+  max-width: var(--messages-content-w);
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+}
+
+body.messages-page .voice-preview.hidden {
+  display: none;
+}
+
+body.messages-page .voice-preview__play {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: none;
+  background: #fff;
+  color: var(--g-primary);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+body.messages-page .voice-preview__icon {
+  width: 20px;
+  height: 20px;
+}
+
+body.messages-page .voice-preview__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+body.messages-page .voice-preview__time {
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+body.messages-page .voice-preview__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+body.messages-page .voice-preview__wave {
+  position: relative;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+body.messages-page .voice-preview__wave::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.7) 0,
+    rgba(255, 255, 255, 0.7) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+  opacity: 0.7;
+}
+
+body.messages-page .voice-preview__progress {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+body.messages-page .voice-preview__remove {
+  border: none;
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
 .messages-form textarea.form-control {
   height: var(--messages-input-size) !important;
   min-height: var(--messages-input-size) !important;
