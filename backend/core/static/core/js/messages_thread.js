@@ -335,6 +335,9 @@
             const others = [];
 
             selectedFiles.forEach((file, index) => {
+                if (file.name === "voice.webm") {
+                    return;
+                }
                 if (isMediaFile(file)) {
                     media.push({ file, index });
                 } else {
