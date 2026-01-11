@@ -1,5 +1,5 @@
 {% extends "core/base.html" %}
-{% load tz static markdown_extras %}
+{% load tz static markdown_extras socialaccount %}
 
 {% block title %}Профиль — Germify{% endblock %}
 
@@ -95,6 +95,24 @@
               <div class="profile-bio profile-bio--empty">Пока нет описания.</div>
             {% endif %}
           </div>
+
+          {% if is_owner %}
+            <div class="profile-social">
+              <div class="profile-social__label">Google аккаунт</div>
+              {% if google_connected %}
+                <div class="profile-social__status text-success">Подключен</div>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'socialaccount_connections' %}">
+                  Управлять
+                </a>
+              {% else %}
+                <div class="profile-social__status text-muted">Не подключен</div>
+                <a class="btn btn-sm btn-outline-primary"
+                   href="{% provider_login_url "google" process="connect" next=request.path %}">
+                  Подключить Google
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
 
           {# ===== EDIT PANEL (скрыт по умолчанию) ===== #}
           {% if user.is_authenticated and user.username == profile_user.username and form %}
