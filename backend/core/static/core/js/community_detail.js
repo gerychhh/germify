@@ -475,7 +475,11 @@
             headers: { 'X-CSRFToken': getCookie('csrftoken') },
             body: formData,
           });
-          const data = await resp.json().catch(() => ({}));
+          const data = await resp.json().catch(() => null);
+          if (!data) {
+            setSettingsStatus('Не удалось сохранить изменения', 'error');
+            throw new Error('invalid_json');
+          }
           if (!resp.ok) {
             const message = data.errors ? 'Не удалось сохранить изменения' : 'Ошибка сохранения';
             setSettingsStatus(message, 'error');
@@ -488,6 +492,9 @@
             updateRulesBlocks(data.data.rules_html);
             updateLinksBlocks(data.data.links);
             updateHeroMedia(data.data);
+          } else if (!data.success) {
+            setSettingsStatus('Не удалось сохранить изменения', 'error');
+            throw new Error('fail');
           }
           setSettingsStatus('Изменения сохранены');
         } catch (err) {

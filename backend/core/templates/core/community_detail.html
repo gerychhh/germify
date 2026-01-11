@@ -302,7 +302,7 @@
       </div>
       <div class="modal-body">
         {% if is_admin %}
-          <form id="communitySettingsForm" enctype="multipart/form-data">
+          <form id="communitySettingsForm" method="post" action="{% url 'community_settings_api' community.slug %}" enctype="multipart/form-data">
             {% csrf_token %}
               <div class="settings-block appearance-builder mb-3">
                 <div class="row g-3 align-items-start">
