@@ -133,8 +133,11 @@
         const progWrap = document.getElementById("message-upload-progress");
         const progBar = document.getElementById("message-upload-progress-bar");
         const submitBtn = form.querySelector("button[type='submit']");
+        const submitIcon = submitBtn?.querySelector("img");
+        const submitIconSend = submitBtn?.dataset?.iconSend || "/static/core/icons/send.svg";
+        const submitIconMic = submitBtn?.dataset?.iconMic || "/static/core/icons/mic.svg";
 
-        const voiceBtn = document.getElementById("chat-voice-record-btn");
+        const voiceBtn = submitBtn;
         const voiceStatus = document.getElementById("chat-voice-record-status");
         const voicePreview = document.getElementById("chat-voice-preview");
         const voicePreviewWrap = document.getElementById("chat-voice-preview-wrap");
@@ -163,6 +166,20 @@
             const isExpanded = scrollHeight > baseHeight + 2;
             input.classList.toggle("is-expanded", isExpanded);
             input.classList.remove("is-scrollable");
+        }
+
+        function updateActionButtonMode() {
+            if (!submitBtn) return;
+            const hasText = Boolean((input?.value || "").trim());
+            const hasAttachments = selectedFiles.length > 0;
+            const mode = (hasText || hasAttachments) ? "send" : "mic";
+            submitBtn.dataset.mode = mode;
+            submitBtn.classList.toggle("composer__send--accent", mode === "send");
+            submitBtn.title = mode === "send" ? "Отправить" : "Записать голосовое";
+            submitBtn.setAttribute("aria-label", submitBtn.title);
+            if (submitIcon) {
+                submitIcon.src = mode === "send" ? submitIconSend : submitIconMic;
+            }
         }
 
         // ------------------------------
@@ -301,6 +318,8 @@
         const MAX_FILE_SIZE = 25 * 1024 * 1024;
         const MAX_TOTAL_SIZE = 250 * 1024 * 1024;
         const MAX_FILE_COUNT = parseInt(document.body?.dataset?.attachMax || "10", 10);
+
+        updateActionButtonMode();
 
         function formatSize(bytes) {
             if (bytes < 1024 * 1024) {
@@ -473,6 +492,7 @@
                     voicePreviewIcon.src = "/static/core/icons/media-play.svg";
                 }
             }
+            updateActionButtonMode();
         }
 
         function addFiles(filesList) {
@@ -518,6 +538,7 @@
             input.addEventListener("input", updateTextareaSize);
             window.addEventListener("load", updateTextareaSize);
             updateTextareaSize();
+            input.addEventListener("input", updateActionButtonMode);
         }
 
         attachments?.addEventListener("click", (event) => {
@@ -582,12 +603,17 @@
                     selectedFiles.push(file);
 
                     if (voicePreview) {
-                        voicePreview.src = URL.createObjectURL(blob);
-                        voicePreview.classList.remove("hidden");
-                        voicePreviewWrap?.classList.remove("hidden");
+                        voicePreview.src = "";
+                        voicePreview.classList.add("hidden");
+                        voicePreviewWrap?.classList.add("hidden");
                     }
 
                     renderSelectedFiles();
+                    updateActionButtonMode();
+
+                    if (form) {
+                        form.dispatchEvent(new Event("submit", { cancelable: true }));
+                    }
 
                     if (typeof stopPromiseResolve === "function") {
                         stopPromiseResolve();
@@ -599,7 +625,7 @@
                 recording = true;
 
                 if (voiceStatus) voiceStatus.textContent = "Запись… нажмите ещё раз чтобы остановить";
-                if (voiceBtn) voiceBtn.classList.add("btn-outline-danger");
+                if (voiceBtn) voiceBtn.classList.add("is-recording");
             } catch (e) {
                 console.error("voice record error", e);
                 alert("Не удалось получить доступ к микрофону. (Нужен HTTPS или localhost)");
@@ -617,11 +643,12 @@
             recording = false;
 
             if (voiceStatus) voiceStatus.textContent = "";
-            if (voiceBtn) voiceBtn.classList.remove("btn-outline-danger");
+            if (voiceBtn) voiceBtn.classList.remove("is-recording");
         }
 
         if (voiceBtn) {
             voiceBtn.addEventListener("click", (e) => {
+                if (submitBtn?.dataset?.mode !== "mic") return;
                 e.preventDefault();
                 e.stopPropagation();
                 if (recording) stopRecording();
@@ -1180,12 +1207,15 @@
             selectedFiles = [];
             renderSelectedFiles();
             if (voicePreview) { voicePreview.classList.add("hidden"); voicePreview.src = ""; }
+            updateActionButtonMode();
         });
 
         if (input) {
             input.addEventListener("keydown", (e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
+                    const text = (input.value || "").trim();
+                    if (!text && !selectedFiles.length) return;
                     form.dispatchEvent(new Event("submit", { cancelable: true }));
                 }
             });

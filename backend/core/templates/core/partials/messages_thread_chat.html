@@ -80,21 +80,15 @@
                     <img class="composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
                 </button>
 
-                <button type="button"
-                        class="composer__attach"
-                        id="chat-voice-record-btn"
-                        title="Записать голосовое"
-                        aria-label="Записать голосовое">
-                    <img class="composer__icon" src="{% static 'core/icons/mic.svg' %}" alt="">
-                </button>
-
                 {{ form.text }}
 
                 <button type="submit"
                         class="composer__send composer__send--accent"
+                        data-icon-send="{% static 'core/icons/send.svg' %}"
+                        data-icon-mic="{% static 'core/icons/mic.svg' %}"
                         title="Отправить"
                         aria-label="Отправить">
-                    <img class="composer__icon" src="{% static 'core/icons/send.svg' %}" alt="">
+                    <img class="composer__icon" src="{% static 'core/icons/mic.svg' %}" alt="">
                 </button>
             </div>
 
