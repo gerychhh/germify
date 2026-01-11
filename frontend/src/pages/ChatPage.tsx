@@ -34,7 +34,7 @@ const messages = [
 
 export const ChatPage = () => (
   <div className="min-h-screen bg-[#0a0b10] text-white">
-    <div className="flex min-h-screen w-full items-start gap-4 py-6">
+    <div className="flex min-h-screen w-full items-start gap-4 px-4 pb-6">
       <GlassCard className="flex w-72 shrink-0 flex-col overflow-hidden rounded-none border-l-0">
         <div className={cn("border-b px-4 py-3 text-sm font-semibold", GLASS_BAR)}>
           Чаты
