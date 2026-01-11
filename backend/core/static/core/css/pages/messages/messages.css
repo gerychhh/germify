@@ -149,16 +149,40 @@ body.messages-page .messages-composer .composer__attachments {
 
 body.messages-page .messages-composer .composer__attachments {
   margin-bottom: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 body.messages-page .messages-composer .composer__media-tile {
-  min-height: 120px;
+  min-height: 100px;
 }
 
 body.messages-page .messages-composer .composer__media-grid[data-count="1"] .composer__media-tile {
-  min-height: 180px;
-  max-height: 320px;
-  aspect-ratio: 16 / 10;
+  min-height: 160px;
+  max-height: 260px;
+  aspect-ratio: 16 / 9;
+}
+
+body.messages-page .messages-composer .composer__media-grid {
+  grid-auto-rows: minmax(90px, 1fr);
+}
+
+body.messages-page .messages-composer .composer__media-grid[data-count="2"] .composer__media-tile {
+  min-height: 120px;
+}
+
+body.messages-page .messages-composer .composer__media-grid[data-count="3"] .composer__media-tile:nth-child(1) {
+  min-height: 160px;
+}
+
+body.messages-page .messages-composer .composer__media-grid[data-count="3"] .composer__media-tile:nth-child(2),
+body.messages-page .messages-composer .composer__media-grid[data-count="3"] .composer__media-tile:nth-child(3) {
+  min-height: 90px;
+}
+
+body.messages-page .messages-composer .composer__media-grid[data-count="4"] .composer__media-tile {
+  min-height: 110px;
 }
 
 .messages-form textarea.form-control {
