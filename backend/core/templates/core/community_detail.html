@@ -413,24 +413,27 @@
                               <div class="fw-semibold text-truncate">{{ m.user.display_name|default:m.user.username }}</div>
                               <div class="small text-secondary">@{{ m.user.username }}</div>
                             </div>
-                            <select class="form-select form-select-sm staff-role-select">
+                            <select class="form-select form-select-sm staff-role-select" {% if m.role == 'owner' %}disabled{% endif %}>
                               <option value="member" {% if m.role == 'member' %}selected{% endif %}>Участник</option>
                               <option value="moderator" {% if m.role == 'moderator' %}selected{% endif %}>Модератор</option>
                               <option value="admin" {% if m.role == 'admin' %}selected{% endif %}>Админ</option>
                               <option value="owner" {% if m.role == 'owner' %}selected{% endif %}>Владелец</option>
                             </select>
-                            <button type="button" class="btn btn-outline-danger btn-sm staff-remove">Удалить</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm staff-remove" {% if m.role == 'owner' %}disabled{% endif %}>Удалить</button>
                           </div>
                           <div class="staff-permissions d-flex flex-wrap gap-2">
                             <span class="small text-body-secondary">Права модератора:</span>
                             <label class="form-check form-check-inline staff-permission-option">
-                              <input class="form-check-input staff-permission" type="checkbox" value="manage_posts" {% if perms.manage_posts %}checked{% endif %}>
+                              <input class="form-check-input staff-permission" type="checkbox" value="manage_posts" {% if perms.manage_posts %}checked{% endif %} {% if m.role == 'owner' %}disabled{% endif %}>
                               <span class="form-check-label">Посты</span>
                             </label>
                             <label class="form-check form-check-inline staff-permission-option">
-                              <input class="form-check-input staff-permission" type="checkbox" value="edit_appearance" {% if perms.edit_appearance %}checked{% endif %}>
+                              <input class="form-check-input staff-permission" type="checkbox" value="edit_appearance" {% if perms.edit_appearance %}checked{% endif %} {% if m.role == 'owner' %}disabled{% endif %}>
                               <span class="form-check-label">Оформление</span>
                             </label>
+                            {% if m.role == 'owner' %}
+                              <span class="badge text-bg-success-subtle border">Полный доступ</span>
+                            {% endif %}
                           </div>
                         </div>
                       {% endwith %}

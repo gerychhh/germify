@@ -94,6 +94,12 @@ html[data-glass="off"] .community-surface {
   margin-bottom: 24px;
 }
 
+html.community-settings-open,
+body.community-settings-open {
+  overflow: hidden;
+  height: 100%;
+}
+
 .community-member {
   padding: 12px;
   border-radius: 12px;

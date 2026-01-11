@@ -351,6 +351,7 @@
     // Settings form
     const settingsForm = document.getElementById('communitySettingsForm');
     const settingsStatus = document.getElementById('communitySettingsStatus');
+    const settingsModal = document.getElementById('communitySettingsModal');
     const communityNameEl = document.querySelector('[data-community-name]');
     const communityDescriptionEl = document.querySelector('[data-community-description]');
     const communityTagsEl = document.querySelector('[data-community-tags]');
@@ -453,6 +454,15 @@
       }
     };
 
+    if (settingsModal) {
+      const toggleScrollLock = (locked) => {
+        document.documentElement.classList.toggle('community-settings-open', locked);
+        document.body.classList.toggle('community-settings-open', locked);
+      };
+      settingsModal.addEventListener('shown.bs.modal', () => toggleScrollLock(true));
+      settingsModal.addEventListener('hidden.bs.modal', () => toggleScrollLock(false));
+    }
+
     if (settingsForm && settingsUrl) {
       settingsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -511,7 +521,7 @@
       if (roleSelect) body.append('role', roleSelect.value);
       body.append('permissions', JSON.stringify(collectPermissions(item)));
       try {
-        await fetch(url, {
+        const resp = await fetch(url, {
           method: 'POST',
           headers: {
             'X-CSRFToken': getCookie('csrftoken'),
@@ -519,8 +529,13 @@
           },
           body,
         });
+        if (!resp.ok) {
+          const message = resp.status === 403 ? 'Недостаточно прав' : 'Ошибка обновления';
+          setSettingsStatus(message, 'error');
+        }
       } catch (err) {
         console.error(err);
+        setSettingsStatus('Ошибка обновления', 'error');
       } finally {
         trigger && (trigger.disabled = false);
       }
@@ -557,9 +572,13 @@
           if (resp.ok) {
             item.remove();
             if (typeof data.members === 'number') updateCounts(data.members);
+          } else {
+            const message = resp.status === 403 ? 'Недостаточно прав' : 'Ошибка удаления';
+            setSettingsStatus(message, 'error');
           }
         } catch (err) {
           console.error(err);
+          setSettingsStatus('Ошибка удаления', 'error');
         }
       });
     }

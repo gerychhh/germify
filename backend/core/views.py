@@ -2325,7 +2325,9 @@ def community_member_role(request, slug, user_id):
 
     membership.role = new_role
     permissions_raw = request.POST.get("permissions")
-    if permissions_raw:
+    if membership.role == "owner":
+        membership.permissions = {key: True for key in membership.default_permissions()}
+    elif permissions_raw:
         try:
             incoming = json.loads(permissions_raw)
         except Exception:
