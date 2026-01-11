@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from django.contrib.auth import get_user_model
 
+from allauth.account.adapter import DefaultAccountAdapter
+from allauth.account.utils import user_username
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 
 
@@ -22,3 +24,14 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         user = matches.first()
         if user and user.is_active:
             sociallogin.connect(request, user)
+
+
+class AccountAdapter(DefaultAccountAdapter):
+    def populate_username(self, request, user):
+        if user_username(user):
+            return user
+
+        email = (user.email or "").strip()
+        base = email.split("@")[0] if email else "user"
+        user.username = self.generate_unique_username([base, email])
+        return user
