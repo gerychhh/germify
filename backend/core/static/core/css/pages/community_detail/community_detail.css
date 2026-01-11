@@ -85,6 +85,15 @@ html[data-glass="off"] .community-surface {
   margin-top: 0;
 }
 
+#communitySettingsModal .modal-dialog-centered {
+  align-items: flex-start;
+}
+
+#communitySettingsModal .modal-dialog {
+  margin-top: calc(var(--g-navbar-h) + 12px);
+  margin-bottom: 24px;
+}
+
 .community-member {
   padding: 12px;
   border-radius: 12px;
