@@ -1096,6 +1096,21 @@
             const btnNext = overlay.querySelector(".next");
             const btnClose = overlay.querySelector(".viewer-close");
             const btnFullscreen = overlay.querySelector(".viewer-fullscreen");
+            const chromeButtons = [btnPrev, btnNext, btnClose, btnFullscreen].filter(Boolean);
+            let chromeTimer = null;
+
+            function setChromeVisible(isVisible) {
+                chromeButtons.forEach((btn) => {
+                    btn.style.opacity = isVisible ? "" : "0";
+                    btn.style.pointerEvents = isVisible ? "" : "none";
+                });
+            }
+
+            function bumpChromeVisibility() {
+                setChromeVisible(true);
+                if (chromeTimer) window.clearTimeout(chromeTimer);
+                chromeTimer = window.setTimeout(() => setChromeVisible(false), 1000);
+            }
 
             function renderMedia() {
                 const item = items[current];
@@ -1168,6 +1183,7 @@
 
             overlay.addEventListener("touchstart", (ev) => {
                 touchStartX = ev.changedTouches[0].screenX;
+                bumpChromeVisibility();
             });
 
             overlay.addEventListener("touchend", (ev) => {
@@ -1179,6 +1195,10 @@
                 }
             });
 
+            overlay.addEventListener("mousemove", bumpChromeVisibility);
+            overlay.addEventListener("touchmove", bumpChromeVisibility);
+
+            bumpChromeVisibility();
             renderMedia();
         }
 
