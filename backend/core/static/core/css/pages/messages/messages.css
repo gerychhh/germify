@@ -148,6 +148,12 @@ body.messages-page .messages-chat-card {
   margin: 0 auto;
 }
 
+.messages-composer-attachments {
+  width: 100%;
+  max-width: var(--messages-content-w);
+  margin: 0 auto 8px;
+}
+
 body.messages-page .messages-composer-row {
   background: transparent;
   border: 0;
