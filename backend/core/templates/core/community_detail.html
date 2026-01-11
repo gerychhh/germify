@@ -21,7 +21,7 @@
      data-moderator-requests-url="{% url 'community_moderator_requests' community.slug %}"
      data-moderator-action-url="{% url 'community_moderator_request_action' community.slug 0 'approve' %}">
 
-  <div class="community-hero g-glass card border-0 shadow-sm overflow-hidden">
+  <div class="community-hero card community-surface border-0 shadow-sm overflow-hidden">
     <div class="community-cover" style="{% if community.cover %}background-image:url('{{ community.cover.url }}');{% endif %}"></div>
     <div class="community-actions dropdown">
       <button class="btn btn-outline-secondary rounded-circle community-actions-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия с сообществом">
@@ -110,7 +110,7 @@
     </div>
   </div>
 
-  <div class="row g-4 mt-3">
+  <div class="row g-4 mt-0 community-tabs-row">
     <div class="col-12">
       <div class="g-tabs mb-3 overflow-auto">
         <ul class="nav nav-underline flex-nowrap" role="tablist">
@@ -131,7 +131,9 @@
                 <form method="post"
                       action="{% url 'community_create_post' community.slug %}"
                       class="community-post-form composer__form"
-                      enctype="multipart/form-data">
+                      enctype="multipart/form-data"
+                      data-authenticated="{% if user.is_authenticated %}1{% else %}0{% endif %}"
+                      data-login-url="{% url 'login' %}?next={{ request.path }}">
                   {% csrf_token %}
 
                   <div class="composer__row">
@@ -146,7 +148,11 @@
                       <img class="composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
                     </button>
 
-                    {{ post_form.text }}
+                    <textarea
+                      name="text"
+                      class="composer__textarea"
+                      rows="1"
+                      placeholder="{% if user.is_authenticated %}Напишите пост для сообщества...{% else %}Войдите, чтобы написать пост…{% endif %}">{% if post_form.text.value %}{{ post_form.text.value }}{% endif %}</textarea>
 
                     <button type="submit"
                             class="composer__send composer__send--accent"
@@ -178,7 +184,7 @@
               {% for post in posts %}
                 {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids admin_community_ids=admin_community_ids member_community_ids=member_community_ids %}
               {% empty %}
-                <div class="card g-glass">
+                <div class="card community-surface">
                   <div class="card-body text-center text-body-secondary py-5">
                     <div class="d-flex justify-content-center">
                       <span class="icon icon--32 text-muted" aria-hidden="true">
