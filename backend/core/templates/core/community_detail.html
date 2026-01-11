@@ -21,7 +21,7 @@
      data-moderator-requests-url="{% url 'community_moderator_requests' community.slug %}"
      data-moderator-action-url="{% url 'community_moderator_request_action' community.slug 0 'approve' %}">
 
-  <div class="community-hero card community-surface border-0 shadow-sm overflow-hidden">
+  <div class="community-hero card community-surface shadow-sm overflow-hidden">
     <div class="community-cover" style="{% if community.cover %}background-image:url('{{ community.cover.url }}');{% endif %}"></div>
     <div class="community-actions dropdown">
       <button class="btn btn-outline-secondary rounded-circle community-actions-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия с сообществом">

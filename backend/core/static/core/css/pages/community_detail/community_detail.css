@@ -24,6 +24,8 @@ html[data-glass="off"] .community-surface {
   background: transparent;
   border: none;
   box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   padding: 0;
 }
 
