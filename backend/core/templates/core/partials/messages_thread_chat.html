@@ -17,10 +17,11 @@
          class="card-body messages-list flex-grow-1 overflow-auto"
          data-last-id="{{ last_id }}"
          data-poll-url="{% if other_user %}{% url 'messages_poll' other_user.username %}{% else %}{% url 'messages_chat_poll' chat.id %}{% endif %}">
-
-        {% for message in chat_messages %}
-            {% include "core/partials/message_item.html" with message=message %}
-        {% endfor %}
+        <div class="messages-list-inner">
+            {% for message in chat_messages %}
+                {% include "core/partials/message_item.html" with message=message %}
+            {% endfor %}
+        </div>
     </div>
 
     <button type="button"

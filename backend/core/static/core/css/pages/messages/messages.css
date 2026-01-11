@@ -469,6 +469,15 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
   overflow-x: hidden !important;
 }
 
+.messages-list-inner {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .message-item {
   display: flex;              /* ВАЖНО: не inline-flex */
   width: 100%;                /* строка на всю ширину */
