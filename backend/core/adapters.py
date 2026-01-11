@@ -17,11 +17,11 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
             return
 
         User = get_user_model()
-        matches = User.objects.filter(email__iexact=email)
-        if matches.count() != 1:
-            return
-
-        user = matches.first()
+        user = (
+            User.objects.filter(email__iexact=email)
+            .order_by("id")
+            .first()
+        )
         if user and user.is_active:
             sociallogin.connect(request, user)
 

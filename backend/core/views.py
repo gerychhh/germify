@@ -1782,6 +1782,8 @@ def socialaccount_auto_signup(request):
         email = (sociallogin.email_addresses[0].email or "").strip()
 
     if email:
+        if not sociallogin.user.email:
+            sociallogin.user.email = email
         existing_user = (
             User.objects.filter(email__iexact=email)
             .order_by("id")
