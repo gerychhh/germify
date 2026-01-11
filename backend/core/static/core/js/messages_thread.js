@@ -35,6 +35,7 @@
         }
 
         const list = document.querySelector("#messagesList");
+        const listInner = list?.querySelector(".messages-list-inner") || list;
         if (!list) return;
 
         const chatCard = document.getElementById("messagesChatCard") || list.closest("#messagesChatCard");
@@ -951,7 +952,7 @@
             if (!n) return;
             if (chatKind !== "dm") return;
 
-            list.querySelectorAll(".message-item.me").forEach((it) => {
+            listInner?.querySelectorAll(".message-item.me").forEach((it) => {
                 const mid = parseInt(it.dataset.id || "0", 10) || 0;
                 if (!mid || mid > n) return;
 
@@ -1038,10 +1039,10 @@
                     try { data = JSON.parse(xhr.responseText); } catch (e) {}
 
                     if (data && data.html && data.id) {
-                        const already = list.querySelector(`.message-item[data-id="${data.id}"]`);
-                        if (!already) list.insertAdjacentHTML("beforeend", data.html);
+                        const already = listInner?.querySelector(`.message-item[data-id="${data.id}"]`);
+                        if (!already) listInner?.insertAdjacentHTML("beforeend", data.html);
 
-                        const newEl = list.querySelector(`.message-item[data-id="${data.id}"]`);
+                        const newEl = listInner?.querySelector(`.message-item[data-id="${data.id}"]`);
                         if (newEl) initMessageMedia(newEl);
 
                         list.dataset.lastId = String(data.id);
@@ -1112,12 +1113,12 @@
             if (!sameChat) return;
 
             if (detail.message_id) {
-                const existing = list.querySelector(`.message-item[data-id="${detail.message_id}"]`);
+                const existing = listInner?.querySelector(`.message-item[data-id="${detail.message_id}"]`);
                 if (existing) return;
             }
 
             const wasAtBottom = recalcIsAtBottom();
-            list.insertAdjacentHTML("beforeend", detail.html);
+            listInner?.insertAdjacentHTML("beforeend", detail.html);
 
             if (detail.message_id) list.dataset.lastId = String(detail.message_id);
 
