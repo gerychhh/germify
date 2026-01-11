@@ -20,6 +20,13 @@ html[data-glass="off"] .community-surface {
   margin-top: 0;
 }
 
+.composer--community {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
 .community-hero { position: relative; border-radius: 20px; }
 .community-cover { height: 140px; background: linear-gradient(120deg, rgba(72, 119, 255, .18), rgba(25, 135, 84, .12)), radial-gradient(600px 260px at 80% 0%, rgba(15, 23, 42, .1), rgba(15, 23, 42, 0)); background-size: cover; background-position: center; }
 .community-avatar-wrap { margin-top: -46px; position: relative; }
