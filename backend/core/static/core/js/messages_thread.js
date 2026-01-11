@@ -126,7 +126,9 @@
         const input = form.querySelector("textarea[name='text']");
         const attachBtn = document.getElementById("messages-attach-btn");
         const fileInput = document.getElementById("message-attachments-input");
-        const selectedWrap = document.getElementById("messages-selected-files");
+        const attachments = form.querySelector("[data-composer-attachments]");
+        const mediaGrid = attachments?.querySelector("[data-composer-media]");
+        const fileList = attachments?.querySelector("[data-composer-files]");
         const progWrap = document.getElementById("message-upload-progress");
         const progBar = document.getElementById("message-upload-progress-bar");
         const submitBtn = form.querySelector("button[type='submit']");
@@ -136,6 +138,24 @@
         const voicePreview = document.getElementById("chat-voice-preview");
 
         const sendUrl = form.dataset.sendUrl || null;
+
+        if (input) {
+            input.classList.add("composer__textarea");
+            input.setAttribute("rows", "1");
+            input.removeAttribute("required");
+            input.required = false;
+        }
+
+        function updateTextareaSize() {
+            if (!input) return;
+            const baseHeight = 44;
+            input.style.height = "auto";
+            const scrollHeight = input.scrollHeight;
+            input.style.height = `${scrollHeight}px`;
+            const isExpanded = scrollHeight > baseHeight + 2;
+            input.classList.toggle("is-expanded", isExpanded);
+            input.classList.remove("is-scrollable");
+        }
 
         // ------------------------------
         // Scroll helpers + button
@@ -269,84 +289,162 @@
         // Attachments state
         // ------------------------------
         let selectedFiles = []; // Array<File>
+        let objectUrls = [];
+        const MAX_FILE_SIZE = 25 * 1024 * 1024;
+        const MAX_TOTAL_SIZE = 250 * 1024 * 1024;
         const MAX_FILE_COUNT = parseInt(document.body?.dataset?.attachMax || "10", 10);
 
-        function bytesToHuman(bytes) {
-            const b = Number(bytes || 0);
-            if (!b) return "0 B";
-            const k = 1024;
-            const sizes = ["B", "KB", "MB", "GB"];
-            const i = Math.min(sizes.length - 1, Math.floor(Math.log(b) / Math.log(k)));
-            return `${(b / Math.pow(k, i)).toFixed(i === 0 ? 0 : 1)} ${sizes[i]}`;
+        function formatSize(bytes) {
+            if (bytes < 1024 * 1024) {
+                return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+            }
+            return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
         }
 
-        function getExt(name) {
-            const n = String(name || "");
-            const idx = n.lastIndexOf(".");
-            return idx >= 0 ? n.slice(idx + 1).toLowerCase() : "";
+        function formatDuration(seconds) {
+            if (!Number.isFinite(seconds)) return "0:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${String(s).padStart(2, "0")}`;
         }
 
-        function iconForFile(name) {
-            const ext = getExt(name);
-            if (ext === "pdf") return "📄";
-            if (ext === "zip" || ext === "rar" || ext === "7z") return "🗜️";
-            if (ext === "doc" || ext === "docx") return "📝";
-            if (ext === "xls" || ext === "xlsx") return "📊";
-            if (ext === "mp3" || ext === "wav" || ext === "ogg" || ext === "webm") return "🎵";
-            if (ext === "mp4" || ext === "mov") return "🎬";
-            return "📁";
+        function isMediaFile(file) {
+            return (file.type || "").startsWith("image/") || (file.type || "").startsWith("video/");
+        }
+
+        function getFileIcon(file, container) {
+            const name = (file.name || "").toLowerCase();
+            const ext = name.split(".").pop();
+            const isDoc = ["pdf", "doc", "docx", "rtf", "txt"].includes(ext);
+            const isZip = ["zip", "rar", "7z"].includes(ext);
+            if (isDoc && container?.dataset?.iconDoc) return container.dataset.iconDoc;
+            if (isZip && container?.dataset?.iconZip) return container.dataset.iconZip;
+            return container?.dataset?.iconGeneric || "";
         }
 
         function renderSelectedFiles() {
-            if (!selectedWrap) return;
-            selectedWrap.innerHTML = "";
-            if (!selectedFiles.length) return;
+            if (!attachments || !mediaGrid || !fileList) return;
+            objectUrls.forEach((url) => URL.revokeObjectURL(url));
+            objectUrls = [];
+            attachments.classList.toggle("hidden", selectedFiles.length === 0);
+            mediaGrid.innerHTML = "";
+            fileList.innerHTML = "";
 
-            selectedFiles.forEach((file, idx) => {
-                const item = document.createElement("div");
-                item.className = "post-edit-attachment-item";
+            const media = [];
+            const others = [];
 
-                let left;
-                if (file.type && file.type.startsWith("image/")) {
-                    left = document.createElement("img");
-                    left.className = "post-edit-att-thumb";
-                    left.alt = file.name;
-                    left.src = URL.createObjectURL(file);
+            selectedFiles.forEach((file, index) => {
+                if (isMediaFile(file)) {
+                    media.push({ file, index });
                 } else {
-                    left = document.createElement("div");
-                    left.className = "post-edit-att-icon";
-                    left.textContent = iconForFile(file.name);
+                    others.push({ file, index });
+                }
+            });
+
+            if (media.length) {
+                mediaGrid.dataset.count = String(Math.min(media.length, 4));
+            } else {
+                mediaGrid.removeAttribute("data-count");
+            }
+
+            const visibleMedia = media.slice(0, 4);
+            const overflowCount = Math.max(0, media.length - visibleMedia.length);
+
+            visibleMedia.forEach((item, idx) => {
+                const tile = document.createElement("div");
+                tile.className = "composer__media-tile";
+
+                const url = URL.createObjectURL(item.file);
+                objectUrls.push(url);
+
+                if ((item.file.type || "").startsWith("video/")) {
+                    const video = document.createElement("video");
+                    video.src = url;
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.preload = "metadata";
+                    tile.appendChild(video);
+
+                    const play = document.createElement("div");
+                    play.className = "composer__video-play";
+                    play.innerHTML = "<span></span>";
+                    tile.appendChild(play);
+
+                    const duration = document.createElement("div");
+                    duration.className = "composer__video-duration";
+                    duration.textContent = "0:00";
+                    tile.appendChild(duration);
+
+                    video.addEventListener("loadedmetadata", () => {
+                        duration.textContent = formatDuration(video.duration);
+                    });
+                } else {
+                const img = document.createElement("img");
+                img.src = url;
+                img.alt = item.file.name || "image";
+                tile.appendChild(img);
                 }
 
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.className = "composer__media-remove";
+                remove.dataset.removeIndex = String(item.index);
+                remove.innerHTML = "&times;";
+                tile.appendChild(remove);
+
+                const progress = document.createElement("div");
+                progress.className = "composer__media-progress";
+                progress.innerHTML = "<span></span>";
+                tile.appendChild(progress);
+
+                if (overflowCount > 0 && idx === visibleMedia.length - 1) {
+                    const overlay = document.createElement("div");
+                    overlay.className = "composer__media-overflow";
+                    overlay.textContent = `+${overflowCount}`;
+                    tile.appendChild(overlay);
+                }
+
+                mediaGrid.appendChild(tile);
+            });
+
+            others.forEach((item) => {
+                const row = document.createElement("div");
+                row.className = "composer__file-row";
+
+                const icon = document.createElement("img");
+                icon.className = "composer__file-icon";
+                icon.src = getFileIcon(item.file, attachments);
+                icon.alt = "";
+
+                const meta = document.createElement("div");
+                meta.className = "composer__file-meta";
+
                 const name = document.createElement("div");
-                name.className = "post-edit-att-name";
-                name.textContent = `${file.name} (${bytesToHuman(file.size)})`;
+                name.className = "composer__file-name";
+                name.textContent = item.file.name || "file";
 
-                const rm = document.createElement("button");
-                rm.type = "button";
-                rm.className = "btn btn-sm btn-light border";
-                rm.style.padding = "2px 8px";
-                rm.style.borderRadius = "999px";
-                rm.textContent = "✖";
-                rm.title = "Удалить";
-                rm.addEventListener("click", () => {
-                    if (left && left.tagName === "IMG") {
-                        try { URL.revokeObjectURL(left.src); } catch (e) {}
-                    }
-                    selectedFiles.splice(idx, 1);
-                    if (file && file.name === "voice.webm") {
-                        if (voicePreview) {
-                            voicePreview.classList.add("hidden");
-                            voicePreview.src = "";
-                        }
-                    }
-                    renderSelectedFiles();
-                });
+                const size = document.createElement("div");
+                size.className = "composer__file-size";
+                size.textContent = formatSize(item.file.size || 0);
 
-                item.appendChild(left);
-                item.appendChild(name);
-                item.appendChild(rm);
-                selectedWrap.appendChild(item);
+                const progress = document.createElement("div");
+                progress.className = "composer__file-progress";
+                progress.innerHTML = "<span></span>";
+
+                meta.appendChild(name);
+                meta.appendChild(size);
+                meta.appendChild(progress);
+
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.className = "composer__file-remove";
+                remove.dataset.removeIndex = String(item.index);
+                remove.innerHTML = "&times;";
+
+                row.appendChild(icon);
+                row.appendChild(meta);
+                row.appendChild(remove);
+                fileList.appendChild(row);
             });
         }
 
@@ -354,12 +452,25 @@
             if (!filesList || !filesList.length) return;
 
             const arr = Array.from(filesList);
-            if (selectedFiles.length + arr.length > MAX_FILE_COUNT) {
-                alert("Максимум файлов в одном сообщении: " + MAX_FILE_COUNT);
-                return;
-            }
+            let totalSize = selectedFiles.reduce((sum, f) => sum + (f.size || 0), 0);
 
-            selectedFiles = selectedFiles.concat(arr);
+            arr.forEach((file) => {
+                if (selectedFiles.length >= MAX_FILE_COUNT) {
+                    alert("Максимум файлов в одном сообщении: " + MAX_FILE_COUNT);
+                    return;
+                }
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`Файл "${file.name}" превышает 25MB`);
+                    return;
+                }
+                if (totalSize + file.size > MAX_TOTAL_SIZE) {
+                    alert("Превышен общий лимит размера файлов (250MB)");
+                    return;
+                }
+                selectedFiles.push(file);
+                totalSize += file.size;
+            });
+
             renderSelectedFiles();
         }
 
@@ -375,6 +486,27 @@
                 fileInput.value = "";
             });
         }
+
+        if (input) {
+            input.addEventListener("input", updateTextareaSize);
+            window.addEventListener("load", updateTextareaSize);
+            updateTextareaSize();
+        }
+
+        attachments?.addEventListener("click", (event) => {
+            const target = event.target;
+            const btn = target?.closest?.("[data-remove-index]");
+            if (!btn) return;
+            const index = Number(btn.dataset.removeIndex);
+            const removed = selectedFiles.splice(index, 1)[0];
+            if (removed && removed.name === "voice.webm") {
+                if (voicePreview) {
+                    voicePreview.classList.add("hidden");
+                    voicePreview.src = "";
+                }
+            }
+            renderSelectedFiles();
+        });
 
         // ------------------------------
         // Voice recording (chat)

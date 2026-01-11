@@ -35,49 +35,60 @@
 
     <div class="messages-composer">
         <form id="messageForm"
-              class="messages-form"
+              class="messages-form composer__form"
               method="post"
               enctype="multipart/form-data"
               data-send-url="{% if other_user %}{% url 'messages_send' other_user.username %}{% else %}{% url 'messages_chat_send' chat.id %}{% endif %}">
             {% csrf_token %}
 
-            <div id="messages-selected-files" class="messages-composer-attachments post-edit-attachments-list"></div>
+            <div class="composer__row">
+                <input id="message-attachments-input" type="file" name="attachments" multiple hidden>
 
-            <div class="d-flex gap-2 align-items-center messages-composer-row">
                 <button type="button"
-                        class="btn msg-icon-btn messages-attach-btn"
+                        class="composer__attach"
                         id="messages-attach-btn"
-                        title="Прикрепить файлы">
-                    <img src="{% static 'core/icons/paperclip.svg' %}" alt="" class="icon icon--16">
+                        data-composer-attach
+                        data-accept=""
+                        title="Прикрепить файлы"
+                        aria-label="Прикрепить файлы">
+                    <img class="composer__icon" src="{% static 'core/icons/paperclip.svg' %}" alt="">
                 </button>
 
                 <button type="button"
-                        class="btn msg-icon-btn voice-record-btn"
+                        class="composer__attach"
                         id="chat-voice-record-btn"
-                        title="Записать голосовое">
-                    <img src="{% static 'core/icons/mic.svg' %}" alt="" class="icon icon--16">
+                        title="Записать голосовое"
+                        aria-label="Записать голосовое">
+                    <img class="composer__icon" src="{% static 'core/icons/mic.svg' %}" alt="">
                 </button>
 
-                <div class="flex-grow-1">
-                    {{ form.text }}
+                {{ form.text }}
 
-                    <div class="d-flex align-items-center gap-2 mt-1">
-                        <span id="chat-voice-record-status" class="small text-muted"></span>
-                    </div>
-
-                    <audio id="chat-voice-preview" class="hidden w-100 mt-2" controls></audio>
-
-                    <div id="message-upload-progress" class="progress hidden mt-2" style="height: 6px;">
-                        <div id="message-upload-progress-bar" class="progress-bar" style="width: 0%;"></div>
-                    </div>
-                </div>
-
-                <input type="file" id="message-attachments-input" name="attachments" multiple class="d-none" />
-
-                <button type="submit" class="btn msg-icon-btn messages-send-btn" title="Отправить">
-                    <img src="{% static 'core/icons/send.svg' %}" alt="" class="icon icon--16">
-                    <span class="visually-hidden">Отправить</span>
+                <button type="submit"
+                        class="composer__send composer__send--accent"
+                        title="Отправить"
+                        aria-label="Отправить">
+                    <img class="composer__icon" src="{% static 'core/icons/send.svg' %}" alt="">
                 </button>
+            </div>
+
+            <div class="composer__attachments hidden"
+                 data-composer-attachments
+                 data-icon-doc="{% static 'core/icons/file-doc.svg' %}"
+                 data-icon-zip="{% static 'core/icons/file-zip.svg' %}"
+                 data-icon-generic="{% static 'core/icons/file-generic.svg' %}">
+                <div class="composer__media-grid" data-composer-media></div>
+                <div class="composer__file-list" data-composer-files></div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mt-2">
+                <span id="chat-voice-record-status" class="small text-muted"></span>
+            </div>
+
+            <audio id="chat-voice-preview" class="hidden w-100 mt-2" controls></audio>
+
+            <div id="message-upload-progress" class="progress hidden mt-2" style="height: 6px;">
+                <div id="message-upload-progress-bar" class="progress-bar" style="width: 0%;"></div>
             </div>
         </form>
     </div>

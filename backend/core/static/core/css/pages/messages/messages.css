@@ -139,25 +139,16 @@ body.messages-page .messages-chat-card {
   --messages-input-size: 44px;
 }
 
-.messages-composer-row {
-  align-items: stretch !important;
-  padding: 6px;
-  border-radius: 16px;
+body.messages-page .messages-composer .composer__row,
+body.messages-page .messages-composer .composer__attachments {
   width: 100%;
   max-width: var(--messages-content-w);
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.messages-composer-attachments {
-  width: 100%;
-  max-width: var(--messages-content-w);
-  margin: 0 auto 8px;
-}
-
-body.messages-page .messages-composer-row {
-  background: transparent;
-  border: 0;
-  box-shadow: none;
+body.messages-page .messages-composer .composer__attachments {
+  margin-top: 8px;
 }
 
 .messages-form textarea.form-control {
@@ -249,12 +240,8 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
     background: transparent;
   }
 
-  body.messages-page .messages-composer-row {
+  body.messages-page .messages-composer .composer__row {
     padding: 0;
-    border-radius: 0;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
   }
 
   body.messages-page main.g-main .g-container > .messages-layout {
