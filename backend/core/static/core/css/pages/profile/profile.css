@@ -5,16 +5,18 @@
   flex-direction:column;
   gap:16px;
   padding:24px 0;
+  width: 100%;
 }
 
 .profile-hero{
   border:1px solid var(--g-border);
-  border-radius: var(--g-radius);
+  border-radius: var(--g-radius-lg);
   overflow: visible;
   background: var(--g-surface);
   box-shadow: var(--g-shadow-sm);
   position:relative;
   z-index: 10;
+  width: 100%;
 }
 
 .profile-hero::before{
@@ -29,7 +31,7 @@
   );
   pointer-events: none;
   z-index: -1;
-  border-radius: var(--g-radius);
+  border-radius: var(--g-radius-lg);
 }
 
 .profile-hero__body{
@@ -168,10 +170,25 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
 }
 
 @media (max-width: 576px){
+  .profile-page{ padding-top: 0; }
   .profile-hero__body{ flex-direction:column; }
 }
 
 .profile-container{ max-width: 980px; }
+
+@media (min-width: 768px){
+  .profile-page{
+    --g-blur: 42px;
+    --post-surface-bg: color-mix(in srgb, var(--g-surface) 86%, transparent);
+    --post-surface-border: color-mix(in srgb, var(--g-border) 80%, transparent);
+  }
+
+  .profile-page .card{
+    background: color-mix(in srgb, var(--g-surface) 72%, transparent);
+    backdrop-filter: blur(calc(var(--g-blur) + 12px)) saturate(160%);
+    -webkit-backdrop-filter: blur(calc(var(--g-blur) + 12px)) saturate(160%);
+  }
+}
 
 .feed-page{
   position: relative;
@@ -180,22 +197,19 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
 
 .profile-posts{
   gap: 10px;
+  width: 100%;
 }
 
-.profile-posts__header{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border: 1px solid var(--g-border);
-  border-radius: var(--g-radius);
-  background: var(--g-surface);
+.profile-posts .posts-list{
+  width: 100%;
 }
 
 /* ===== Lists overlay (followers / following) ===== */
 .profile-list-modal{
-  border-radius: var(--g-radius);
+  border-radius: var(--g-radius-lg);
   box-shadow: var(--g-shadow-lg);
+  background: var(--g-surface);
+  border: 1px solid var(--g-border);
   overflow: hidden;
 }
 

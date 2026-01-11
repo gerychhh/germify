@@ -26,6 +26,16 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.test.client import RequestFactory
 from django.views.decorators.http import require_GET
+
+from allauth.account.utils import perform_login
+from allauth.socialaccount import app_settings as socialaccount_settings
+from allauth.socialaccount.adapter import get_adapter as get_social_adapter
+from allauth.socialaccount.internal.flows.login import record_authentication
+from allauth.socialaccount.internal.flows.signup import (
+    clear_pending_signup,
+    complete_social_signup,
+    get_pending_signup,
+)
 from core.consumers import user_group_name
 
 from core.services.messages import (
@@ -1758,6 +1768,41 @@ def register_view(request):
         form = RegisterForm()
 
     return render(request, "core/register.html", {"form": form})
+
+
+def socialaccount_auto_signup(request):
+    sociallogin = get_pending_signup(request)
+    if not sociallogin:
+        return redirect("login")
+
+    clear_pending_signup(request)
+
+    email = (sociallogin.user.email or "").strip()
+    if not email and sociallogin.email_addresses:
+        email = (sociallogin.email_addresses[0].email or "").strip()
+
+    if email:
+        if not sociallogin.user.email:
+            sociallogin.user.email = email
+        existing_user = (
+            User.objects.filter(email__iexact=email)
+            .order_by("id")
+            .first()
+        )
+        if existing_user and existing_user.is_active:
+            sociallogin.connect(request, existing_user)
+            sociallogin._accept_login(request)
+            record_authentication(request, sociallogin)
+            return perform_login(
+                request,
+                existing_user,
+                email_verification=socialaccount_settings.EMAIL_VERIFICATION,
+                redirect_url=sociallogin.get_redirect_url(request),
+                signal_kwargs={"sociallogin": sociallogin},
+            )
+
+    get_social_adapter(request).save_user(request, sociallogin, form=None)
+    return complete_social_signup(request, sociallogin)
 
 
 def login_view(request):

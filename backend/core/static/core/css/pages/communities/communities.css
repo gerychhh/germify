@@ -5,9 +5,28 @@
    - keep actions horizontal
 */
 
+:root{
+  --post-surface-bg: color-mix(in srgb, var(--g-surface) 74%, transparent);
+  --post-surface-border: color-mix(in srgb, var(--g-border) 75%, transparent);
+  --post-surface-shadow: var(--g-shadow-sm);
+  --post-surface-blur: calc(var(--g-blur) + 6px);
+  --post-surface-saturate: 140%;
+}
+
 .community-card {
   cursor: pointer;
   transition: transform .15s ease, box-shadow .15s ease;
+  background: var(--post-surface-bg);
+  border: 1px solid var(--post-surface-border);
+  box-shadow: var(--post-surface-shadow);
+  backdrop-filter: blur(var(--post-surface-blur)) saturate(var(--post-surface-saturate));
+  -webkit-backdrop-filter: blur(var(--post-surface-blur)) saturate(var(--post-surface-saturate));
+}
+
+html[data-glass="off"] .community-card {
+  background: var(--g-surface-solid);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .community-card::before,
