@@ -144,6 +144,12 @@ body.messages-page .messages-chat-card {
   border-radius: 16px;
 }
 
+body.messages-page .messages-composer-row {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
 .messages-form textarea.form-control {
   height: var(--messages-input-size) !important;
   min-height: var(--messages-input-size) !important;
