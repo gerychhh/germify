@@ -41,6 +41,15 @@
               data-send-url="{% if other_user %}{% url 'messages_send' other_user.username %}{% else %}{% url 'messages_chat_send' chat.id %}{% endif %}">
             {% csrf_token %}
 
+            <div class="composer__attachments hidden"
+                 data-composer-attachments
+                 data-icon-doc="{% static 'core/icons/file-doc.svg' %}"
+                 data-icon-zip="{% static 'core/icons/file-zip.svg' %}"
+                 data-icon-generic="{% static 'core/icons/file-generic.svg' %}">
+                <div class="composer__media-grid" data-composer-media></div>
+                <div class="composer__file-list" data-composer-files></div>
+            </div>
+
             <div class="composer__row">
                 <input id="message-attachments-input" type="file" name="attachments" multiple hidden>
 
@@ -70,15 +79,6 @@
                         aria-label="Отправить">
                     <img class="composer__icon" src="{% static 'core/icons/send.svg' %}" alt="">
                 </button>
-            </div>
-
-            <div class="composer__attachments hidden"
-                 data-composer-attachments
-                 data-icon-doc="{% static 'core/icons/file-doc.svg' %}"
-                 data-icon-zip="{% static 'core/icons/file-zip.svg' %}"
-                 data-icon-generic="{% static 'core/icons/file-generic.svg' %}">
-                <div class="composer__media-grid" data-composer-media></div>
-                <div class="composer__file-list" data-composer-files></div>
             </div>
 
             <div class="d-flex align-items-center gap-2 mt-2">

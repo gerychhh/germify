@@ -148,7 +148,17 @@ body.messages-page .messages-composer .composer__attachments {
 }
 
 body.messages-page .messages-composer .composer__attachments {
-  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+body.messages-page .messages-composer .composer__media-tile {
+  min-height: 120px;
+}
+
+body.messages-page .messages-composer .composer__media-grid[data-count="1"] .composer__media-tile {
+  min-height: 180px;
+  max-height: 320px;
+  aspect-ratio: 16 / 10;
 }
 
 .messages-form textarea.form-control {
