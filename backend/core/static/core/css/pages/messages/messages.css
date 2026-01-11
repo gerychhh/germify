@@ -12,6 +12,7 @@ body.messages-page {
   display: flex;
   flex-direction: column;
   --g-navbar-h: 56px;
+  --messages-content-w: 1200px;
 }
 
 body.messages-page main.g-main {
@@ -142,6 +143,9 @@ body.messages-page .messages-chat-card {
   align-items: stretch !important;
   padding: 6px;
   border-radius: 16px;
+  width: 100%;
+  max-width: var(--messages-content-w);
+  margin: 0 auto;
 }
 
 body.messages-page .messages-composer-row {
@@ -483,7 +487,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 
 .messages-list-inner {
   width: 100%;
-  max-width: 1200px;
+  max-width: var(--messages-content-w);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -623,8 +627,8 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 /* Кнопка "вниз" (внутри окна чата) */
 .scroll-bottom-btn {
   position: absolute;
-  right: 16px;
-  bottom: 92px; /* над полем ввода */
+  right: max(16px, calc((100% - var(--messages-content-w)) / 2 + 16px));
+  bottom: 24px;
   border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));
   border-radius: 999px;
   background: color-mix(in srgb, var(--g-surface) 90%, transparent);
