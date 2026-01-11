@@ -72,7 +72,18 @@ html[data-glass="off"] .community-surface {
 .appearance-upload img { filter: invert(1); }
 
 .staff-permission-option { background: rgba(15, 23, 42, .04); padding: 6px 10px; border-radius: 999px; }
+.staff-permission-option { display: inline-flex; align-items: center; gap: 6px; }
 .staff-permission-option .form-check-input { margin-top: 0; margin-left: 0; }
+
+#communitySettingsModal .form-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#communitySettingsModal .form-check-input {
+  margin-top: 0;
+}
 
 .community-member {
   padding: 12px;
