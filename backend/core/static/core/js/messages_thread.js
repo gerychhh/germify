@@ -1206,6 +1206,8 @@
             const media = e.target.closest(".gallery-media");
             if (!media) return;
 
+            if (media.closest(".image-viewer")) return;
+
             const wrap = media.closest(".attachments");
             if (!wrap) return;
 
