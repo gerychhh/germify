@@ -131,11 +131,6 @@
 
     {# ====== POSTS ====== #}
     <div class="feed-page profile-posts">
-      <div class="profile-posts__header">
-        <div class="fw-semibold">Посты</div>
-        <span class="badge g-badge-soft">{{ posts_count }}</span>
-      </div>
-
       <section class="posts-list d-flex flex-column gap-3"
                id="posts-list"
                data-next-page="{% if has_next %}{{ next_page }}{% else %}0{% endif %}"

@@ -5,16 +5,18 @@
   flex-direction:column;
   gap:16px;
   padding:24px 0;
+  width: 100%;
 }
 
 .profile-hero{
   border:1px solid var(--g-border);
-  border-radius: var(--g-radius);
+  border-radius: var(--g-radius-lg);
   overflow: visible;
   background: var(--g-surface);
   box-shadow: var(--g-shadow-sm);
   position:relative;
   z-index: 10;
+  width: 100%;
 }
 
 .profile-hero::before{
@@ -29,7 +31,7 @@
   );
   pointer-events: none;
   z-index: -1;
-  border-radius: var(--g-radius);
+  border-radius: var(--g-radius-lg);
 }
 
 .profile-hero__body{
@@ -168,6 +170,7 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
 }
 
 @media (max-width: 576px){
+  .profile-page{ padding-top: 0; }
   .profile-hero__body{ flex-direction:column; }
 }
 
@@ -180,16 +183,11 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
 
 .profile-posts{
   gap: 10px;
+  width: 100%;
 }
 
-.profile-posts__header{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border: 1px solid var(--g-border);
-  border-radius: var(--g-radius);
-  background: var(--g-surface);
+.profile-posts .posts-list{
+  width: 100%;
 }
 
 /* ===== Lists overlay (followers / following) ===== */
