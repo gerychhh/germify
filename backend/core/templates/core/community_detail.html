@@ -183,20 +183,6 @@
             <div class="d-flex flex-column gap-3">
               {% for post in posts %}
                 {% include "core/partials/post.html" with post=post user=user liked_posts_ids=liked_posts_ids liked_comment_ids=liked_comment_ids following_ids=following_ids admin_community_ids=admin_community_ids member_community_ids=member_community_ids %}
-              {% empty %}
-                <div class="card community-surface">
-                  <div class="card-body text-center text-body-secondary py-5">
-                    <div class="d-flex justify-content-center">
-                      <span class="icon icon--32 text-muted" aria-hidden="true">
-                        <img src="{% static 'core/icons/note.svg' %}" alt="" class="icon icon--32">
-                      </span>
-                    </div>
-                    <div class="mt-2 d-flex justify-content-center align-items-center gap-2">
-                      <img src="{% static 'core/icons/smile.svg' %}" alt="" class="icon icon--20 text-muted">
-                      <span>Пока нет постов. Будьте первым</span>
-                    </div>
-                  </div>
-                </div>
               {% endfor %}
             </div>
           {% else %}
