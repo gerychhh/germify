@@ -178,7 +178,15 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
 
 @media (min-width: 768px){
   .profile-page{
-    --g-blur: 38px;
+    --g-blur: 42px;
+    --post-surface-bg: color-mix(in srgb, var(--g-surface) 86%, transparent);
+    --post-surface-border: color-mix(in srgb, var(--g-border) 80%, transparent);
+  }
+
+  .profile-page .card{
+    background: color-mix(in srgb, var(--g-surface) 72%, transparent);
+    backdrop-filter: blur(calc(var(--g-blur) + 12px)) saturate(160%);
+    -webkit-backdrop-filter: blur(calc(var(--g-blur) + 12px)) saturate(160%);
   }
 }
 
