@@ -34,8 +34,31 @@ const messages = [
 
 export const ChatPage = () => (
   <div className="min-h-screen bg-[#0a0b10] text-white">
-    <div className="mx-auto flex min-h-screen max-w-3xl items-start px-4 py-6">
-      <GlassCard className="flex w-full min-h-[520px] h-[calc(100vh-3rem)] flex-col overflow-hidden">
+    <div className="flex min-h-screen w-full items-start gap-4 py-6">
+      <GlassCard className="flex w-72 shrink-0 flex-col overflow-hidden rounded-none border-l-0">
+        <div className={cn("border-b px-4 py-3 text-sm font-semibold", GLASS_BAR)}>
+          Чаты
+        </div>
+        <div className="glass-scroll flex-1 space-y-2 overflow-y-auto px-3 py-3">
+          {[
+            { name: "Алиса Воронова", preview: "Привет! Ты видел новые фичи?" },
+            { name: "Команда Glass", preview: "Сделаем минимально и в тёмной гамме." },
+            { name: "Никита", preview: "Пусть все элементы читаются." },
+            { name: "Мария", preview: "Чуть позже пришлю макет." },
+          ].map((chat) => (
+            <button
+              key={chat.name}
+              type="button"
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:bg-white/10"
+            >
+              <div className="text-sm font-semibold">{chat.name}</div>
+              <div className="text-xs text-white/55 line-clamp-1">{chat.preview}</div>
+            </button>
+          ))}
+        </div>
+      </GlassCard>
+
+      <GlassCard className="flex min-h-[520px] h-[calc(100vh-3rem)] flex-1 flex-col overflow-hidden">
         <div
           className={cn(
             "flex items-center justify-between gap-4 border-b px-4 py-3",
