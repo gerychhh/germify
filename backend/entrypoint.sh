@@ -1,6 +1,10 @@
 #!/usr/bin/env sh
 set -e
 
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
+
 # Подождать MySQL
 python - <<'PY'
 import os, socket, time
@@ -18,6 +22,7 @@ else:
 PY
 
 python manage.py migrate --noinput
+python manage.py bootstrap_socialapps
 python manage.py collectstatic --noinput
 
 PORT="${DJANGO_PORT:-8000}"

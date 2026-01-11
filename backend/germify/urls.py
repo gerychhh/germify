@@ -4,7 +4,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
+    path("accounts/", include("allauth.urls")),
     # Всё приложение core: лента, сообщения, профиль, логин/регистрация и т.д.
     path("", include("core.urls")),
 ]
