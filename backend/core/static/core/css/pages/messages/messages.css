@@ -760,7 +760,7 @@ html[data-theme="dark"] .messages-chat-card .btn-light:hover .icon img {
 .scroll-bottom-btn {
   position: absolute;
   right: max(16px, calc((100% - var(--messages-content-w)) / 2 + 16px));
-  bottom: 24px;
+  bottom: 96px;
   width: 48px;
   height: 48px;
   border: 1px solid color-mix(in srgb, var(--g-border) 70%, var(--g-glass-border));

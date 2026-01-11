@@ -2673,29 +2673,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 // ================================
-// FULLSCREEN IMAGE VIEWER + SLIDES
+// FULLSCREEN MEDIA VIEWER + SLIDES
 // ================================
 document.addEventListener("click", function (e) {
-    const img = e.target.closest(".gallery-media[data-media='image']");
-    if (!img) return;
+    const media = e.target.closest(".gallery-media");
+    if (!media) return;
 
-    const post = img.closest(".attachments");
+    const post = media.closest(".attachments");
     if (!post) return;
 
-    const images = [...post.querySelectorAll(".gallery-media[data-media='image']")];
-    const urls = images.map(i => i.dataset.full || i.src);
-    let index = images.indexOf(img);
+    const mediaItems = [...post.querySelectorAll(".gallery-media")];
+    const items = mediaItems.map((item) => ({
+        type: item.dataset.media || (item.tagName === "VIDEO" ? "video" : "image"),
+        url: item.dataset.full || item.currentSrc || item.src,
+    }));
 
-    openViewer(urls, index);
+    let index = mediaItems.indexOf(media);
+    if (index < 0) index = 0;
+
+    openMediaViewer(items, index);
 });
 
-function openViewer(urls, index) {
+function openMediaViewer(items, index) {
     let current = index;
+    const prefersTouch = window.matchMedia?.("(pointer: coarse)")?.matches;
 
     const overlay = document.createElement("div");
     overlay.className = "image-viewer";
     overlay.innerHTML = `
-        <img class="viewer-img" src="${urls[current]}">
+        <div class="viewer-stage"></div>
         <button type="button" class="viewer-arrow prev" aria-label="Назад">
             <img class="viewer-icon" src="/static/core/icons/arrow-left.svg" alt="">
         </button>
@@ -2705,34 +2711,74 @@ function openViewer(urls, index) {
         <button type="button" class="viewer-close" aria-label="Закрыть">
             <img class="viewer-icon" src="/static/core/icons/close.svg" alt="">
         </button>
+        <button type="button" class="viewer-fullscreen" aria-label="На весь экран">
+            <img class="viewer-icon" src="/static/core/icons/media-fullscreen.svg" alt="">
+        </button>
     `;
 
     document.body.appendChild(overlay);
 
-    const viewerImg = overlay.querySelector(".viewer-img");
+    const stage = overlay.querySelector(".viewer-stage");
     const btnPrev = overlay.querySelector(".prev");
     const btnNext = overlay.querySelector(".next");
     const btnClose = overlay.querySelector(".viewer-close");
+    const btnFullscreen = overlay.querySelector(".viewer-fullscreen");
+
+    function renderMedia() {
+        const item = items[current];
+        if (!item || !stage) return;
+        stage.innerHTML = "";
+
+        if (item.type === "video") {
+            const video = document.createElement("video");
+            video.className = "viewer-video";
+            video.src = item.url;
+            video.controls = true;
+            video.playsInline = true;
+            stage.appendChild(video);
+
+            if (prefersTouch) {
+                const fs = video.requestFullscreen || video.webkitEnterFullscreen;
+                if (fs) {
+                    try { fs.call(video); } catch (err) {}
+                }
+            }
+        } else {
+            const img = document.createElement("img");
+            img.className = "viewer-img";
+            img.src = item.url;
+            stage.appendChild(img);
+        }
+    }
 
     function show(i) {
         current = i;
-        viewerImg.src = urls[current];
+        renderMedia();
     }
 
     btnPrev.onclick = () => {
-        if (current === 0) show(urls.length - 1);
+        if (current === 0) show(items.length - 1);
         else show(current - 1);
     };
 
     btnNext.onclick = () => {
-        if (current === urls.length - 1) show(0);
+        if (current === items.length - 1) show(0);
         else show(current + 1);
+    };
+
+    btnFullscreen.onclick = () => {
+        const media = stage?.querySelector(".viewer-video, .viewer-img");
+        if (!media) return;
+        const req = media.requestFullscreen || media.webkitEnterFullscreen;
+        if (req) {
+            try { req.call(media); } catch (err) {}
+        }
     };
 
     btnClose.onclick = () => overlay.remove();
 
-    overlay.addEventListener("click", (e) => {
-        if (e.target === overlay) overlay.remove();
+    overlay.addEventListener("click", (ev) => {
+        if (ev.target === overlay) overlay.remove();
     });
 
     function escHandler(ev) {
@@ -2757,4 +2803,6 @@ function openViewer(urls, index) {
             else btnNext.click();
         }
     });
+
+    renderMedia();
 }

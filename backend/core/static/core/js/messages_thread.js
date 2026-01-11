@@ -1067,6 +1067,138 @@
             initAudioPlayers(rootEl);
         }
 
+        function openMediaViewer(items, index) {
+            let current = index;
+            const prefersTouch = window.matchMedia?.("(pointer: coarse)")?.matches;
+
+            const overlay = document.createElement("div");
+            overlay.className = "image-viewer";
+            overlay.innerHTML = `
+                <div class="viewer-stage"></div>
+                <button type="button" class="viewer-arrow prev" aria-label="Назад">
+                    <img class="viewer-icon" src="/static/core/icons/arrow-left.svg" alt="">
+                </button>
+                <button type="button" class="viewer-arrow next" aria-label="Вперёд">
+                    <img class="viewer-icon" src="/static/core/icons/arrow-right.svg" alt="">
+                </button>
+                <button type="button" class="viewer-close" aria-label="Закрыть">
+                    <img class="viewer-icon" src="/static/core/icons/close.svg" alt="">
+                </button>
+                <button type="button" class="viewer-fullscreen" aria-label="На весь экран">
+                    <img class="viewer-icon" src="/static/core/icons/media-fullscreen.svg" alt="">
+                </button>
+            `;
+
+            document.body.appendChild(overlay);
+
+            const stage = overlay.querySelector(".viewer-stage");
+            const btnPrev = overlay.querySelector(".prev");
+            const btnNext = overlay.querySelector(".next");
+            const btnClose = overlay.querySelector(".viewer-close");
+            const btnFullscreen = overlay.querySelector(".viewer-fullscreen");
+
+            function renderMedia() {
+                const item = items[current];
+                if (!item || !stage) return;
+                stage.innerHTML = "";
+
+                if (item.type === "video") {
+                    const video = document.createElement("video");
+                    video.className = "viewer-video";
+                    video.src = item.url;
+                    video.controls = true;
+                    video.playsInline = true;
+                    stage.appendChild(video);
+
+                    if (prefersTouch) {
+                        const fs = video.requestFullscreen || video.webkitEnterFullscreen;
+                        if (fs) {
+                            try { fs.call(video); } catch (err) {}
+                        }
+                    }
+                } else {
+                    const img = document.createElement("img");
+                    img.className = "viewer-img";
+                    img.src = item.url;
+                    stage.appendChild(img);
+                }
+            }
+
+            function show(i) {
+                current = i;
+                renderMedia();
+            }
+
+            btnPrev.onclick = () => {
+                if (current === 0) show(items.length - 1);
+                else show(current - 1);
+            };
+
+            btnNext.onclick = () => {
+                if (current === items.length - 1) show(0);
+                else show(current + 1);
+            };
+
+            btnFullscreen.onclick = () => {
+                const media = stage?.querySelector(".viewer-video, .viewer-img");
+                if (!media) return;
+                const req = media.requestFullscreen || media.webkitEnterFullscreen;
+                if (req) {
+                    try { req.call(media); } catch (err) {}
+                }
+            };
+
+            btnClose.onclick = () => overlay.remove();
+
+            overlay.addEventListener("click", (ev) => {
+                if (ev.target === overlay) overlay.remove();
+            });
+
+            function escHandler(ev) {
+                if (ev.key === "Escape") {
+                    overlay.remove();
+                    document.removeEventListener("keydown", escHandler);
+                }
+            }
+            document.addEventListener("keydown", escHandler);
+
+            let touchStartX = 0;
+
+            overlay.addEventListener("touchstart", (ev) => {
+                touchStartX = ev.changedTouches[0].screenX;
+            });
+
+            overlay.addEventListener("touchend", (ev) => {
+                let diff = ev.changedTouches[0].screenX - touchStartX;
+
+                if (Math.abs(diff) > 50) {
+                    if (diff > 0) btnPrev.click();
+                    else btnNext.click();
+                }
+            });
+
+            renderMedia();
+        }
+
+        document.addEventListener("click", function (e) {
+            const media = e.target.closest(".gallery-media");
+            if (!media) return;
+
+            const wrap = media.closest(".attachments");
+            if (!wrap) return;
+
+            const mediaItems = [...wrap.querySelectorAll(".gallery-media")];
+            const items = mediaItems.map((item) => ({
+                type: item.dataset.media || (item.tagName === "VIDEO" ? "video" : "image"),
+                url: item.dataset.full || item.currentSrc || item.src,
+            }));
+
+            let index = mediaItems.indexOf(media);
+            if (index < 0) index = 0;
+
+            openMediaViewer(items, index);
+        });
+
         initMessageMedia(document);
 
         // ------------------------------
