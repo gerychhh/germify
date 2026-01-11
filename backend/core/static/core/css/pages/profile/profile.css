@@ -176,6 +176,12 @@ body.profile-is-editing .profile-avatar-wrap .avatar{
 
 .profile-container{ max-width: 980px; }
 
+@media (min-width: 768px){
+  .profile-page{
+    --g-blur: 38px;
+  }
+}
+
 .feed-page{
   position: relative;
   z-index: 1;
