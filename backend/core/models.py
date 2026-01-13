@@ -190,6 +190,8 @@ class CommunityMembership(models.Model):
     @property
     def moderator_permissions(self):
         base = self.default_permissions()
+        if self.role == "owner":
+            return {key: True for key in base}
         incoming = self.permissions or {}
         for key in base:
             if key in incoming:
@@ -201,7 +203,9 @@ class CommunityMembership(models.Model):
             self.is_admin = True
         elif self.role == "guest":
             self.is_admin = False
-        if not self.permissions:
+        if self.role == "owner":
+            self.permissions = {key: True for key in self.default_permissions()}
+        elif not self.permissions:
             self.permissions = self.default_permissions()
         else:
             normalized = self.default_permissions()

@@ -350,6 +350,119 @@
 
     // Settings form
     const settingsForm = document.getElementById('communitySettingsForm');
+    const settingsStatus = document.getElementById('communitySettingsStatus');
+    const settingsModal = document.getElementById('communitySettingsModal');
+    const communityNameEl = document.querySelector('[data-community-name]');
+    const communityDescriptionEl = document.querySelector('[data-community-description]');
+    const communityTagsEl = document.querySelector('[data-community-tags]');
+    const communityCoverEl = document.querySelector('[data-community-cover]');
+    const communityAvatarEl = document.querySelector('[data-community-avatar]');
+    const aboutDescriptionEl = document.querySelector('[data-about-description-text]');
+    const aboutDescriptionEmpty = document.querySelector('[data-about-description-empty]');
+    const aboutRulesEl = document.querySelector('[data-about-rules-text]');
+    const aboutRulesEmpty = document.querySelector('[data-about-rules-empty]');
+    const aboutLinksList = document.querySelector('[data-about-links-list]');
+    const aboutLinksEmpty = document.querySelector('[data-about-links-empty]');
+
+    const setSettingsStatus = (message, type = 'success') => {
+      if (!settingsStatus) return;
+      settingsStatus.textContent = message;
+      settingsStatus.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
+      settingsStatus.classList.add(type === 'error' ? 'alert-danger' : 'alert-success');
+      if (message) {
+        clearTimeout(settingsStatus._timeoutId);
+        settingsStatus._timeoutId = setTimeout(() => settingsStatus.classList.add('d-none'), 3000);
+      }
+    };
+
+    const updateTags = (tags) => {
+      if (!communityTagsEl) return;
+      if (tags && tags.length) {
+        communityTagsEl.innerHTML = tags
+          .map((tag) => `<span class="badge rounded-pill bg-body-secondary text-body">${tag}</span>`)
+          .join('');
+        communityTagsEl.classList.remove('d-none');
+      } else {
+        communityTagsEl.innerHTML = '';
+        communityTagsEl.classList.add('d-none');
+      }
+    };
+
+    const updateDescriptionBlocks = (value, htmlValue) => {
+      if (communityDescriptionEl) {
+        if (value) {
+          communityDescriptionEl.textContent = value;
+          communityDescriptionEl.classList.remove('d-none');
+        } else {
+          communityDescriptionEl.textContent = '';
+          communityDescriptionEl.classList.add('d-none');
+        }
+      }
+      if (aboutDescriptionEl && aboutDescriptionEmpty) {
+        if (htmlValue) {
+          aboutDescriptionEl.innerHTML = htmlValue;
+          aboutDescriptionEl.classList.remove('d-none');
+          aboutDescriptionEmpty.classList.add('d-none');
+        } else {
+          aboutDescriptionEl.innerHTML = '';
+          aboutDescriptionEl.classList.add('d-none');
+          aboutDescriptionEmpty.classList.remove('d-none');
+        }
+      }
+    };
+
+    const updateRulesBlocks = (htmlValue) => {
+      if (aboutRulesEl && aboutRulesEmpty) {
+        if (htmlValue) {
+          aboutRulesEl.innerHTML = htmlValue;
+          aboutRulesEl.classList.remove('d-none');
+          aboutRulesEmpty.classList.add('d-none');
+        } else {
+          aboutRulesEl.innerHTML = '';
+          aboutRulesEl.classList.add('d-none');
+          aboutRulesEmpty.classList.remove('d-none');
+        }
+      }
+    };
+
+    const updateLinksBlocks = (links) => {
+      if (!aboutLinksList || !aboutLinksEmpty) return;
+      if (links && links.length) {
+        aboutLinksList.innerHTML = links
+          .map((link) => `<li><a href="${link}" class="text-decoration-none" target="_blank" rel="noopener">${link}</a></li>`)
+          .join('');
+        aboutLinksList.classList.remove('d-none');
+        aboutLinksEmpty.classList.add('d-none');
+      } else {
+        aboutLinksList.innerHTML = '';
+        aboutLinksList.classList.add('d-none');
+        aboutLinksEmpty.classList.remove('d-none');
+      }
+    };
+
+    const updateHeroMedia = (data) => {
+      if (communityCoverEl) {
+        communityCoverEl.style.backgroundImage = data.cover_url ? `url('${data.cover_url}')` : '';
+      }
+      if (communityAvatarEl) {
+        if (data.icon_url) {
+          communityAvatarEl.innerHTML = `<img src="${data.icon_url}" alt="${data.name || ''}">`;
+        } else {
+          const letter = (data.name || data.slug || '?')[0].toUpperCase();
+          communityAvatarEl.innerHTML = `<span class="avatar-initial">${letter}</span>`;
+        }
+      }
+    };
+
+    if (settingsModal) {
+      const toggleScrollLock = (locked) => {
+        document.documentElement.classList.toggle('community-settings-open', locked);
+        document.body.classList.toggle('community-settings-open', locked);
+      };
+      settingsModal.addEventListener('shown.bs.modal', () => toggleScrollLock(true));
+      settingsModal.addEventListener('hidden.bs.modal', () => toggleScrollLock(false));
+    }
+
     if (settingsForm && settingsUrl) {
       settingsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -362,9 +475,31 @@
             headers: { 'X-CSRFToken': getCookie('csrftoken') },
             body: formData,
           });
-          if (!resp.ok) throw new Error('fail');
+          const data = await resp.json().catch(() => null);
+          if (!data) {
+            setSettingsStatus('Не удалось сохранить изменения', 'error');
+            throw new Error('invalid_json');
+          }
+          if (!resp.ok) {
+            const message = data.errors ? 'Не удалось сохранить изменения' : 'Ошибка сохранения';
+            setSettingsStatus(message, 'error');
+            throw new Error('fail');
+          }
+          if (data.data) {
+            if (communityNameEl && data.data.name) communityNameEl.textContent = data.data.name;
+            updateTags(data.data.tags);
+            updateDescriptionBlocks(data.data.description, data.data.description_html);
+            updateRulesBlocks(data.data.rules_html);
+            updateLinksBlocks(data.data.links);
+            updateHeroMedia(data.data);
+          } else if (!data.success) {
+            setSettingsStatus('Не удалось сохранить изменения', 'error');
+            throw new Error('fail');
+          }
+          setSettingsStatus('Изменения сохранены');
         } catch (err) {
           console.error(err);
+          setSettingsStatus('Не удалось сохранить изменения', 'error');
         } finally {
           if (saveBtn) saveBtn.disabled = false;
         }
@@ -393,7 +528,7 @@
       if (roleSelect) body.append('role', roleSelect.value);
       body.append('permissions', JSON.stringify(collectPermissions(item)));
       try {
-        await fetch(url, {
+        const resp = await fetch(url, {
           method: 'POST',
           headers: {
             'X-CSRFToken': getCookie('csrftoken'),
@@ -401,8 +536,13 @@
           },
           body,
         });
+        if (!resp.ok) {
+          const message = resp.status === 403 ? 'Недостаточно прав' : 'Ошибка обновления';
+          setSettingsStatus(message, 'error');
+        }
       } catch (err) {
         console.error(err);
+        setSettingsStatus('Ошибка обновления', 'error');
       } finally {
         trigger && (trigger.disabled = false);
       }
@@ -439,9 +579,13 @@
           if (resp.ok) {
             item.remove();
             if (typeof data.members === 'number') updateCounts(data.members);
+          } else {
+            const message = resp.status === 403 ? 'Недостаточно прав' : 'Ошибка удаления';
+            setSettingsStatus(message, 'error');
           }
         } catch (err) {
           console.error(err);
+          setSettingsStatus('Ошибка удаления', 'error');
         }
       });
     }

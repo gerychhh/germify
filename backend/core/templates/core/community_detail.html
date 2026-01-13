@@ -22,7 +22,7 @@
      data-moderator-action-url="{% url 'community_moderator_request_action' community.slug 0 'approve' %}">
 
   <div class="community-hero card community-surface shadow-sm overflow-hidden">
-    <div class="community-cover" style="{% if community.cover %}background-image:url('{{ community.cover.url }}');{% endif %}"></div>
+    <div class="community-cover" data-community-cover style="{% if community.cover %}background-image:url('{{ community.cover.url }}');{% endif %}"></div>
     <div class="community-actions dropdown">
       <button class="btn btn-outline-secondary rounded-circle community-actions-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Действия с сообществом">
         <span class="icon">⋯</span>
@@ -69,7 +69,7 @@
       <div class="d-flex flex-column flex-md-row gap-3 align-items-start">
         <div class="d-flex align-items-center gap-3 flex-grow-1">
           <div class="community-avatar-wrap">
-            <div class="avatar avatar--xl community-avatar">
+            <div class="avatar avatar--xl community-avatar" data-community-avatar>
               {% if community.icon %}
                 <img src="{{ community.icon.url }}" alt="{{ community.name }}">
               {% else %}
@@ -79,7 +79,7 @@
           </div>
           <div class="flex-grow-1 min-w-0">
             <div class="d-flex align-items-center gap-2 flex-wrap">
-              <h1 class="h4 mb-0 text-truncate">{{ community.name }}</h1>
+              <h1 class="h4 mb-0 text-truncate" data-community-name>{{ community.name }}</h1>
               {% if membership and membership.role %}
                 <span class="badge text-bg-primary-subtle border">{{ membership.role_label }}</span>
               {% endif %}
@@ -94,16 +94,16 @@
                 <span id="communityMembersCount">{{ members_total|default:community.members_count }}</span>
               </button>
             </div>
-            {% if community.tags %}
-              <div class="d-flex flex-wrap gap-2 mt-2">
+            <div class="d-flex flex-wrap gap-2 mt-2 {% if not community.tags %}d-none{% endif %}" data-community-tags>
+              {% if community.tags %}
                 {% for tag in community.tags %}
                   <span class="badge rounded-pill bg-body-secondary text-body">{{ tag }}</span>
                 {% endfor %}
-              </div>
-            {% endif %}
-            {% if community.description %}
-              <p class="mb-0 mt-2 text-body">{{ community.description }}</p>
-            {% endif %}
+              {% endif %}
+            </div>
+            <p class="mb-0 mt-2 text-body {% if not community.description %}d-none{% endif %}" data-community-description>
+              {{ community.description }}
+            </p>
           </div>
         </div>
       </div>
@@ -199,35 +199,44 @@
           <div class="card post-card mb-3">
             <div class="card-body">
               <h3 class="h6">Описание</h3>
-              {% if community.description %}
-                <div class="post-text m-0">{{ community.description|md }}</div>
-              {% else %}
-                <p class="text-body-secondary mb-0">Описание пока не добавлено.</p>
-              {% endif %}
+              <div data-about-description>
+                <div class="post-text m-0 {% if not community.description %}d-none{% endif %}" data-about-description-text>
+                  {{ community.description|md }}
+                </div>
+                <p class="text-body-secondary mb-0 {% if community.description %}d-none{% endif %}" data-about-description-empty>
+                  Описание пока не добавлено.
+                </p>
+              </div>
             </div>
           </div>
           <div class="card post-card mb-3">
             <div class="card-body">
               <h3 class="h6">Правила</h3>
-              {% if community.rules %}
-                <div class="post-text m-0">{{ community.rules|md }}</div>
-              {% else %}
-                <p class="text-body-secondary mb-0">Правила ещё не заданы.</p>
-              {% endif %}
+              <div data-about-rules>
+                <div class="post-text m-0 {% if not community.rules %}d-none{% endif %}" data-about-rules-text>
+                  {{ community.rules|md }}
+                </div>
+                <p class="text-body-secondary mb-0 {% if community.rules %}d-none{% endif %}" data-about-rules-empty>
+                  Правила ещё не заданы.
+                </p>
+              </div>
             </div>
           </div>
           <div class="card post-card mb-3">
             <div class="card-body">
               <h3 class="h6">Полезные ссылки</h3>
-              {% if community.links %}
-                <ul class="list-unstyled mb-0 d-flex flex-column gap-1">
-                  {% for link in community.links %}
-                    <li><a href="{{ link }}" class="text-decoration-none" target="_blank" rel="noopener">{{ link }}</a></li>
-                  {% endfor %}
+              <div data-about-links>
+                <ul class="list-unstyled mb-0 d-flex flex-column gap-1 {% if not community.links %}d-none{% endif %}" data-about-links-list>
+                  {% if community.links %}
+                    {% for link in community.links %}
+                      <li><a href="{{ link }}" class="text-decoration-none" target="_blank" rel="noopener">{{ link }}</a></li>
+                    {% endfor %}
+                  {% endif %}
                 </ul>
-              {% else %}
-                <p class="text-body-secondary mb-0">Ссылки не добавлены.</p>
-              {% endif %}
+                <p class="text-body-secondary mb-0 {% if community.links %}d-none{% endif %}" data-about-links-empty>
+                  Ссылки не добавлены.
+                </p>
+              </div>
             </div>
           </div>
           <div class="card post-card">
@@ -293,7 +302,7 @@
       </div>
       <div class="modal-body">
         {% if is_admin %}
-          <form id="communitySettingsForm" enctype="multipart/form-data">
+          <form id="communitySettingsForm" method="post" action="{% url 'community_settings_api' community.slug %}" enctype="multipart/form-data">
             {% csrf_token %}
               <div class="settings-block appearance-builder mb-3">
                 <div class="row g-3 align-items-start">
@@ -404,24 +413,27 @@
                               <div class="fw-semibold text-truncate">{{ m.user.display_name|default:m.user.username }}</div>
                               <div class="small text-secondary">@{{ m.user.username }}</div>
                             </div>
-                            <select class="form-select form-select-sm staff-role-select">
+                            <select class="form-select form-select-sm staff-role-select" {% if m.role == 'owner' %}disabled{% endif %}>
                               <option value="member" {% if m.role == 'member' %}selected{% endif %}>Участник</option>
                               <option value="moderator" {% if m.role == 'moderator' %}selected{% endif %}>Модератор</option>
                               <option value="admin" {% if m.role == 'admin' %}selected{% endif %}>Админ</option>
                               <option value="owner" {% if m.role == 'owner' %}selected{% endif %}>Владелец</option>
                             </select>
-                            <button type="button" class="btn btn-outline-danger btn-sm staff-remove">Удалить</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm staff-remove" {% if m.role == 'owner' %}disabled{% endif %}>Удалить</button>
                           </div>
                           <div class="staff-permissions d-flex flex-wrap gap-2">
                             <span class="small text-body-secondary">Права модератора:</span>
                             <label class="form-check form-check-inline staff-permission-option">
-                              <input class="form-check-input staff-permission" type="checkbox" value="manage_posts" {% if perms.manage_posts %}checked{% endif %}>
+                              <input class="form-check-input staff-permission" type="checkbox" value="manage_posts" {% if perms.manage_posts %}checked{% endif %} {% if m.role == 'owner' %}disabled{% endif %}>
                               <span class="form-check-label">Посты</span>
                             </label>
                             <label class="form-check form-check-inline staff-permission-option">
-                              <input class="form-check-input staff-permission" type="checkbox" value="edit_appearance" {% if perms.edit_appearance %}checked{% endif %}>
+                              <input class="form-check-input staff-permission" type="checkbox" value="edit_appearance" {% if perms.edit_appearance %}checked{% endif %} {% if m.role == 'owner' %}disabled{% endif %}>
                               <span class="form-check-label">Оформление</span>
                             </label>
+                            {% if m.role == 'owner' %}
+                              <span class="badge text-bg-success-subtle border">Полный доступ</span>
+                            {% endif %}
                           </div>
                         </div>
                       {% endwith %}
@@ -456,9 +468,12 @@
                 </div>
               </div>
             </div>
-            <div class="mt-3 d-flex justify-content-end gap-2">
+            <div class="mt-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+              <div id="communitySettingsStatus" class="alert alert-success py-2 px-3 mb-0 d-none" role="status"></div>
+              <div class="d-flex justify-content-end gap-2 ms-auto">
               <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
               <button type="submit" class="btn btn-primary" id="communitySettingsSave">Сохранить</button>
+              </div>
             </div>
           </form>
 

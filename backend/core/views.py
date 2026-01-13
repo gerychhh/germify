@@ -45,6 +45,7 @@ from core.services.messages import (
     get_unread_total,
     mark_chat_read,
 )
+from core.templatetags.markdown_extras import md_filter
 
 
 
@@ -2255,31 +2256,37 @@ def community_members_api(request, slug):
 
 @login_required
 def community_settings_api(request, slug):
+    def build_payload(target):
+        return {
+            "name": target.name,
+            "description": target.description or "",
+            "description_html": str(md_filter(target.description or "")),
+            "slug": target.slug,
+            "tags": target.tags or [],
+            "links": target.links or [],
+            "rules": target.rules or "",
+            "rules_html": str(md_filter(target.rules or "")),
+            "post_policy": target.post_policy,
+            "post_requires_approval": target.post_requires_approval,
+            "comments_enabled": target.comments_enabled,
+            "allow_links": target.allow_links,
+            "accent_color": target.accent_color,
+            "cover_url": target.cover.url if target.cover else "",
+            "icon_url": target.icon.url if target.icon else "",
+        }
+
     community = get_object_or_404(Community, slug=slug)
     membership = CommunityMembership.objects.filter(community=community, user=request.user).first()
     if not membership or not membership.can_moderate():
         return JsonResponse({"error": "forbidden"}, status=403)
 
     if request.method == "GET":
-        data = {
-            "name": community.name,
-            "description": community.description,
-            "slug": community.slug,
-            "tags": community.tags,
-            "links": community.links,
-            "rules": community.rules,
-            "post_policy": community.post_policy,
-            "post_requires_approval": community.post_requires_approval,
-            "comments_enabled": community.comments_enabled,
-            "allow_links": community.allow_links,
-            "accent_color": community.accent_color,
-        }
-        return JsonResponse({"data": data, "can_manage": True})
+        return JsonResponse({"data": build_payload(community), "can_manage": True})
 
     form = CommunityForm(request.POST, request.FILES, instance=community)
     if form.is_valid():
         form.save()
-        return JsonResponse({"success": True})
+        return JsonResponse({"success": True, "data": build_payload(community)})
     return JsonResponse({"errors": form.errors}, status=400)
 
 
@@ -2318,7 +2325,9 @@ def community_member_role(request, slug, user_id):
 
     membership.role = new_role
     permissions_raw = request.POST.get("permissions")
-    if permissions_raw:
+    if membership.role == "owner":
+        membership.permissions = {key: True for key in membership.default_permissions()}
+    elif permissions_raw:
         try:
             incoming = json.loads(permissions_raw)
         except Exception:
