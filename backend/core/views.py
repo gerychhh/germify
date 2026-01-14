@@ -1763,7 +1763,15 @@ def register_view(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user, backend=settings.AUTHENTICATION_BACKENDS[0])
+            backend = next(
+                (
+                    backend_path
+                    for backend_path in settings.AUTHENTICATION_BACKENDS
+                    if backend_path == "django.contrib.auth.backends.ModelBackend"
+                ),
+                settings.AUTHENTICATION_BACKENDS[0],
+            )
+            login(request, user, backend=backend)
             return redirect("feed")
     else:
         form = RegisterForm()
