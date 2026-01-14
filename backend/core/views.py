@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from django.db.models import Q, Count, Case, When, Value, IntegerField, Max
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
@@ -1762,7 +1763,7 @@ def register_view(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
+            login(request, user, backend=settings.AUTHENTICATION_BACKENDS[0])
             return redirect("feed")
     else:
         form = RegisterForm()
